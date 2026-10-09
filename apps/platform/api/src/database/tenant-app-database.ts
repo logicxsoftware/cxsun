@@ -32,8 +32,13 @@ import {
   type AuditorClientDatabase
 } from "@cxsun/auditor-api";
 import {
+  logicxErpSchemeMigrations,
+  migrateLogicxErpSchemeDatabase,
+  rollbackLogicxErpSchemeDatabase,
   seedLogicxErpOverviewPermissions,
-  type LogicxErpPermissionDatabase
+  seedLogicxErpSchemePermissions,
+  type LogicxErpPermissionDatabase,
+  type LogicxErpSchemeDatabase
 } from "@cxsun/logicx-erp-api";
 import {
   mailMigrationBatch,
@@ -143,6 +148,12 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
           statements: [`RUN ${migration.name}`]
         }))
       : []),
+    ...(enabled.has("logicx-erp") && enabled.has("billing.sales")
+      ? logicxErpSchemeMigrations.map((migration) => ({
+          ...migration,
+          statements: [`RUN ${migration.name}`]
+        }))
+      : []),
     ...(enabled.has("accounts.accounting")
       ? accountsTenantMigrations.map((migration) => ({
           ...migration,
@@ -197,6 +208,11 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
     provisionedApps.push("billing");
   }
 
+  if (enabled.has("logicx-erp") && enabled.has("billing.sales")) {
+    await migrateLogicxErpSchemeDatabase(database as unknown as Kysely<LogicxErpSchemeDatabase>);
+    provisionedApps.push("logicx-erp");
+  }
+
   if (enabled.has("accounts.accounting")) {
     await migrateAccountsTenantDatabase(tenant.dbName);
     provisionedApps.push("accounts");
@@ -239,6 +255,7 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
     await seedLogicxErpOverviewPermissions(
       database as unknown as Kysely<LogicxErpPermissionDatabase>
     );
+    await seedLogicxErpSchemePermissions(database as unknown as Kysely<LogicxErpSchemeDatabase>);
     seededApps.push("logicx-erp");
   }
   if (enabled.has("zetro")) {
@@ -293,6 +310,8 @@ export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase
     await rollbackZetroProviderDatabase(database as unknown as Kysely<ZetroProviderDatabase>);
     await rollbackZetroChatDatabase(database as unknown as Kysely<ZetroDatabase>);
   }
+  if (enabled.has("logicx-erp") && enabled.has("billing.sales"))
+    await rollbackLogicxErpSchemeDatabase(database as unknown as Kysely<LogicxErpSchemeDatabase>);
   if (enabled.has("billing.sales")) await rollbackBillingTenantDatabase(tenant.dbName);
   if (enabled.has("accounts.accounting")) await rollbackAccountsTenantDatabase(tenant.dbName);
   await rollbackCoreTenantDatabase(tenant.dbName);

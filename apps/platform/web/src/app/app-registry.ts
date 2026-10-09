@@ -1,6 +1,7 @@
 import {
   AlertTriangleIcon,
   ArchiveIcon,
+  BadgePercentIcon,
   BarChart3Icon,
   BoxesIcon,
   Building2Icon,
@@ -289,8 +290,19 @@ export function appMenuFor(
     return {
       icon: BoxesIcon,
       isActive: activePage.startsWith("logicx-erp"),
-      onSelect: () => onSelect("logicx-erp.overview"),
-      title: "LogicX ERP"
+      title: "LogicX ERP",
+      items: [
+        {
+          title: "Overview",
+          isActive: activePage === "logicx-erp.overview",
+          onSelect: () => onSelect("logicx-erp.overview")
+        },
+        {
+          title: "Schemes",
+          isActive: activePage === "logicx-erp.schemes",
+          onSelect: () => onSelect("logicx-erp.schemes")
+        }
+      ]
     };
   }
   if (appId === "zetro") {
@@ -680,6 +692,12 @@ export function appMenuItemsFor(
         isActive: activePage === "logicx-erp.overview",
         onSelect: () => onSelect("logicx-erp.overview"),
         title: "Overview"
+      },
+      {
+        icon: BadgePercentIcon,
+        isActive: activePage === "logicx-erp.schemes",
+        onSelect: () => onSelect("logicx-erp.schemes"),
+        title: "Schemes"
       }
     ];
   }

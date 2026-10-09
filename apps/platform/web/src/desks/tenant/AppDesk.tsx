@@ -77,7 +77,10 @@ import { useCrmNavigationCounts } from "@cxsun/crm-web/modules/enquiry/hooks";
 import { ZetroLogo } from "@cxsun/zetro-web/logo";
 import type { EnquiryReportFilters } from "@cxsun/crm-web/modules/enquiry";
 import { auditorClientGateway } from "../../modules/auditor/auditor-host";
-import { logicxErpOverviewGateway } from "../../modules/logicx-erp/logicx-erp-host";
+import {
+  logicxErpOverviewGateway,
+  logicxErpSchemeGateway
+} from "../../modules/logicx-erp/logicx-erp-host";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
   return lazy(async () => ({ default: await loader() }));
@@ -104,6 +107,9 @@ const LogicxErpOverviewWorkspace = lazyWorkspace(() =>
   import("@cxsun/logicx-erp-web/modules/overview").then(
     (module) => module.LogicxErpOverviewWorkspace
   )
+);
+const LogicxErpSchemeWorkspace = lazyWorkspace(() =>
+  import("@cxsun/logicx-erp-web/modules/scheme").then((module) => module.LogicxErpSchemeWorkspace)
 );
 const CrmOverviewWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/overview").then((module) => module.CrmOverviewWorkspace)
@@ -444,6 +450,7 @@ type AppPage =
   | "auditor.overview"
   | "auditor.clients"
   | "logicx-erp.overview"
+  | "logicx-erp.schemes"
   | "crm.overview"
   | "crm.reports"
   | "crm.enquiries"
@@ -936,7 +943,8 @@ export function AppDesk() {
             key={
               safePage.startsWith("core.") ||
               safePage.startsWith("billing.") ||
-              safePage === "crm.contacts"
+              safePage === "crm.contacts" ||
+              safePage === "logicx-erp.schemes"
                 ? safePage
                 : `${safePage}:${location.href}`
             }
@@ -948,6 +956,9 @@ export function AppDesk() {
             {safePage === "auditor.overview" ? <AuditorOverviewWorkspace /> : null}
             {safePage === "logicx-erp.overview" ? (
               <LogicxErpOverviewWorkspace gateway={logicxErpOverviewGateway} />
+            ) : null}
+            {safePage === "logicx-erp.schemes" ? (
+              <LogicxErpSchemeWorkspace gateway={logicxErpSchemeGateway} />
             ) : null}
             {safePage === "frappe.overview" ? <FrappeOverviewWorkspace /> : null}
             {safePage === "zetro.chat" ? (
@@ -1190,6 +1201,16 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
   }
 
   if (
+    app === "logicx-erp" &&
+    children[0] === "schemes" &&
+    (children.length === 1 ||
+      (children.length === 2 && Boolean(children[1])) ||
+      (children.length === 3 && children[2] === "edit"))
+  ) {
+    return "logicx-erp.schemes";
+  }
+
+  if (
     app === "billing" &&
     ["quotation", "sales", "purchase", "export-sales", "payment", "receipt"].includes(
       children[0] ?? ""
@@ -1236,6 +1257,7 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "auditor.overview" ||
     key === "auditor.clients" ||
     key === "logicx-erp.overview" ||
+    key === "logicx-erp.schemes" ||
     key === "crm.overview" ||
     key === "crm.reports" ||
     key === "crm.enquiries" ||
@@ -1340,6 +1362,7 @@ function tenantPathMatchesPage(pathname: string, page: AppPage): boolean {
   }
   if (
     page === "crm.contacts" ||
+    page === "logicx-erp.schemes" ||
     (page.startsWith("core.") && (isCommonMasterPage(page) || CORE_RECORD_PAGES.has(page)))
   ) {
     const prefix = `${canonicalPath}/`;
@@ -1838,6 +1861,7 @@ function titleForPage(page: AppPage) {
     "auditor.overview": "Overview",
     "auditor.clients": "Clients",
     "logicx-erp.overview": "Overview",
+    "logicx-erp.schemes": "Schemes",
     "crm.overview": "Overview",
     "crm.reports": "Reports",
     "crm.enquiries": "Enquiries",

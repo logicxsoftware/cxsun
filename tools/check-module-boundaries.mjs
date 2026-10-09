@@ -98,6 +98,7 @@ const crmContact360Leaves = [
 const capabilityBackendRoles = new Map([
   ["auditor-api/client", ["module", "service", "repository", "routes", "migration", "types"]],
   ["logicx-erp-api/overview", ["module", "service", "routes", "seed", "types"]],
+  ["logicx-erp-api/scheme", reducedBackendRoles],
   ["project-manager-api/platform-registry", reducedBackendRoles],
   ["zuno-api/diagnostics", ["module", "service", "repository", "routes", "types"]],
   ["zuno-api/cases", ["module", "service", "repository", "routes", "migration", "types"]],

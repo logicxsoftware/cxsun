@@ -7,3 +7,15 @@ export type {
   LogicxErpOverviewRequestContext,
   LogicxErpPermissionDatabase
 } from "./modules/overview/index.js";
+export {
+  logicxErpSchemeMigrations,
+  logicxErpSchemeModule,
+  migrateLogicxErpSchemeDatabase,
+  rollbackLogicxErpSchemeDatabase,
+  seedLogicxErpSchemePermissions
+} from "./modules/scheme/index.js";
+export type {
+  LogicxErpSchemeDatabase,
+  LogicxErpSchemeRecord,
+  LogicxErpSchemeRequestContext
+} from "./modules/scheme/index.js";

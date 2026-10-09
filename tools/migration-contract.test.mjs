@@ -70,7 +70,9 @@ test("every fresh SQL table follows its database ownership naming contract", () 
       } else if (platformMasterTables.has(table)) {
         // Platform master tables are intentionally unprefixed.
       } else if (
-        !/^(app|accounts|auditor|core|billing|crm|devkit|mail|project_manager|zetro|zuno)_/.test(table)
+        !/^(app|accounts|auditor|core|billing|crm|devkit|mail|logicx_erp|project_manager|zetro|zuno)_/.test(
+          table
+        )
       ) {
         failures.push(`${file}: ${table} has no tenant owner prefix`);
       }
@@ -98,7 +100,9 @@ test("every fresh SQL table follows its database ownership naming contract", () 
       } else if (platformMasterTables.has(table)) {
         // Platform master tables are intentionally unprefixed.
       } else if (
-        !/^(app|accounts|auditor|core|billing|crm|devkit|mail|project_manager|zetro|zuno)_/.test(table)
+        !/^(app|accounts|auditor|core|billing|crm|devkit|mail|logicx_erp|project_manager|zetro|zuno)_/.test(
+          table
+        )
       ) {
         failures.push(`${file}: ${table} has no tenant owner prefix`);
       }

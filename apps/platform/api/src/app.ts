@@ -33,7 +33,11 @@ import {
   type PriorityDatabase
 } from "@cxsun/crm-api";
 import { auditorClientModule, type AuditorClientDatabase } from "@cxsun/auditor-api";
-import { logicxErpOverviewModule } from "@cxsun/logicx-erp-api";
+import {
+  logicxErpOverviewModule,
+  logicxErpSchemeModule,
+  type LogicxErpSchemeDatabase
+} from "@cxsun/logicx-erp-api";
 import {
   frappeConnectionModule,
   frappeEnquirySyncModule,
@@ -166,6 +170,7 @@ export async function createApp() {
             enquiryModule.key,
             auditorClientModule.key,
             logicxErpOverviewModule.key,
+            logicxErpSchemeModule.key,
             zetroChatModule.key,
             ...billingApiModuleKeys,
             ...accountsApiModuleKeys,
@@ -759,6 +764,26 @@ export async function createApp() {
       actorEmail: context.actorEmail,
       authorize: context.authorize,
       tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
+  });
+  await logicxErpSchemeModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("module_key")
+      .where("module_key", "in", ["logicx-erp", "billing.sales"])
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .execute();
+    const keys = new Set(enabled.map((row) => row.module_key));
+    if (!keys.has("logicx-erp"))
+      throw AppError.forbidden("LogicX ERP is not enabled for this tenant.");
+    if (!keys.has("billing.sales"))
+      throw AppError.forbidden("Schemes need Billing to be enabled for this tenant.");
+    return {
+      actorEmail: context.actorEmail,
+      authorize: context.authorize,
+      database: context.database as unknown as import("kysely").Kysely<LogicxErpSchemeDatabase>
     };
   });
   console.info("[platform.routes] LogicX ERP package ready");
