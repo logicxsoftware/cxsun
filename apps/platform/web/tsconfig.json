@@ -1,0 +1,21 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@cxsun/ui": ["../../../packages/ui/src/index.ts"],
+      "@cxsun/ui/styles.css": ["../../../packages/ui/src/styles.css"],
+      "@cxsun/ui/components/*": ["../../../packages/ui/src/components/*"],
+      "@cxsun/ui/layouts/*": ["../../../packages/ui/src/layouts/*"],
+      "@cxsun/ui/blocks/*": ["../../../packages/ui/src/blocks/*"],
+      "@cxsun/ui/workspace": ["../../../packages/ui/src/workspace/index.ts"],
+      "@cxsun/ui/workspace/*": ["../../../packages/ui/src/workspace/*"],
+      "@cxsun/ui/presets/*": ["../../../packages/ui/src/workspace/presets/*"],
+      "@cxsun/ui/lib/*": ["../../../packages/ui/src/lib/*"],
+      "@cxsun/uiux": ["../../../devkits/uiux/src/index.ts"]
+    },
+    "noEmit": true,
+    "preserveSymlinks": true,
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

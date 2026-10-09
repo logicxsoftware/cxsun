@@ -1,0 +1,17 @@
+{
+  "cloud-workspace-projection": {
+    "identifier": "cloud-workspace-projection",
+    "description": "Allow the canonical CXSUN workspace to persist only safe tenant labels",
+    "remote": { "urls": ["https://app.codexsun.com/*"] },
+    "local": true,
+    "windows": ["main"],
+    "permissions": ["core:default"]
+  },
+  "local-launcher": {
+    "identifier": "local-launcher",
+    "description": "Local CXSUN launcher access",
+    "local": true,
+    "windows": ["main"],
+    "permissions": ["core:default"]
+  }
+}
