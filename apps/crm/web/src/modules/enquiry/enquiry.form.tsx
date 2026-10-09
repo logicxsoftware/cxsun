@@ -166,7 +166,14 @@ export function EnquiryForm({
             if (index < 0) return;
             event.preventDefault();
             event.stopPropagation();
-            if (index === controls.length - 1) return;
+            if (index === controls.length - 1) {
+              document
+                .querySelector<HTMLButtonElement>(
+                  `button[form="${newEnquiryFormId}"][type="submit"]`
+                )
+                ?.focus();
+              return;
+            }
             controls[index + 1]?.focus();
             return;
           }
