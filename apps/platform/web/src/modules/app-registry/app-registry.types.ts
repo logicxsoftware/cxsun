@@ -17,7 +17,8 @@ export type PlatformApp = {
     | "blog"
     | "auditor"
     | "crm"
-    | "frappe";
+    | "frappe"
+    | "logicx-erp";
   uuid: string;
 };
 export type PlatformAppSavePayload = Omit<PlatformApp, "id" | "uuid">;

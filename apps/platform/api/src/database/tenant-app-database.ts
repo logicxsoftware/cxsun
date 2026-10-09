@@ -32,6 +32,10 @@ import {
   type AuditorClientDatabase
 } from "@cxsun/auditor-api";
 import {
+  seedLogicxErpOverviewPermissions,
+  type LogicxErpPermissionDatabase
+} from "@cxsun/logicx-erp-api";
+import {
   mailMigrationBatch,
   migrateMailModule,
   rollbackMailModule,
@@ -230,6 +234,12 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
   if (enabled.has("auditor")) {
     await seedAuditorClientPermissions(database as unknown as Kysely<AuditorClientDatabase>);
     seededApps.push("auditor");
+  }
+  if (enabled.has("logicx-erp")) {
+    await seedLogicxErpOverviewPermissions(
+      database as unknown as Kysely<LogicxErpPermissionDatabase>
+    );
+    seededApps.push("logicx-erp");
   }
   if (enabled.has("zetro")) {
     await seedZetroChatPermissions(database as unknown as Kysely<ZetroDatabase>);

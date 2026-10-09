@@ -16,6 +16,7 @@
     "@cxsun/core-api": "^1.0.80",
     "@cxsun/crm-api": "^1.0.80",
     "@cxsun/frappe-api": "^1.0.80",
+    "@cxsun/logicx-erp-api": "^1.0.80",
     "@cxsun/zetro-api": "^1.0.80",
     "@cxsun/project-manager-api": "^1.0.80",
     "@cxsun/zuno-api": "^1.0.80",

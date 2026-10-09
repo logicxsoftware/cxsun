@@ -2,6 +2,7 @@ import {
   AlertTriangleIcon,
   ArchiveIcon,
   BarChart3Icon,
+  BoxesIcon,
   Building2Icon,
   CircleGaugeIcon,
   Clock3Icon,
@@ -42,7 +43,8 @@ export type PlatformAppId =
   | "auditor"
   | "crm"
   | "frappe"
-  | "zetro";
+  | "zetro"
+  | "logicx-erp";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -55,7 +57,8 @@ export type PlatformAppRootPage =
   | "auditor.clients"
   | "crm.overview"
   | "frappe.overview"
-  | "zetro.chat";
+  | "zetro.chat"
+  | "logicx-erp.overview";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -85,7 +88,8 @@ export type PlatformAppDefinition = {
     | "auditor"
     | "crm"
     | "frappe"
-    | "zetro";
+    | "zetro"
+    | "logicx-erp";
 };
 
 export const defaultTenantModuleKeys = [
@@ -97,7 +101,8 @@ export const defaultTenantModuleKeys = [
   "auditor",
   "crm",
   "frappe",
-  "zetro"
+  "zetro",
+  "logicx-erp"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
@@ -211,6 +216,17 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Auditor",
     moduleKey: "auditor",
     stack: "auditor"
+  },
+  {
+    accentClass: "bg-orange-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "LogicX ERP operations workspace for the tenant desk.",
+    icon: BoxesIcon,
+    id: "logicx-erp",
+    label: "LogicX ERP",
+    moduleKey: "logicx-erp",
+    stack: "logicx-erp"
   }
 ];
 
@@ -245,6 +261,7 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 }
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
+  if (appId === "logicx-erp") return "logicx-erp.overview";
   if (appId === "zetro") return "zetro.chat";
   if (appId === "frappe") return "frappe.overview";
   if (appId === "crm") return "crm.overview";
@@ -268,6 +285,14 @@ export function appMenuFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem {
+  if (appId === "logicx-erp") {
+    return {
+      icon: BoxesIcon,
+      isActive: activePage.startsWith("logicx-erp"),
+      onSelect: () => onSelect("logicx-erp.overview"),
+      title: "LogicX ERP"
+    };
+  }
   if (appId === "zetro") {
     return {
       icon: SparklesIcon,
@@ -648,6 +673,16 @@ export function appMenuItemsFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem[] {
+  if (appId === "logicx-erp") {
+    return [
+      {
+        icon: BoxesIcon,
+        isActive: activePage === "logicx-erp.overview",
+        onSelect: () => onSelect("logicx-erp.overview"),
+        title: "Overview"
+      }
+    ];
+  }
   if (appId === "zetro") {
     return [
       {

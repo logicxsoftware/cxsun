@@ -33,6 +33,7 @@ import {
   type PriorityDatabase
 } from "@cxsun/crm-api";
 import { auditorClientModule, type AuditorClientDatabase } from "@cxsun/auditor-api";
+import { logicxErpOverviewModule } from "@cxsun/logicx-erp-api";
 import {
   frappeConnectionModule,
   frappeEnquirySyncModule,
@@ -164,6 +165,7 @@ export async function createApp() {
             ...coreApiModuleKeys,
             enquiryModule.key,
             auditorClientModule.key,
+            logicxErpOverviewModule.key,
             zetroChatModule.key,
             ...billingApiModuleKeys,
             ...accountsApiModuleKeys,
@@ -741,6 +743,25 @@ export async function createApp() {
     };
   });
   console.info("[platform.routes] Auditor package ready");
+  await logicxErpOverviewModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "logicx-erp")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("LogicX ERP is not enabled for this tenant.");
+    const tenant = await new TenantRepository().findByIdOrCode(context.tenantId);
+    if (!tenant) throw AppError.notFound("Tenant was not found.");
+    return {
+      actorEmail: context.actorEmail,
+      authorize: context.authorize,
+      tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
+  });
+  console.info("[platform.routes] LogicX ERP package ready");
   await registerBillingApi(app);
   console.info("[platform.routes] Billing package ready");
   await registerAccountsApi(app);

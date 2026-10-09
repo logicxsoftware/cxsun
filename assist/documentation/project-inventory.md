@@ -38,6 +38,9 @@ apps/
   mail/
     api/
     web/
+  logicx-erp/
+    api/
+    web/
 
 devkits/
   project-manager/
@@ -123,6 +126,13 @@ Project Manager owns Platform Registry and Ideas and is composed by Platform thr
 - Client records contain a client name, optional company name, owner name, mobile, email, GSTIN, and status. They are not Platform tenants or portal users.
 - Auditor clients use the dedicated `auditor_clients` table when Auditor is enabled. They are distinct from Platform tenants and do not have their own login accounts.
 - `auditor_client_credentials` stores one encrypted password and username or email per client and portal: GSTIN, E-Way Bill, E-Invoice, and Accounts. Passwords are fetched only through a separate permission-checked, uncached reveal endpoint for copying. The encryption key derives from the Platform `JWT_SECRET`, which must be retained to read existing credentials.
+
+### LogicX ERP
+
+- `apps/logicx-erp/api` (`@cxsun/logicx-erp-api`) owns the `overview` module: the `GET /logicx-erp/overview` route, its response contract, and the `logicx-erp.overview.view` permission seed granted to the tenant `admin` role. The Platform API composes it with the desk user session, rejects tenants whose `app_module_settings` row for `logicx-erp` is not enabled, and supplies the live tenant code and name from the tenant registry.
+- `apps/logicx-erp/web` (`@cxsun/logicx-erp-web`) owns the LogicX ERP overview workspace, its gateway, query hook, and types. The tenant desk mounts it at `/app/logicx-erp/overview` through an injected API gateway and lists the app in the app launcher, side menu, and Landing Desk choices.
+- The Platform app registry seeds the app with app ID, module key, and stack `logicx-erp`. It is a default tenant module key for the seeded default tenant; other tenants receive it through Plan Access or entitlements. After access changes, tenant databases need `npm run db:seed` (or tenant provisioning) to write the module setting and permission rows.
+- LogicX ERP owns no tables yet. ERP business modules add module-owned migrations under the `logicx_erp_` prefix when they are delivered.
 
 ### Core
 

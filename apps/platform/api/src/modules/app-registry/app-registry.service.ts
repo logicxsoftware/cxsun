@@ -14,7 +14,8 @@ export const defaultTenantModuleKeys = [
   "auditor",
   "crm",
   "frappe",
-  "zetro"
+  "zetro",
+  "logicx-erp"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
@@ -138,6 +139,17 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Auditor",
     moduleKey: "auditor",
     stack: "auditor",
+    uuid: ""
+  },
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "LogicX ERP operations workspace for the tenant desk.",
+    appId: "logicx-erp",
+    id: 0,
+    label: "LogicX ERP",
+    moduleKey: "logicx-erp",
+    stack: "logicx-erp",
     uuid: ""
   }
 ];

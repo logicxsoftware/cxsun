@@ -9,6 +9,7 @@ import {
   type FormEvent
 } from "react";
 import {
+  BoxesIcon,
   Building2Icon,
   CreditCardIcon,
   ContactRoundIcon,
@@ -76,6 +77,7 @@ import { useCrmNavigationCounts } from "@cxsun/crm-web/modules/enquiry/hooks";
 import { ZetroLogo } from "@cxsun/zetro-web/logo";
 import type { EnquiryReportFilters } from "@cxsun/crm-web/modules/enquiry";
 import { auditorClientGateway } from "../../modules/auditor/auditor-host";
+import { logicxErpOverviewGateway } from "../../modules/logicx-erp/logicx-erp-host";
 
 function lazyWorkspace<Props>(loader: () => Promise<ComponentType<Props>>) {
   return lazy(async () => ({ default: await loader() }));
@@ -97,6 +99,11 @@ const AuditorOverviewWorkspace = lazyWorkspace(() =>
 );
 const AuditorClientWorkspace = lazyWorkspace(() =>
   import("@cxsun/auditor-web/modules/client").then((module) => module.AuditorClientWorkspace)
+);
+const LogicxErpOverviewWorkspace = lazyWorkspace(() =>
+  import("@cxsun/logicx-erp-web/modules/overview").then(
+    (module) => module.LogicxErpOverviewWorkspace
+  )
 );
 const CrmOverviewWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/overview").then((module) => module.CrmOverviewWorkspace)
@@ -436,6 +443,7 @@ type AppPage =
   | "frappe.user-mapping"
   | "auditor.overview"
   | "auditor.clients"
+  | "logicx-erp.overview"
   | "crm.overview"
   | "crm.reports"
   | "crm.enquiries"
@@ -585,25 +593,27 @@ export function AppDesk() {
       ? pageForApp(landingApp)
       : page.startsWith("auditor") && !switchableApps.includes("auditor")
         ? pageForApp(landingApp)
-        : page.startsWith("zetro") && !switchableApps.includes("zetro")
+        : page.startsWith("logicx-erp") && !switchableApps.includes("logicx-erp")
           ? pageForApp(landingApp)
-          : page.startsWith("frappe") && !switchableApps.includes("frappe")
+          : page.startsWith("zetro") && !switchableApps.includes("zetro")
             ? pageForApp(landingApp)
-            : page.startsWith("task-manager") && !switchableApps.includes("task-manager")
+            : page.startsWith("frappe") && !switchableApps.includes("frappe")
               ? pageForApp(landingApp)
-              : page.startsWith("mail") && !switchableApps.includes("mail")
+              : page.startsWith("task-manager") && !switchableApps.includes("task-manager")
                 ? pageForApp(landingApp)
-                : page.startsWith("crm") && !switchableApps.includes("crm")
+                : page.startsWith("mail") && !switchableApps.includes("mail")
                   ? pageForApp(landingApp)
-                  : page.startsWith("blog") && !switchableApps.includes("blog")
+                  : page.startsWith("crm") && !switchableApps.includes("crm")
                     ? pageForApp(landingApp)
-                    : page.startsWith("accounts") && !switchableApps.includes("accounts")
+                    : page.startsWith("blog") && !switchableApps.includes("blog")
                       ? pageForApp(landingApp)
-                      : (page.startsWith("billing") ||
-                            (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
-                          !switchableApps.includes("billing")
+                      : page.startsWith("accounts") && !switchableApps.includes("accounts")
                         ? pageForApp(landingApp)
-                        : page;
+                        : (page.startsWith("billing") ||
+                              (page.startsWith("core") && !page.startsWith("core.organisation"))) &&
+                            !switchableApps.includes("billing")
+                          ? pageForApp(landingApp)
+                          : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle = titleForPage(safePage);
   const accountingYear = selectedFinancialYear?.name ?? "Accounting year";
@@ -936,6 +946,9 @@ export function AppDesk() {
               <BlogsEditorWorkspace host={blogEditorHost} />
             ) : null}
             {safePage === "auditor.overview" ? <AuditorOverviewWorkspace /> : null}
+            {safePage === "logicx-erp.overview" ? (
+              <LogicxErpOverviewWorkspace gateway={logicxErpOverviewGateway} />
+            ) : null}
             {safePage === "frappe.overview" ? <FrappeOverviewWorkspace /> : null}
             {safePage === "zetro.chat" ? (
               <ZetroChatWorkspace
@@ -1222,6 +1235,7 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "frappe.user-mapping" ||
     key === "auditor.overview" ||
     key === "auditor.clients" ||
+    key === "logicx-erp.overview" ||
     key === "crm.overview" ||
     key === "crm.reports" ||
     key === "crm.enquiries" ||
@@ -1372,66 +1386,74 @@ function LandingDesk({
 
   const choices = enabledApps.map((appId) => ({
     description:
-      appId === "billing"
-        ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
-        : appId === "crm"
-          ? "Customer relationships and sales opportunities."
-          : appId === "zetro"
-            ? "AI coworker with private conversation history."
-            : appId === "frappe"
-              ? "Frappe connection and manual CRM enquiry sync."
-              : appId === "accounts"
-                ? "Chart of accounts, ledger groups, ledgers, journal, and accounting overview."
-                : appId === "mail"
-                  ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
-                  : "Shared workspace, company setup, roles, and cross-app launch desk.",
+      appId === "logicx-erp"
+        ? "LogicX ERP operations workspace for the tenant desk."
+        : appId === "billing"
+          ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
+          : appId === "crm"
+            ? "Customer relationships and sales opportunities."
+            : appId === "zetro"
+              ? "AI coworker with private conversation history."
+              : appId === "frappe"
+                ? "Frappe connection and manual CRM enquiry sync."
+                : appId === "accounts"
+                  ? "Chart of accounts, ledger groups, ledgers, journal, and accounting overview."
+                  : appId === "mail"
+                    ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
+                    : "Shared workspace, company setup, roles, and cross-app launch desk.",
     icon:
-      appId === "billing"
-        ? CreditCardIcon
-        : appId === "crm"
-          ? ContactRoundIcon
-          : appId === "zetro"
-            ? ZetroLogo
-            : appId === "frappe"
-              ? RefreshCwIcon
-              : appId === "accounts"
-                ? LayersIcon
-                : appId === "mail"
-                  ? MailIcon
-                  : appId === "task-manager"
-                    ? ListChecksIcon
-                    : LayoutDashboardIcon,
+      appId === "logicx-erp"
+        ? BoxesIcon
+        : appId === "billing"
+          ? CreditCardIcon
+          : appId === "crm"
+            ? ContactRoundIcon
+            : appId === "zetro"
+              ? ZetroLogo
+              : appId === "frappe"
+                ? RefreshCwIcon
+                : appId === "accounts"
+                  ? LayersIcon
+                  : appId === "mail"
+                    ? MailIcon
+                    : appId === "task-manager"
+                      ? ListChecksIcon
+                      : LayoutDashboardIcon,
     iconClass:
-      appId === "billing"
-        ? "bg-emerald-600 text-white"
-        : appId === "crm"
-          ? "bg-rose-600 text-white"
-          : appId === "zetro"
-            ? "border border-border bg-white"
-            : appId === "frappe"
-              ? "bg-teal-600 text-white"
-              : appId === "accounts"
-                ? "bg-cyan-600 text-white"
-                : appId === "mail"
-                  ? "bg-sky-600 text-white"
-                  : appId === "task-manager"
-                    ? "bg-violet-600 text-white"
-                    : "bg-slate-950 text-white",
+      appId === "logicx-erp"
+        ? "bg-orange-600 text-white"
+        : appId === "billing"
+          ? "bg-emerald-600 text-white"
+          : appId === "crm"
+            ? "bg-rose-600 text-white"
+            : appId === "zetro"
+              ? "border border-border bg-white"
+              : appId === "frappe"
+                ? "bg-teal-600 text-white"
+                : appId === "accounts"
+                  ? "bg-cyan-600 text-white"
+                  : appId === "mail"
+                    ? "bg-sky-600 text-white"
+                    : appId === "task-manager"
+                      ? "bg-violet-600 text-white"
+                      : "bg-slate-950 text-white",
     id: appId,
     label:
-      appId === "billing"
-        ? "Billing"
-        : appId === "crm"
-          ? "CRM"
-          : appId === "frappe"
-            ? "Frappe"
-            : appId === "accounts"
-              ? "Accounts"
-              : appId === "mail"
-                ? "Mail"
-                : appId === "task-manager"
-                  ? "Task Manager"
-                  : "Application"
+      appId === "logicx-erp"
+        ? "LogicX ERP"
+        : appId === "billing"
+          ? "Billing"
+          : appId === "crm"
+            ? "CRM"
+            : appId === "frappe"
+              ? "Frappe"
+              : appId === "accounts"
+                ? "Accounts"
+                : appId === "mail"
+                  ? "Mail"
+                  : appId === "task-manager"
+                    ? "Task Manager"
+                    : "Application"
   })) satisfies Array<{
     description: string;
     icon: ComponentType<{ className?: string }>;
@@ -1815,6 +1837,7 @@ function titleForPage(page: AppPage) {
     "frappe.user-mapping": "User mapping",
     "auditor.overview": "Overview",
     "auditor.clients": "Clients",
+    "logicx-erp.overview": "Overview",
     "crm.overview": "Overview",
     "crm.reports": "Reports",
     "crm.enquiries": "Enquiries",
@@ -1964,6 +1987,8 @@ function appFromPage(
   if (page.startsWith("frappe")) return enabledApps.includes("frappe") ? "frappe" : landingApp;
   if (page.startsWith("crm")) return enabledApps.includes("crm") ? "crm" : landingApp;
   if (page.startsWith("auditor")) return enabledApps.includes("auditor") ? "auditor" : landingApp;
+  if (page.startsWith("logicx-erp"))
+    return enabledApps.includes("logicx-erp") ? "logicx-erp" : landingApp;
   if (page.startsWith("blog")) return enabledApps.includes("blog") ? "blog" : landingApp;
   if (page.startsWith("core.organisation")) return "application";
   if (page.startsWith("billing") || page.startsWith("core"))

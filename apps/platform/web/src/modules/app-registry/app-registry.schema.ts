@@ -17,6 +17,7 @@ export const appRegistrySchema = z.object({
     "blog",
     "auditor",
     "crm",
-    "frappe"
+    "frappe",
+    "logicx-erp"
   ])
 });

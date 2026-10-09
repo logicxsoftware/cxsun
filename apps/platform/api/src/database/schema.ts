@@ -78,7 +78,8 @@ export type PlatformAppsTable = {
     | "auditor"
     | "crm"
     | "frappe"
-    | "zetro";
+    | "zetro"
+    | "logicx-erp";
   updated_at: TimestampColumn;
   uuid: string;
 };

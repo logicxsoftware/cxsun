@@ -20,6 +20,7 @@ export const appRegistryFields: RegistryField<PlatformApp>[] = [
       { label: "Frappe", value: "frappe" },
       { label: "Blog", value: "blog" },
       { label: "Auditor", value: "auditor" },
+      { label: "LogicX ERP", value: "logicx-erp" },
       { label: "Platform Task Manager", value: "platform-task-manager" },
       { label: "Project Manager", value: "project-manager" },
       { label: "Mail", value: "mail" }

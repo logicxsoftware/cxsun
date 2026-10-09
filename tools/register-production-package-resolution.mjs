@@ -11,6 +11,7 @@ const apiPackages = new Map([
   ["@cxsun/core-api", "core"],
   ["@cxsun/crm-api", "crm"],
   ["@cxsun/frappe-api", "frappe"],
+  ["@cxsun/logicx-erp-api", "logicx-erp"],
   ["@cxsun/zetro-api", "zetro"],
   ["@cxsun/project-manager-api", "project-manager"],
   ["@cxsun/zuno-api", "zuno"],

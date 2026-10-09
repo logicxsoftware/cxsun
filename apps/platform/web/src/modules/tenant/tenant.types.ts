@@ -19,7 +19,8 @@ export type Tenant = {
     | "auditor"
     | "crm"
     | "frappe"
-    | "zetro";
+    | "zetro"
+    | "logicx-erp";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -55,7 +56,8 @@ export type TenantSavePayload = {
     | "auditor"
     | "crm"
     | "frappe"
-    | "zetro";
+    | "zetro"
+    | "logicx-erp";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;
@@ -90,7 +92,8 @@ export type TenantRuntime = {
       | "auditor"
       | "crm"
       | "frappe"
-      | "zetro";
+      | "zetro"
+      | "logicx-erp";
     label: string;
     moduleKey: string;
     stack:
@@ -105,7 +108,8 @@ export type TenantRuntime = {
       | "auditor"
       | "crm"
       | "frappe"
-      | "zetro";
+      | "zetro"
+      | "logicx-erp";
   }>;
   defaultLandingApp:
     | "application"
@@ -119,6 +123,7 @@ export type TenantRuntime = {
     | "auditor"
     | "crm"
     | "frappe"
-    | "zetro";
+    | "zetro"
+    | "logicx-erp";
   tenant: Tenant | null;
 };
