@@ -9,6 +9,7 @@ export function EnquiryList({
   records,
   users,
   userColumnMode,
+  showActions = true,
   visibleColumns,
   loading,
   onShow,
@@ -19,6 +20,7 @@ export function EnquiryList({
   records: EnquiryRecord[];
   users: EnquiryLookup[];
   userColumnMode: "creator" | "allocatedTo" | "both";
+  showActions?: boolean;
   visibleColumns: Record<string, boolean>;
   loading: boolean;
   onShow: (record: EnquiryRecord) => void;
@@ -161,11 +163,8 @@ export function EnquiryList({
       columns={columns.filter((column) => {
         if (column.id === "creator" && userColumnMode === "allocatedTo") return false;
         if (column.id === "assignedTo" && userColumnMode === "creator") return false;
-        return (
-          column.id === "enquiryNo" ||
-          column.id === "actions" ||
-          visibleColumns[column.id ?? ""] !== false
-        );
+        if (column.id === "actions") return showActions;
+        return column.id === "enquiryNo" || visibleColumns[column.id ?? ""] !== false;
       })}
       data={records}
       emptyState="No enquiries found."

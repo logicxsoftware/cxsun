@@ -30,23 +30,27 @@ export function WorkspaceUpsertPage({
         className
       )}
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-normal text-foreground/80">{title}</h1>
-          {description ? (
-            <p className="mt-0.5 text-sm text-muted-foreground/70">{description}</p>
-          ) : null}
+      {title || description || onBack || action ? (
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            {title ? (
+              <h1 className="text-xl font-semibold tracking-normal text-foreground/80">{title}</h1>
+            ) : null}
+            {description ? (
+              <p className="mt-0.5 text-sm text-muted-foreground/70">{description}</p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {onBack ? (
+              <Button type="button" variant="outline" onClick={onBack} className="h-9 rounded-md">
+                <ArrowLeft className="size-4" />
+                {backLabel}
+              </Button>
+            ) : null}
+            {action}
+          </div>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {onBack ? (
-            <Button type="button" variant="outline" onClick={onBack} className="h-9 rounded-md">
-              <ArrowLeft className="size-4" />
-              {backLabel}
-            </Button>
-          ) : null}
-          {action}
-        </div>
-      </div>
+      ) : null}
       {children}
     </section>
   );

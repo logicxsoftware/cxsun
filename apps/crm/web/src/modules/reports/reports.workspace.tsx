@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { RefreshCw } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { Input } from "@cxsun/ui/components/input";
 import { WorkspaceSelect } from "@cxsun/ui/workspace/select";
@@ -27,22 +26,7 @@ export function CrmReportsWorkspace({
   const users = useEnquiryUsers();
   const invalidDates = Boolean(draft.fromDate && draft.toDate && draft.fromDate > draft.toDate);
   return (
-    <WorkspacePage
-      title="Enquiry reports"
-      description="Select a count to open the matching enquiries. Dates use your local enquiry date."
-      technicalName="page.crm.reports"
-      actions={
-        <Button
-          type="button"
-          variant="outline"
-          disabled={report.isFetching}
-          onClick={() => void report.refetch()}
-        >
-          <RefreshCw className="size-4" />
-          Refresh
-        </Button>
-      }
-    >
+    <WorkspacePage title="" className="pt-0 lg:pt-0" technicalName="page.crm.reports">
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2" aria-label="Enquiry report views">
           {views.map((item) => (

@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { HouseIcon } from "lucide-react";
 import {
   Breadcrumb,
@@ -16,13 +16,22 @@ export type AppHeaderBreadcrumb = {
 };
 
 export type AppHeaderProps = {
+  actionsAlignment?: "edge" | "workspace" | "form";
+  actions?: ReactNode;
   breadcrumbs: AppHeaderBreadcrumb[];
   homeHref: string;
   name?: string;
   className?: string;
 };
 
-export function AppHeader({ breadcrumbs, homeHref, name, className }: AppHeaderProps) {
+export function AppHeader({
+  actionsAlignment = "edge",
+  actions,
+  breadcrumbs,
+  homeHref,
+  name,
+  className
+}: AppHeaderProps) {
   return (
     <header
       className={cn(
@@ -55,8 +64,18 @@ export function AppHeader({ breadcrumbs, homeHref, name, className }: AppHeaderP
           ))}
         </BreadcrumbList>
       </Breadcrumb>
-      {name ? (
-        <span className="shrink-0 text-sm font-medium text-muted-foreground">{name}</span>
+      {name || actions ? (
+        <div
+          className={cn(
+            "flex shrink-0 items-center gap-2",
+            actionsAlignment === "workspace" &&
+              "mr-4 lg:mr-[max(2rem,calc((100%-92rem)/2+1.5rem))]",
+            actionsAlignment === "form" && "mr-4 lg:mr-[max(2rem,calc((100%-72rem)/2))]"
+          )}
+        >
+          {name ? <span className="text-sm font-medium text-muted-foreground">{name}</span> : null}
+          {actions}
+        </div>
       ) : null}
     </header>
   );

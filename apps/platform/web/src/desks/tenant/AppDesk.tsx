@@ -75,7 +75,7 @@ import { publishAccountingYear, publishCompanyContext } from "../../shared/tenan
 import { blogEditorHost } from "../../modules/blog/blog-host";
 import { useCrmNavigationCounts } from "@cxsun/crm-web/modules/enquiry/hooks";
 import { ZetroLogo } from "@cxsun/zetro-web/logo";
-import type { EnquiryReportFilters } from "@cxsun/crm-web/modules/enquiry";
+import { newEnquiryFormId, type EnquiryReportFilters } from "@cxsun/crm-web/modules/enquiry";
 import { auditorClientGateway } from "../../modules/auditor/auditor-host";
 import {
   logicxErpOverviewGateway,
@@ -754,13 +754,51 @@ export function AppDesk() {
     completeListNavigation(nextPage);
   }
 
+  function openNewContact() {
+    void navigate({ params: { _splat: "crm/contacts/new" }, to: "/app/$" });
+  }
+
+  useEffect(() => {
+    if (activeApp !== "crm") return;
+
+    function openCrmShortcut(event: KeyboardEvent) {
+      if (!event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest("input, textarea, select, [contenteditable=true]"))
+      ) {
+        return;
+      }
+
+      if (!event.altKey && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        if (safePage !== "crm.enquiries.new") requestListNavigation("crm.enquiries.new");
+      }
+      if (
+        !event.altKey &&
+        event.key.toLowerCase() === "c" &&
+        safePage === "crm.contacts" &&
+        location.pathname === "/app/crm/contacts" &&
+        !window.getSelection()?.toString()
+      ) {
+        event.preventDefault();
+        openNewContact();
+      }
+    }
+
+    window.addEventListener("keydown", openCrmShortcut);
+    return () => window.removeEventListener("keydown", openCrmShortcut);
+  });
+
   function openReportEnquiries(filters: EnquiryReportFilters) {
     void navigate({
       params: { _splat: "crm/enquiries" },
       search: { report: "1", ...filters },
       to: "/app/$"
     });
-    setPlatformDocumentTitle("Enquiries");
+    setPlatformDocumentTitle("All Enquiries");
   }
 
   function markUnsavedFormChanges(event: FormEvent<HTMLElement>) {
@@ -871,6 +909,13 @@ export function AppDesk() {
   return (
     <AuthGate desk="tenant">
       <TenantMainLayout
+        headerActionsAlignment={
+          safePage === "crm.enquiries.new"
+            ? "form"
+            : safePage === "crm.contacts" && location.pathname === "/app/crm/contacts"
+              ? "workspace"
+              : "edge"
+        }
         appItems={workspaceItems}
         brand={{
           href: appRootUrl(activeApp),
@@ -906,13 +951,45 @@ export function AppDesk() {
           title: companyBranding.brandName ?? activeWorkspaceTitle
         }}
         headerTitle={activePageTitle}
+        headerActions={
+          safePage === "crm.contacts" && location.pathname === "/app/crm/contacts" ? (
+            <Button
+              size="sm"
+              className="h-7 px-3"
+              aria-keyshortcuts="Control+C"
+              onClick={openNewContact}
+            >
+              <PlusIcon className="size-4" />
+              New
+              <kbd className="ml-1 rounded bg-background/15 px-1.5 py-0.5 text-[10px] font-medium text-background/75">
+                Ctrl C
+              </kbd>
+            </Button>
+          ) : safePage === "crm.enquiries.new" ? (
+            <Button
+              size="sm"
+              className="h-7 px-3"
+              type="submit"
+              form={newEnquiryFormId}
+              aria-keyshortcuts="Control+S"
+            >
+              Save enquiry
+              <kbd className="ml-1 rounded bg-background/15 px-1.5 py-0.5 text-[10px] font-medium text-background/75">
+                Ctrl S
+              </kbd>
+            </Button>
+          ) : null
+        }
+        hideSidebarBrand={activeApp === "crm"}
         homeHref={appRootUrl(activeApp)}
         menuItems={menuItems}
+        omitWorkspaceBreadcrumb={activeApp === "crm"}
         {...(activeApp === "crm"
           ? {
               sidebarPrimaryAction: {
                 icon: PlusIcon,
                 label: "New enquiry",
+                shortcut: "Ctrl E",
                 onSelect: () => requestListNavigation("crm.enquiries.new")
               }
             }
@@ -989,7 +1066,12 @@ export function AppDesk() {
               <CrmReportsWorkspace onOpenEnquiries={openReportEnquiries} />
             ) : null}
             {safePage === "crm.contacts" ? (
-              <ContactWorkspace key={safePage} basePath="/app/crm/contacts" />
+              <ContactWorkspace
+                key={safePage}
+                basePath="/app/crm/contacts"
+                hideSinglePagePagination
+                showListHeader={false}
+              />
             ) : null}
             {safePage === "crm.contact-360" ? <Contact360Workspace key={safePage} /> : null}
             {safePage === "crm.enquiries" ? (
@@ -1006,6 +1088,7 @@ export function AppDesk() {
                 currentUserEmail={signedInUser.email}
                 initialCreate
                 onCloseCreate={() => completeListNavigation("crm.enquiries", true)}
+                onCancelCreate={() => requestListNavigation("crm.enquiries")}
               />
             ) : null}
             {safePage === "crm.my-job" ? (
@@ -1864,7 +1947,7 @@ function titleForPage(page: AppPage) {
     "logicx-erp.schemes": "Schemes",
     "crm.overview": "Overview",
     "crm.reports": "Reports",
-    "crm.enquiries": "Enquiries",
+    "crm.enquiries": "All Enquiries",
     "crm.enquiries.new": "New enquiry",
     "crm.my-job": "My Job",
     "crm.my-calls": "My Calls",

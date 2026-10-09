@@ -24,16 +24,25 @@ import {
 } from "@cxsun/ui/layouts/main-layouts";
 
 type TenantMainLayoutProps = {
+  headerActionsAlignment?: "edge" | "workspace" | "form";
   appItems: TopMenuAppItem[];
   brand: SidebarBrand;
   children: ReactNode;
+  headerActions?: ReactNode;
   headerTitle: string;
+  hideSidebarBrand?: boolean;
   homeHref: string;
   menuItems: SidemenuItem[];
+  omitWorkspaceBreadcrumb?: boolean;
   onLogout: () => Promise<void>;
   onOpenSettings: () => void;
   settingsActive: boolean;
-  sidebarPrimaryAction?: { icon: LucideIcon; label: string; onSelect: () => void };
+  sidebarPrimaryAction?: {
+    icon: LucideIcon;
+    label: string;
+    onSelect: () => void;
+    shortcut?: string;
+  };
   user: TopMenuUser;
   versionLabel: string;
   workspaceName: string;
@@ -52,12 +61,16 @@ export function TenantMainLayout(props: TenantMainLayoutProps) {
 }
 
 function TenantMainShell({
+  headerActionsAlignment = "edge",
   appItems,
   brand,
   children,
+  headerActions,
   headerTitle,
+  hideSidebarBrand,
   homeHref,
   menuItems,
+  omitWorkspaceBreadcrumb,
   onLogout,
   onOpenSettings,
   settingsActive,
@@ -114,7 +127,7 @@ function TenantMainShell({
       </div>
       <div className="relative flex min-h-0 flex-1 pt-0.5">
         <AppSidebar
-          brand={brand}
+          {...(hideSidebarBrand ? {} : { brand })}
           className="md:p-1 md:pt-0.5 md:pb-0.5"
           footerContent={
             <>
@@ -141,7 +154,12 @@ function TenantMainShell({
         />
         <SidebarInset className="min-h-0 min-w-0 overflow-hidden md:peer-data-[variant=inset]:m-1 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:mt-0 md:peer-data-[variant=inset]:mb-0.5">
           <AppHeader
-            breadcrumbs={[{ label: workspaceName, href: homeHref }, { label: headerTitle }]}
+            actionsAlignment={headerActionsAlignment}
+            actions={headerActions}
+            breadcrumbs={[
+              ...(omitWorkspaceBreadcrumb ? [] : [{ label: workspaceName, href: homeHref }]),
+              { label: headerTitle }
+            ]}
             homeHref={homeHref}
           />
           <div

@@ -68,10 +68,10 @@ export type SidebarUserMenuItem = {
 };
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  brand: SidebarBrand;
+  brand?: SidebarBrand;
   footerContent?: React.ReactNode;
   items: SidemenuItem[];
-  primaryAction?: { icon: LucideIcon; label: string; onSelect: () => void };
+  primaryAction?: { icon: LucideIcon; label: string; onSelect: () => void; shortcut?: string };
   user: SidebarUser;
   userMenuItems?: SidebarUserMenuItem[];
   versionLabel?: string;
@@ -111,9 +111,9 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" variant="inset" className={className} {...props}>
       <SidebarHeader>
-        <SidebarBrandMenu brand={brand} />
+        {brand ? <SidebarBrandMenu brand={brand} /> : null}
         {primaryAction ? (
-          <SidebarMenu>
+          <SidebarMenu className={brand ? undefined : "mt-2"}>
             <SidebarMenuItem>
               <SidebarMenuButton
                 className="h-10 bg-foreground font-medium text-background hover:bg-foreground/90 hover:text-background"
@@ -123,6 +123,11 @@ export function AppSidebar({
               >
                 <primaryAction.icon className="size-4" />
                 <span className="group-data-[collapsible=icon]:hidden">{primaryAction.label}</span>
+                {primaryAction.shortcut ? (
+                  <kbd className="ml-auto rounded bg-background/15 px-1.5 py-0.5 text-[10px] font-medium text-background/75 group-data-[collapsible=icon]:hidden">
+                    {primaryAction.shortcut}
+                  </kbd>
+                ) : null}
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

@@ -1,6 +1,5 @@
 import { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceFilters } from "@cxsun/ui/workspace/filters";
@@ -45,7 +44,8 @@ export function EnquiryWorkspace({
   reportFilters,
   onBackToReports,
   initialCreate = false,
-  onCloseCreate
+  onCloseCreate,
+  onCancelCreate
 }: {
   scope?: EnquiryScope;
   reportFilters?: EnquiryReportFilters | undefined;
@@ -53,6 +53,7 @@ export function EnquiryWorkspace({
   currentUserEmail?: string;
   initialCreate?: boolean;
   onCloseCreate?: () => void;
+  onCancelCreate?: () => void;
 }) {
   const client = useQueryClient();
   const [editing, setEditing] = useState<EnquiryRecord | null | undefined>(
@@ -158,8 +159,11 @@ export function EnquiryWorkspace({
           ""
         }
         onBack={() => {
-          setEditing(undefined);
-          if (initialCreate) onCloseCreate?.();
+          if (initialCreate) {
+            (onCancelCreate ?? onCloseCreate)?.();
+          } else {
+            setEditing(undefined);
+          }
         }}
         onContactSaved={async () => {
           await Promise.all([
@@ -185,32 +189,9 @@ export function EnquiryWorkspace({
   }
   return (
     <WorkspacePage
-      title={scope === "assigned" ? "My Job" : scope === "created" ? "My Calls" : "All Enquiries"}
-      description={
-        scope === "assigned"
-          ? "Enquiries assigned to your user account."
-          : scope === "created"
-            ? "Enquiries created by you."
-            : "Capture and qualify customer requests."
-      }
+      title=""
+      className="pt-0 lg:pt-0"
       technicalName={`page.crm.${scope}.enquiries.list`}
-      actions={
-        scope === "assigned" ? undefined : (
-          <Button
-            type="button"
-            disabled={
-              lists.isLoading ||
-              statuses.isLoading ||
-              priorities.isLoading ||
-              Boolean(statuses.error || priorities.error)
-            }
-            onClick={() => setEditing(null)}
-          >
-            <Plus className="size-4" />
-            New enquiry
-          </Button>
-        )
-      }
     >
       {reportFilters ? (
         <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-4 py-2 text-sm">
@@ -258,6 +239,7 @@ export function EnquiryWorkspace({
       ) : null}
       <EnquiryList
         records={records}
+        showActions={scope !== "assigned"}
         users={users.data ?? []}
         userColumnMode={
           scope === "assigned" ? "creator" : scope === "created" ? "allocatedTo" : "both"
@@ -269,22 +251,24 @@ export function EnquiryWorkspace({
         onOpenCall={(record) => openCall.mutate(record)}
         openingCallId={openCall.isPending ? openCall.variables.id : null}
       />
-      <WorkspacePagination
-        page={currentPage}
-        rowsPerPage={rowsPerPage}
-        rowsPerPageOptions={[20, 50, 100]}
-        showingLabel={buildShowingLabel(currentPage, rowsPerPage, total)}
-        singularLabel="enquiry"
-        totalCount={total}
-        totalPages={totalPages}
-        onNextPage={() => setPage((value) => Math.min(totalPages, value + 1))}
-        onPageChange={setPage}
-        onPreviousPage={() => setPage((value) => Math.max(1, value - 1))}
-        onRowsPerPageChange={(value) => {
-          setRowsPerPage(value);
-          setPage(1);
-        }}
-      />
+      {totalPages > 1 ? (
+        <WorkspacePagination
+          page={currentPage}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[20, 50, 100]}
+          showingLabel={buildShowingLabel(currentPage, rowsPerPage, total)}
+          singularLabel="enquiry"
+          totalCount={total}
+          totalPages={totalPages}
+          onNextPage={() => setPage((value) => Math.min(totalPages, value + 1))}
+          onPageChange={setPage}
+          onPreviousPage={() => setPage((value) => Math.max(1, value - 1))}
+          onRowsPerPageChange={(value) => {
+            setRowsPerPage(value);
+            setPage(1);
+          }}
+        />
+      ) : null}
     </WorkspacePage>
   );
 }

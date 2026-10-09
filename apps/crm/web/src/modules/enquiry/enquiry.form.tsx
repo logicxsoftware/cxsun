@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@cxsun/ui/components/button";
 import { Input } from "@cxsun/ui/components/input";
 import { Textarea } from "@cxsun/ui/components/textarea";
-import { WorkspaceDatePicker } from "@cxsun/ui/workspace/date-picker";
+import { WorkspaceDateInputPicker } from "@cxsun/ui/workspace/date-input-picker";
 import { WorkspaceLookup } from "@cxsun/ui/workspace/lookup";
 import { prioritySwatch, statusIcon } from "../../crm-colors";
 import {
@@ -22,6 +22,8 @@ import type {
   EnquiryRecord,
   EnquirySavePayload
 } from "./enquiry.types";
+
+export const newEnquiryFormId = "crm-new-enquiry-form";
 
 export function EnquiryForm({
   record,
@@ -57,6 +59,29 @@ export function EnquiryForm({
     record ? fromRecord(record) : emptyEnquiry(statuses, priorities)
   );
   const [issues, setIssues] = useState<Record<string, string>>({});
+  const [dueDateInvalid, setDueDateInvalid] = useState(false);
+  const escapeNavigation = useRef(false);
+  const keyboardLookup = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (record) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        !event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.shiftKey ||
+        event.repeat ||
+        event.key.toLowerCase() !== "s" ||
+        (event.target instanceof Element && event.target.closest('[role="dialog"]'))
+      ) {
+        return;
+      }
+      event.preventDefault();
+      (document.getElementById(newEnquiryFormId) as HTMLFormElement | null)?.requestSubmit();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [record]);
   const set = <Key extends keyof EnquirySavePayload>(key: Key, next: EnquirySavePayload[Key]) => {
     setValue((current) => ({ ...current, [key]: next }));
     setIssues((current) => ({ ...current, [key]: "" }));
@@ -72,6 +97,11 @@ export function EnquiryForm({
   const selectedStatus = statuses.find((item) => item.id === value.statusId)?.code ?? "";
   const needsOutcome = ["won", "lost", "closed"].includes(selectedStatus);
   const submit = () => {
+    if (loading) return;
+    if (dueDateInvalid) {
+      setIssues((current) => ({ ...current, dueDate: "Enter a valid date as DD/MM/YYYY." }));
+      return;
+    }
     if (needsOutcome && !value.closedReason?.trim()) {
       setIssues((current) => ({ ...current, closedReason: "Enter an outcome reason." }));
       return;
@@ -91,13 +121,82 @@ export function EnquiryForm({
   };
   return (
     <WorkspaceUpsertPage
-      className="max-w-5xl"
-      title={record ? `Edit enquiry #${record.enquiryNo}` : "New enquiry form"}
+      className={record ? "max-w-5xl" : "max-w-6xl pt-0 lg:pt-0"}
+      title={record ? `Edit enquiry #${record.enquiryNo}` : ""}
       {...(record ? { description: record.title } : {})}
-      onBack={onBack}
+      {...(record ? { onBack } : {})}
     >
       <form
+        {...(record ? {} : { id: newEnquiryFormId })}
         noValidate
+        onKeyDownCapture={(event) => {
+          if (record) return;
+          const target = event.target;
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            escapeNavigation.current = false;
+            keyboardLookup.current =
+              target instanceof HTMLElement && target.getAttribute("role") === "combobox"
+                ? target
+                : null;
+            return;
+          }
+          if (event.key === "Enter") {
+            escapeNavigation.current = false;
+            if (
+              event.altKey ||
+              event.ctrlKey ||
+              event.metaKey ||
+              event.shiftKey ||
+              event.nativeEvent.isComposing
+            ) {
+              return;
+            }
+            if (
+              target instanceof HTMLElement &&
+              target.getAttribute("role") === "combobox" &&
+              target.getAttribute("aria-expanded") === "true" &&
+              keyboardLookup.current === target
+            ) {
+              keyboardLookup.current = null;
+              return;
+            }
+            keyboardLookup.current = null;
+            const controls = enquiryNavigationControls(event.currentTarget);
+            const index = controls.indexOf(target as HTMLElement);
+            if (index < 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (index === controls.length - 1) return;
+            controls[index + 1]?.focus();
+            return;
+          }
+          keyboardLookup.current = null;
+          if (event.key !== "Escape") {
+            escapeNavigation.current = false;
+            return;
+          }
+          if (!(target instanceof HTMLElement)) return;
+          const controls = enquiryNavigationControls(event.currentTarget);
+          const index = controls.indexOf(target);
+          if (index < 0) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (
+            !escapeNavigation.current &&
+            (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)
+          ) {
+            selectFieldText(target);
+            escapeNavigation.current = true;
+            return;
+          }
+          if (index === 0) {
+            onBack();
+            return;
+          }
+          const previous = controls[index - 1]!;
+          previous.focus();
+          selectFieldText(previous);
+        }}
         onSubmit={(event) => {
           event.preventDefault();
           submit();
@@ -113,13 +212,14 @@ export function EnquiryForm({
                 {lookupError}
               </WorkspaceFormBanner>
             ) : null}
-            <div className="grid items-stretch gap-4 lg:grid-cols-2">
+            <div className="grid items-stretch gap-4 lg:grid-cols-2 lg:gap-8">
               <section
                 className="min-w-0 rounded-md border border-border/80 p-4 sm:p-5"
                 aria-label="Enquiry content"
               >
                 <div className="space-y-5">
                   <EnquiryCustomerFields
+                    autoFocusMobile={!record}
                     contacts={contacts}
                     loading={contactsLoading}
                     value={value}
@@ -128,7 +228,11 @@ export function EnquiryForm({
                     onChange={setCustomer}
                     onContactSaved={onContactSaved}
                   />
-                  <WorkspaceFormField label="Enquiry message" required={!value.title.trim()}>
+                  <WorkspaceFormField
+                    label="Enquiry message"
+                    required={!value.title.trim()}
+                    className="enquiry-nav-field"
+                  >
                     <Textarea
                       className="min-h-52 resize-y"
                       rows={8}
@@ -138,7 +242,7 @@ export function EnquiryForm({
                     />
                     {issues.description ? <FieldError>{issues.description}</FieldError> : null}
                   </WorkspaceFormField>
-                  <WorkspaceFormField label="Title">
+                  <WorkspaceFormField label="Title" className="enquiry-nav-field">
                     <Input
                       value={value.title}
                       placeholder={suggestedTitle || "Auto-filled from the enquiry message"}
@@ -157,7 +261,7 @@ export function EnquiryForm({
                 aria-label="Enquiry details"
               >
                 <div className="space-y-5">
-                  <WorkspaceFormField label="List in">
+                  <WorkspaceFormField label="List in" className="enquiry-nav-field">
                     <WorkspaceLookup
                       allowTextValue={false}
                       clearable
@@ -179,7 +283,7 @@ export function EnquiryForm({
                     />
                     {issues.listInId ? <FieldError>{issues.listInId}</FieldError> : null}
                   </WorkspaceFormField>
-                  <WorkspaceFormField label="Assigned to">
+                  <WorkspaceFormField label="Assigned to" className="enquiry-nav-field">
                     <WorkspaceLookup
                       allowTextValue={false}
                       options={users
@@ -192,7 +296,7 @@ export function EnquiryForm({
                       }
                     />
                   </WorkspaceFormField>
-                  <WorkspaceFormField label="Priority">
+                  <WorkspaceFormField label="Priority" className="enquiry-nav-field">
                     <WorkspaceLookup
                       allowTextValue={false}
                       clearable={false}
@@ -213,7 +317,7 @@ export function EnquiryForm({
                       onValueChange={(selected) => set("priorityId", Number(selected))}
                     />
                   </WorkspaceFormField>
-                  <WorkspaceFormField label="Status">
+                  <WorkspaceFormField label="Status" className="enquiry-nav-field">
                     <WorkspaceLookup
                       allowTextValue={false}
                       clearable={false}
@@ -235,7 +339,11 @@ export function EnquiryForm({
                     />
                   </WorkspaceFormField>
                   {needsOutcome ? (
-                    <WorkspaceFormField label="Outcome reason" required>
+                    <WorkspaceFormField
+                      label="Outcome reason"
+                      required
+                      className="enquiry-nav-field"
+                    >
                       <Textarea
                         value={value.closedReason ?? ""}
                         aria-invalid={Boolean(issues.closedReason)}
@@ -244,37 +352,49 @@ export function EnquiryForm({
                       {issues.closedReason ? <FieldError>{issues.closedReason}</FieldError> : null}
                     </WorkspaceFormField>
                   ) : null}
-                  <WorkspaceFormField label="Due date">
-                    <WorkspaceDatePicker
+                  <WorkspaceFormField label="Due date" className="enquiry-nav-field">
+                    <WorkspaceDateInputPicker
                       value={value.dueDate ?? ""}
                       onValueChange={(date) => set("dueDate", date || null)}
+                      onValidityChange={(valid) => {
+                        setDueDateInvalid(!valid);
+                        if (valid) {
+                          setIssues((current) => ({ ...current, dueDate: "" }));
+                        }
+                      }}
                     />
-                    {value.dueDate ? (
-                      <button
-                        className="text-xs text-muted-foreground underline"
-                        type="button"
-                        onClick={() => set("dueDate", null)}
-                      >
-                        Clear due date
-                      </button>
-                    ) : null}
+                    {issues.dueDate ? <FieldError>{issues.dueDate}</FieldError> : null}
                   </WorkspaceFormField>
                 </div>
               </section>
             </div>
           </WorkspaceFormBody>
-          <WorkspaceFormActions>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : record ? "Update enquiry" : "Save enquiry"}
-            </Button>
-            <Button type="button" variant="outline" onClick={onBack} disabled={loading}>
-              Cancel
-            </Button>
-          </WorkspaceFormActions>
+          {record ? (
+            <WorkspaceFormActions>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Update enquiry"}
+              </Button>
+              <Button type="button" variant="outline" onClick={onBack} disabled={loading}>
+                Cancel
+              </Button>
+            </WorkspaceFormActions>
+          ) : null}
         </WorkspaceFormSurface>
       </form>
     </WorkspaceUpsertPage>
   );
+}
+
+function enquiryNavigationControls(form: HTMLFormElement): HTMLElement[] {
+  return Array.from(
+    form.querySelectorAll<HTMLElement>(".enquiry-nav-field input, .enquiry-nav-field textarea")
+  ).filter((control) => !control.hasAttribute("disabled"));
+}
+
+function selectFieldText(control: HTMLElement) {
+  if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+    control.select();
+  }
 }
 
 function FieldError({ children }: { children: string }) {

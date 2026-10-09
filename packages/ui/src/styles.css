@@ -1071,3 +1071,10 @@
     }
   }
 }
+
+@media screen {
+  table thead,
+  table thead th {
+    background-color: color-mix(in oklab, var(--muted) 60%, var(--border) 40%);
+  }
+}

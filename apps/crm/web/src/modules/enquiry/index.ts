@@ -1,4 +1,5 @@
 export { EnquiryWorkspace } from "./enquiry.workspace";
+export { newEnquiryFormId } from "./enquiry.form";
 export { useCrmNavigationCounts } from "./enquiry.hooks";
 export { useEnquirySummary, useEnquiryAttention, useEnquiryUsers } from "./enquiry.hooks";
 export { useEnquiryReport, enquiryReportQueryKey } from "./enquiry.hooks";

@@ -30,30 +30,32 @@ export function WorkspacePage({
         className
       )}
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          {title ? (
-            <h1 className="text-2xl font-semibold tracking-normal text-foreground/80">{title}</h1>
-          ) : null}
-          {description ? (
-            <p className="mt-0.5 text-sm text-muted-foreground/70">{description}</p>
+      {title || description || actions || action || onBack ? (
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            {title ? (
+              <h1 className="text-2xl font-semibold tracking-normal text-foreground/80">{title}</h1>
+            ) : null}
+            {description ? (
+              <p className="mt-0.5 text-sm text-muted-foreground/70">{description}</p>
+            ) : null}
+          </div>
+          {actions || action || onBack ? (
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {onBack ? (
+                <button
+                  className="rounded-md border px-3 py-2 text-sm"
+                  onClick={onBack}
+                  type="button"
+                >
+                  Back
+                </button>
+              ) : null}
+              {actions ?? action}
+            </div>
           ) : null}
         </div>
-        {actions || action || onBack ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {onBack ? (
-              <button
-                className="rounded-md border px-3 py-2 text-sm"
-                onClick={onBack}
-                type="button"
-              >
-                Back
-              </button>
-            ) : null}
-            {actions ?? action}
-          </div>
-        ) : null}
-      </div>
+      ) : null}
       {children}
     </section>
   );

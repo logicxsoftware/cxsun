@@ -9,6 +9,7 @@ import type { EnquiryLookup, EnquirySavePayload } from "./enquiry.types";
 type CustomerValue = Pick<EnquirySavePayload, "contactId" | "capturedName" | "capturedPhone">;
 
 export function EnquiryCustomerFields({
+  autoFocusMobile = false,
   contacts,
   loading,
   value,
@@ -17,6 +18,7 @@ export function EnquiryCustomerFields({
   onChange,
   onContactSaved
 }: {
+  autoFocusMobile?: boolean;
   contacts: EnquiryLookup[];
   loading: boolean;
   value: CustomerValue;
@@ -52,10 +54,11 @@ export function EnquiryCustomerFields({
 
   return (
     <>
-      <WorkspaceFormField label="Mobile no">
+      <WorkspaceFormField label="Mobile no" className="enquiry-nav-field">
         <Input
           type="tel"
           autoComplete="tel"
+          autoFocus={autoFocusMobile}
           aria-invalid={Boolean(mobileError)}
           value={value.capturedPhone ?? ""}
           onChange={(event) => {
@@ -86,7 +89,7 @@ export function EnquiryCustomerFields({
           </p>
         ) : null}
       </WorkspaceFormField>
-      <WorkspaceFormField label="Customer" required>
+      <WorkspaceFormField label="Customer" required className="enquiry-nav-field">
         <WorkspaceLookup
           allowTextValue
           options={options}

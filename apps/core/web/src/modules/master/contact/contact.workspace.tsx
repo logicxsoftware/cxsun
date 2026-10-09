@@ -50,7 +50,15 @@ const emptyLookups: ContactLookups = {
   cities: [],
   pincodes: []
 };
-export function ContactWorkspace({ basePath = "/app/core/master/contact" }: { basePath?: string }) {
+export function ContactWorkspace({
+  basePath = "/app/core/master/contact",
+  hideSinglePagePagination = false,
+  showListHeader = true
+}: {
+  basePath?: string;
+  hideSinglePagePagination?: boolean;
+  showListHeader?: boolean;
+}) {
   const client = useQueryClient(),
     [search, setSearch] = useState(""),
     [page, setPage] = useState(1),
@@ -173,16 +181,21 @@ export function ContactWorkspace({ basePath = "/app/core/master/contact" }: { ba
     );
   return (
     <WorkspacePage
-      title="Contacts"
-      description="Manage contact identity, tax, communication, address, finance, and lifecycle details."
-      actions={
-        <div className="flex gap-2">
-          <Button disabled={generateCode.isPending} onClick={() => generateCode.mutate()}>
-            <Plus className="size-4" />
-            New
-          </Button>
-        </div>
-      }
+      title={showListHeader ? "Contacts" : ""}
+      {...(showListHeader
+        ? {
+            description:
+              "Manage contact identity, tax, communication, address, finance, and lifecycle details.",
+            actions: (
+              <div className="flex gap-2">
+                <Button disabled={generateCode.isPending} onClick={() => generateCode.mutate()}>
+                  <Plus className="size-4" />
+                  New
+                </Button>
+              </div>
+            )
+          }
+        : { className: "pt-0 lg:pt-0" })}
     >
       <WorkspaceFilters
         searchPlaceholder="Search code, contact, phone, or email"
@@ -201,21 +214,23 @@ export function ContactWorkspace({ basePath = "/app/core/master/contact" }: { ba
         }}
         onToggle={(record) => action.mutate({ record, type: "toggle" })}
       />
-      <WorkspacePagination
-        page={currentPage}
-        rowsPerPage={rowsPerPage}
-        showingLabel={buildShowingLabel(currentPage, rowsPerPage, records.length)}
-        singularLabel="contact"
-        totalCount={records.length}
-        totalPages={totalPages}
-        onNextPage={() => setPage((value) => Math.min(totalPages, value + 1))}
-        onPageChange={setPage}
-        onPreviousPage={() => setPage((value) => Math.max(1, value - 1))}
-        onRowsPerPageChange={(value) => {
-          setRowsPerPage(value);
-          setPage(1);
-        }}
-      />
+      {!hideSinglePagePagination || totalPages > 1 ? (
+        <WorkspacePagination
+          page={currentPage}
+          rowsPerPage={rowsPerPage}
+          showingLabel={buildShowingLabel(currentPage, rowsPerPage, records.length)}
+          singularLabel="contact"
+          totalCount={records.length}
+          totalPages={totalPages}
+          onNextPage={() => setPage((value) => Math.min(totalPages, value + 1))}
+          onPageChange={setPage}
+          onPreviousPage={() => setPage((value) => Math.max(1, value - 1))}
+          onRowsPerPageChange={(value) => {
+            setRowsPerPage(value);
+            setPage(1);
+          }}
+        />
+      ) : null}
     </WorkspacePage>
   );
 }
