@@ -1,5 +1,7 @@
 import { BarChart3, Clock3, MessageSquare, PhoneCall } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
+import { useQuery } from "@tanstack/react-query";
+import { crmRequest } from "../../crm-request";
 import { Card } from "@cxsun/ui/components/card";
 import {
   useEnquirySummary,
@@ -9,6 +11,7 @@ import {
 } from "../enquiry/index";
 import type { EnquiryMasterLookup } from "../enquiry/index";
 import { useStatus } from "../status/index";
+import { LiveOverviewWorkspace } from "./overview.live";
 
 export function CrmOverviewWorkspace({
   currentUserName,
@@ -16,6 +19,44 @@ export function CrmOverviewWorkspace({
   onOpenMyCalls
 }: {
   currentUserEmail: string;
+  currentUserName: string;
+  onOpenMyJob: () => void;
+  onOpenMyCalls: () => void;
+}) {
+  const source = useQuery({
+    queryKey: ["crm", "enquiries", "source"],
+    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source")
+  });
+  if (source.isLoading)
+    return <p className="p-6 text-sm text-muted-foreground">Loading overview source…</p>;
+  if (source.error)
+    return (
+      <p className="p-6 text-sm text-destructive" role="alert">
+        {source.error.message}
+      </p>
+    );
+  if (source.data?.provider === "frappe")
+    return (
+      <LiveOverviewWorkspace
+        currentUserName={currentUserName}
+        onOpenMyJob={onOpenMyJob}
+        onOpenMyCalls={onOpenMyCalls}
+      />
+    );
+  return (
+    <LocalOverviewWorkspace
+      currentUserName={currentUserName}
+      onOpenMyJob={onOpenMyJob}
+      onOpenMyCalls={onOpenMyCalls}
+    />
+  );
+}
+
+function LocalOverviewWorkspace({
+  currentUserName,
+  onOpenMyJob,
+  onOpenMyCalls
+}: {
   currentUserName: string;
   onOpenMyJob: () => void;
   onOpenMyCalls: () => void;

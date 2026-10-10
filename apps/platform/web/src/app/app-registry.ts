@@ -24,6 +24,7 @@ import {
   RefreshCwIcon,
   LayoutDashboardIcon,
   ReceiptTextIcon,
+  SearchIcon,
   SendIcon,
   ShieldCheckIcon,
   SparklesIcon,
@@ -760,66 +761,79 @@ export function appMenuItemsFor(
         title: "Overview"
       },
       {
-        icon: ClipboardListIcon,
-        isActive: activePage === "crm.my-job",
-        onSelect: () => onSelect("crm.my-job"),
-        title: "My Job",
-        count: crmCounts?.assigned
-      },
-      {
-        icon: PhoneCallIcon,
-        isActive: activePage === "crm.my-calls",
-        onSelect: () => onSelect("crm.my-calls"),
-        title: "My Calls",
-        count: crmCounts?.created
+        icon: ContactRoundIcon,
+        isActive: activePage === "crm.contacts",
+        onSelect: () => onSelect("crm.contacts"),
+        title: "Contact"
       },
       {
         icon: ClipboardListIcon,
         isActive: activePage === "crm.enquiries",
         onSelect: () => onSelect("crm.enquiries"),
-        title: "All Enquiries",
+        title: "Enquiries",
         count: crmCounts?.all
       },
       {
         icon: BarChart3Icon,
         isActive: activePage === "crm.reports",
         onSelect: () => onSelect("crm.reports"),
-        title: "Reports"
+        title: "List in"
       },
       {
-        icon: ContactRoundIcon,
-        isActive: activePage === "crm.contacts",
-        onSelect: () => onSelect("crm.contacts"),
-        title: "Contacts"
-      },
-      {
-        icon: UsersIcon,
-        isActive: activePage === "crm.contact-360",
-        onSelect: () => onSelect("crm.contact-360"),
-        title: "Contact 360"
-      },
-      {
-        icon: PackageIcon,
+        icon: SearchIcon,
         isActive:
+          activePage === "crm.contact-360" ||
+          activePage === "crm.my-job" ||
+          activePage === "crm.my-calls" ||
           activePage === "crm.list-in" ||
           activePage === "crm.status" ||
           activePage === "crm.priority",
-        title: "Common",
+        title: "On Research",
         items: [
           {
-            title: "List In",
-            isActive: activePage === "crm.list-in",
-            onSelect: () => onSelect("crm.list-in")
+            icon: UsersIcon,
+            title: "Contact 360",
+            isActive: activePage === "crm.contact-360",
+            onSelect: () => onSelect("crm.contact-360")
           },
           {
-            title: "Status",
-            isActive: activePage === "crm.status",
-            onSelect: () => onSelect("crm.status")
+            icon: ClipboardListIcon,
+            title: "My Job",
+            count: crmCounts?.assigned,
+            isActive: activePage === "crm.my-job",
+            onSelect: () => onSelect("crm.my-job")
           },
           {
-            title: "Priority",
-            isActive: activePage === "crm.priority",
-            onSelect: () => onSelect("crm.priority")
+            icon: PhoneCallIcon,
+            title: "My Calls",
+            count: crmCounts?.created,
+            isActive: activePage === "crm.my-calls",
+            onSelect: () => onSelect("crm.my-calls")
+          },
+          {
+            icon: PackageIcon,
+            title: "Common",
+            isActive:
+              activePage === "crm.list-in" ||
+              activePage === "crm.status" ||
+              activePage === "crm.priority",
+            items: [
+              {
+                title: "List In",
+                isActive: activePage === "crm.list-in",
+                onSelect: () => onSelect("crm.list-in")
+              },
+              {
+                title: "Status",
+                isActive: activePage === "crm.status",
+                onSelect: () => onSelect("crm.status")
+              },
+              {
+                title: "Priority",
+                isActive: activePage === "crm.priority",
+                onSelect: () => onSelect("crm.priority")
+              }
+            ]
           }
         ]
       }

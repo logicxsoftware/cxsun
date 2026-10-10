@@ -28,7 +28,7 @@ export function getTenantId(): string | null {
 
 export function getAccountingYearId(): number | null {
   try {
-    const value = Number(localStorage.getItem(ACCOUNTING_YEAR_ID_KEY));
+    const value = Number(sessionStorage.getItem(ACCOUNTING_YEAR_ID_KEY));
     return Number.isInteger(value) && value > 0 ? value : null;
   } catch {
     return null;
@@ -37,8 +37,8 @@ export function getAccountingYearId(): number | null {
 
 export function setAccountingYearId(id: number | null): void {
   try {
-    if (id) localStorage.setItem(ACCOUNTING_YEAR_ID_KEY, String(id));
-    else localStorage.removeItem(ACCOUNTING_YEAR_ID_KEY);
+    if (id) sessionStorage.setItem(ACCOUNTING_YEAR_ID_KEY, String(id));
+    else sessionStorage.removeItem(ACCOUNTING_YEAR_ID_KEY);
     window.dispatchEvent(new CustomEvent("cxsun:accounting-year-change", { detail: { id } }));
   } catch {}
 }

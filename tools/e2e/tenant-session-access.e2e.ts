@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { createServer } from "node:net";
 import { registerSyntheticSession } from "./auth-session-helper.js";
 import { signAuthToken } from "../../apps/platform/api/src/auth/jwt.js";
+import {
+  authCookieName,
+  encryptSessionCookie
+} from "../../apps/platform/api/src/auth/session-cookie.js";
 
 const port = await availablePort();
 process.env.PLATFORM_API_PORT = String(port);
@@ -66,16 +70,20 @@ try {
   });
   assert.equal(loginResponse.statusCode, 200, loginResponse.body);
 
-  const sessionCookie = loginResponse.cookies.findLast(
-    (cookie) => cookie.name.endsWith("cxsun_session") && cookie.value.length > 0
+  const tenantSlot = loginResponse.json().data.sessionSlot as string;
+  assert.match(tenantSlot, /^[0-9a-f]{32}$/u);
+  const sessionCookie = loginResponse.cookies.find(
+    (cookie) => cookie.name === authCookieName(tenantSlot) && cookie.value.length > 0
   );
   assert.ok(sessionCookie, "Development login did not issue a session cookie.");
+  const tenantCookieHeader = `${sessionCookie.name}=${sessionCookie.value}`;
 
   const coreResponse = await app.inject({
     headers: {
-      cookie: `${sessionCookie.name}=${sessionCookie.value}`,
+      cookie: tenantCookieHeader,
       host: applicationHost.host,
-      origin: applicationHost.origin
+      origin: applicationHost.origin,
+      "x-cxsun-session-slot": tenantSlot
     },
     method: "GET",
     url: "/core/organisation/companies?search="
@@ -87,9 +95,10 @@ try {
   );
   const tenantSession = await app.inject({
     headers: {
-      cookie: `${sessionCookie.name}=${sessionCookie.value}`,
+      cookie: tenantCookieHeader,
       host: applicationHost.host,
-      origin: applicationHost.origin
+      origin: applicationHost.origin,
+      "x-cxsun-session-slot": tenantSlot
     },
     method: "GET",
     url: "/auth/session"
@@ -103,9 +112,10 @@ try {
 
   const defaultCompanyResponse = await app.inject({
     headers: {
-      cookie: `${sessionCookie.name}=${sessionCookie.value}`,
+      cookie: tenantCookieHeader,
       host: applicationHost.host,
-      origin: applicationHost.origin
+      origin: applicationHost.origin,
+      "x-cxsun-session-slot": tenantSlot
     },
     method: "GET",
     url: "/core/organisation/default-company"
@@ -125,9 +135,10 @@ try {
   );
 
   const scopedHeaders = {
-    cookie: `${sessionCookie.name}=${sessionCookie.value}`,
+    cookie: tenantCookieHeader,
     host: applicationHost.host,
     origin: applicationHost.origin,
+    "x-cxsun-session-slot": tenantSlot,
     "x-company-id": String(defaultCompany.companyId),
     "x-financial-year-id": String(defaultCompany.financialYearId)
   };
@@ -174,7 +185,94 @@ try {
     }
   }
 
-  console.log("Tenant session remained valid across Platform, Core, and Billing lookups.");
+  const saToken = signAuthToken({
+    email: "parallel-sa-e2e@example.test",
+    loginHost: applicationHost.hostname,
+    userId: "parallel-sa-e2e",
+    userType: "super_admin"
+  });
+  await registerSyntheticSession(saToken);
+  const staffToken = signAuthToken({
+    email: "parallel-staff-e2e@example.test",
+    loginHost: applicationHost.hostname,
+    userId: "parallel-staff-e2e",
+    userType: "staff"
+  });
+  await registerSyntheticSession(staffToken);
+  const saSlot = "a".repeat(32);
+  const staffSlot = "b".repeat(32);
+  const parallelCookies = [
+    tenantCookieHeader,
+    `${authCookieName(saSlot)}=${encryptSessionCookie(saToken)}`,
+    `${authCookieName(staffSlot)}=${encryptSessionCookie(staffToken)}`
+  ].join("; ");
+  const parallelHeaders = { cookie: parallelCookies, host: applicationHost.host };
+  const saSession = await app.inject({
+    headers: { ...parallelHeaders, "x-cxsun-session-slot": saSlot },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(saSession.statusCode, 200, saSession.body);
+  assert.equal(saSession.json().data.userType, "super_admin");
+  const staffSession = await app.inject({
+    headers: { ...parallelHeaders, "x-cxsun-session-slot": staffSlot },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(staffSession.statusCode, 200, staffSession.body);
+  assert.equal(staffSession.json().data.userType, "staff");
+  const parallelTenantSession = await app.inject({
+    headers: { ...parallelHeaders, "x-cxsun-session-slot": tenantSlot },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(parallelTenantSession.statusCode, 200, parallelTenantSession.body);
+  assert.equal(parallelTenantSession.json().data.userType, "tenant");
+
+  const secondTenantLogin = await app.inject({
+    headers: {
+      ...parallelHeaders,
+      origin: applicationHost.origin,
+      "x-cxsun-session-slot": tenantSlot
+    },
+    method: "POST",
+    url: "/auth/development/tenant-login"
+  });
+  assert.equal(secondTenantLogin.statusCode, 200, secondTenantLogin.body);
+  const secondTenantSlot = secondTenantLogin.json().data.sessionSlot as string;
+  assert.notEqual(secondTenantSlot, tenantSlot);
+  assert.ok(
+    secondTenantLogin.cookies.some((cookie) => cookie.name === authCookieName(secondTenantSlot))
+  );
+  const firstTenantAfterLogin = await app.inject({
+    headers: { ...parallelHeaders, "x-cxsun-session-slot": tenantSlot },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(firstTenantAfterLogin.statusCode, 200, firstTenantAfterLogin.body);
+
+  const saLogout = await app.inject({
+    headers: { ...parallelHeaders, "x-cxsun-session-slot": saSlot },
+    method: "POST",
+    url: "/auth/logout"
+  });
+  assert.equal(saLogout.statusCode, 200, saLogout.body);
+  assert.ok(saLogout.cookies.some((cookie) => cookie.name === authCookieName(saSlot)));
+  assert.ok(!saLogout.cookies.some((cookie) => cookie.name === authCookieName(tenantSlot)));
+  const tenantAfterSaLogout = await app.inject({
+    headers: { ...parallelHeaders, "x-cxsun-session-slot": tenantSlot },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(tenantAfterSaLogout.statusCode, 200, tenantAfterSaLogout.body);
+  const staffAfterSaLogout = await app.inject({
+    headers: { ...parallelHeaders, "x-cxsun-session-slot": staffSlot },
+    method: "GET",
+    url: "/auth/session"
+  });
+  assert.equal(staffAfterSaLogout.statusCode, 200, staffAfterSaLogout.body);
+
+  console.log("Tenant, SA, and staff sessions stayed independent across the composed API.");
 } finally {
   await app.close();
 }

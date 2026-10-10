@@ -34,6 +34,9 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 
 - Bumped workspace version to 1.0.81.
 - Added source-aware CRM enquiry routes and a paged live Frappe enquiry list for all, assigned, and created views.
+- Show HTML-formatted enquiry titles and details as plain text in local and Frappe CRM tables without changing stored content.
+- Reordered the CRM sidebar to put Contact and Enquiries after Overview, and changed the Reports menu label to List in.
+- Grouped Contact 360, My Job, My Calls, and Common under a new On Research CRM sidebar menu.
 - Added a tenant setting to select local or verified Frappe data for CRM enquiry lists. CRM reports still read local records and show that scope in the UI.
 - Added paged Frappe enquiry preview and a queued import of unlinked enquiries with job progress, skip counts, and failure details.
 - Expanded the shared UI library with workspace, agent, content, and commerce blocks, new components and themes, and matching UIUX gallery pages. Updated UI dependencies and the root lockfile.

@@ -35,31 +35,45 @@ test("builds desk-aware login routes with a durable expiry reason", () => {
 test("only an explicit expired-session 401 clears session state and opens login", async () => {
   let cleared = 0;
   let replacedWith = "";
-  const fetch = async () =>
-    Response.json(
+  const requestHeaders: Headers[] = [];
+  const fetch = async (_input: RequestInfo | URL, init?: RequestInit) => {
+    requestHeaders.push(new Headers(init?.headers));
+    return Response.json(
       { error: { code: "AUTH_SESSION_EXPIRED", message: "Session expired." }, success: false },
       { status: 401 }
     );
+  };
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
       fetch,
       location: {
+        href: "http://app.codexsun.test/app/billing/sales",
         pathname: "/app/billing/sales",
         replace: (path: string) => {
           replacedWith = path;
         }
-      }
+      },
+      __CXSUN_RUNTIME_CONFIG__: { VITE_PLATFORM_API_URL: "/api/app" }
     }
+  });
+  Object.defineProperty(globalThis, "sessionStorage", {
+    configurable: true,
+    value: { getItem: () => "a".repeat(32) }
   });
 
   installSessionExpiryInterceptor(() => {
     cleared += 1;
   });
   await window.fetch("/api/billing/sales");
+  await window.fetch("/api/app/billing/sales");
+  await window.fetch("https://external.example.test/data");
 
   assert.equal(cleared, 1);
   assert.equal(replacedWith, "/login?reason=session-expired");
+  assert.equal(requestHeaders[0]?.get("x-cxsun-session-slot"), null);
+  assert.equal(requestHeaders[1]?.get("x-cxsun-session-slot"), "a".repeat(32));
+  assert.equal(requestHeaders[2]?.get("x-cxsun-session-slot"), null);
 });
 
 test("a domain lookup 401 is not misclassified as an expired browser session", async () => {

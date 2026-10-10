@@ -3,6 +3,7 @@ import { BellRing } from "lucide-react";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
 import { WorkspaceRowActions } from "@cxsun/ui/workspace/row-actions";
 import { CrmStatusBadge, prioritySwatch } from "../../crm-colors";
+import { enquiryTableText } from "./enquiry.table-text";
 import type { EnquiryLookup, EnquiryRecord } from "./enquiry.types";
 
 export function EnquiryList({
@@ -80,14 +81,14 @@ export function EnquiryList({
         ) : (
           <button
             className="block max-w-80 cursor-pointer truncate text-left font-medium text-foreground hover:underline"
-            title={row.original.description ?? row.original.title}
+            title={enquiryTableText(row.original.description ?? row.original.title)}
             type="button"
             onClick={(event) => {
               event.stopPropagation();
               onShow(row.original);
             }}
           >
-            {row.original.title}
+            {enquiryTableText(row.original.title) || "—"}
           </button>
         )
     },

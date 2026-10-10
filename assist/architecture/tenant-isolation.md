@@ -48,6 +48,11 @@ Current implementation note: tenant login resolves the tenant database for tenan
 
 Platform requires an active server session for both cookie and bearer requests. After validating the session and tenant registry, Platform replaces tenant routing headers and sets tenant response metadata from that trusted context. The shared Framework never derives response metadata from an incoming `x-tenant-id` header.
 
+Browser tabs select their own encrypted session cookie with a non-secret slot in sessionStorage.
+The browser sends the slot in `x-cxsun-session-slot` on application API requests.
+The API validates the selected cookie and its active server session before it resolves tenant data.
+Login creates a new slot. Logout and session reset revoke only the selected server session.
+
 Tenant database provisioning follows the tenant's selected application set. Platform identity/access migrations run
 first. Billing activation then runs Core's owned prerequisite migrations and seeds before Billing's owned migrations
 and seeds. Mail migrations run only when Mail is enabled. Task Manager runs its own migrations and seeds when enabled. Tenant

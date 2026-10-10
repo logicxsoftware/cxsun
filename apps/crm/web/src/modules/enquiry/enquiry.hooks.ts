@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { crmRequest } from "../../crm-request";
 import {
   getEnquiry,
   getEnquiryOverviewActivity,
@@ -82,7 +83,23 @@ export const useEnquiryContacts = (enabled = true) =>
 export const useEnquiryUsers = (enabled = true) =>
   useQuery({ queryKey: enquiryUsersQueryKey, queryFn: listTenantUsers, enabled });
 export function useCrmNavigationCounts(_email: string, enabled: boolean) {
-  const summary = useEnquirySummary(enabled);
+  const source = useQuery({
+    queryKey: ["crm", "enquiries", "source"],
+    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source"),
+    enabled
+  });
+  const summary = useQuery({
+    queryKey: source.data?.provider === "frappe"
+      ? ["crm", "enquiries", "frappe-summary", new Date().toISOString().slice(0, 10)]
+      : ["crm", "enquiries", "navigation-summary", "local"],
+    queryFn: () =>
+      source.data?.provider === "frappe"
+        ? crmRequest<{ allCount: number; assigned: { total: number }; created: { total: number } }>(
+            `/crm/enquiries/live/summary?today=${localToday()}`
+          )
+        : getEnquirySummary(localToday()),
+    enabled: enabled && Boolean(source.data)
+  });
   return {
     assigned: summary.data?.assigned.total ?? 0,
     created: summary.data?.created.total ?? 0,

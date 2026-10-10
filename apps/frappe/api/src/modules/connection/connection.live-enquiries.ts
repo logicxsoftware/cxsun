@@ -2,6 +2,7 @@ import { AppError } from "@cxsun/framework/errors";
 import type { Kysely } from "kysely";
 import { FrappeConnectionRepository } from "./connection.repository.js";
 import { requestFrappe } from "./connection.service.js";
+import { aggregateFrappeEnquiries } from "./connection.aggregate-enquiries.js";
 import type { FrappeDatabase, FrappeSettings } from "./connection.types.js";
 
 const fields = [
@@ -30,6 +31,9 @@ export type LiveEnquiryQuery = {
   pageSize: number;
   search: string;
   status?: string | undefined;
+  group?: string | undefined;
+  creator?: string | undefined;
+  assignee?: string | undefined;
   fromDate?: string | undefined;
   toDate?: string | undefined;
 };
@@ -48,7 +52,7 @@ export async function listLiveFrappeEnquiries(
   const saved = await repository.credentials(encryptionSecret);
   if (!saved || saved.row.verification_status !== "verified" || !saved.settings.enabled)
     throw AppError.conflict("The live Frappe connection is not verified and enabled.");
-  const filters: unknown[][] = [];
+  const filters: Array<[string, string, string]> = [];
   if (query.scope !== "all" || !canViewAll) {
     if (!employeeCode)
       throw AppError.forbidden("Map this CRM user to a Frappe employee to view live enquiries.");
@@ -60,7 +64,30 @@ export async function listLiveFrappeEnquiries(
       ]);
   }
   if (query.search) filters.push(["title", "like", `%${query.search}%`]);
-  if (query.status) filters.push(["status", "=", query.status]);
+  if (query.status)
+    filters.push([
+      "status",
+      query.status === "none" ? "is" : "=",
+      query.status === "none" ? "not set" : query.status
+    ]);
+  if (query.group)
+    filters.push([
+      "group",
+      query.group === "none" ? "is" : "=",
+      query.group === "none" ? "not set" : query.group
+    ]);
+  if (query.creator)
+    filters.push([
+      "user_employee",
+      query.creator === "none" ? "is" : "=",
+      query.creator === "none" ? "not set" : query.creator
+    ]);
+  if (query.assignee)
+    filters.push([
+      "assigned_to_employee",
+      query.assignee === "none" ? "is" : "=",
+      query.assignee === "none" ? "not set" : query.assignee
+    ]);
   if (query.fromDate) filters.push(["date", ">=", query.fromDate]);
   if (query.toDate) filters.push(["date", "<=", query.toDate]);
   const params = new URLSearchParams({
@@ -78,11 +105,20 @@ export async function listLiveFrappeEnquiries(
         ["user_employee", "=", employeeCode]
       ])
     );
-  const response = await requestFrappe<{ data?: RemoteEnquiry[] }>(
-    `/api/resource/Enquiry?${params}`,
-    "GET",
-    saved.settings ?? defaults
-  );
+  const [response, groupedStatuses] = await Promise.all([
+    requestFrappe<{ data?: RemoteEnquiry[] }>(
+      `/api/resource/Enquiry?${params}`,
+      "GET",
+      saved.settings ?? defaults
+    ),
+    aggregateFrappeEnquiries(
+      saved.settings ?? defaults,
+      ["status"],
+      filters.filter((filter) => filter[0] !== "status"),
+      employeeCode,
+      canViewAll
+    )
+  ]);
   if (!Array.isArray(response.data))
     throw new AppError({
       code: "FRAPPE_RESPONSE_INVALID",
@@ -90,11 +126,20 @@ export async function listLiveFrappeEnquiries(
       statusCode: 502
     });
   const remote = response.data;
+  const statusCounts = groupedStatuses.map((row) => ({
+    code: row.status ? String(row.status) : "none",
+    count: row.count
+  }));
+  const total = query.status
+    ? (statusCounts.find((row) => row.code === query.status)?.count ?? 0)
+    : statusCounts.reduce((sum, row) => sum + row.count, 0);
   return {
     source: "frappe" as const,
     page: query.page,
     pageSize: query.pageSize,
     hasMore: remote.length > query.pageSize,
+    total,
+    statusCounts,
     items: remote.slice(0, query.pageSize).map((item) => ({
       name: item.name,
       title: item.title || item.name,

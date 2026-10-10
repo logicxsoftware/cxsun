@@ -36,6 +36,32 @@ export type EnquiryPage = {
   total: number;
   statusCounts: Array<{ code: string; count: number }>;
 };
+export type LiveEnquiryRecord = {
+  name: string;
+  title: string;
+  details: string;
+  customer: string | null;
+  mobile: string | null;
+  date: string | null;
+  dueDate: string | null;
+  group: string | null;
+  creator: string | null;
+  assignee: string | null;
+  priority: string | null;
+  status: string | null;
+  statusDetails: string | null;
+  createdAt: string | null;
+  modifiedAt: string | null;
+};
+export type LiveEnquiryPage = {
+  source: "frappe";
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  total: number;
+  statusCounts: Array<{ code: string; count: number }>;
+  items: LiveEnquiryRecord[];
+};
 export type EnquiryReportFilters = {
   fromDate?: string | undefined;
   toDate?: string | undefined;
@@ -43,6 +69,9 @@ export type EnquiryReportFilters = {
   createdBy?: string | undefined;
   assignedUserId?: string | undefined;
   filter?: string | undefined;
+  group?: string | undefined;
+  creatorEmployee?: string | undefined;
+  assigneeEmployee?: string | undefined;
 };
 export type EnquiryReportRow = {
   listInId: number | null;

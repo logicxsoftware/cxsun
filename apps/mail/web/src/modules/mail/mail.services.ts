@@ -131,7 +131,7 @@ function escapeMailHtml(value: string) {
 async function mailRequest<T>(path: string, init: RequestInit = {}) {
   const tenantId = sessionStorage.getItem("cxsun_tenant_id");
   const tenantDatabase = sessionStorage.getItem("cxsun_tenant_db_name");
-  const companyId = localStorage.getItem("cxsun.tenant.company-id");
+  const companyId = sessionStorage.getItem("cxsun.tenant.company-id");
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",

@@ -1,4 +1,5 @@
 import { requiredClientEnv } from "../env/client-env";
+import { clearSessionSlot, getSessionSlot, setSessionSlot } from "../auth/tab-session";
 
 const apiBaseUrl = requiredClientEnv("VITE_PLATFORM_API_URL");
 export type Desk = "sa" | "admin" | "tenant";
@@ -42,6 +43,7 @@ export type SessionData = {
   email: string;
   expiresAt: string;
   name?: string;
+  sessionSlot?: string;
   tenantCode?: string;
   tenantDbName?: string;
   tenantId?: string;
@@ -120,7 +122,8 @@ export function clearBrowserSession(): void {
     sessionStorage.removeItem(TENANT_DB_NAME_KEY);
     sessionStorage.removeItem(SESSION_CONTEXT_KEY);
     sessionStorage.removeItem(SESSION_IDENTITY_KEY);
-    for (const key of TENANT_RUNTIME_KEYS) localStorage.removeItem(key);
+    clearSessionSlot();
+    for (const key of TENANT_RUNTIME_KEYS) sessionStorage.removeItem(key);
   } catch {}
 }
 
@@ -128,9 +131,11 @@ function writeSession(data: {
   context?: SessionContext;
   email: string;
   name?: string;
+  sessionSlot?: string;
   tenantDbName?: string;
   tenantId?: string;
 }) {
+  if (data.sessionSlot) setSessionSlot(data.sessionSlot);
   try {
     if (data.tenantId) sessionStorage.setItem(TENANT_ID_KEY, data.tenantId);
     if (data.tenantDbName) sessionStorage.setItem(TENANT_DB_NAME_KEY, data.tenantDbName);
@@ -143,7 +148,11 @@ function writeSession(data: {
 }
 
 function authHeaders(desk?: Desk): Record<string, string> {
-  return desk ? { "x-auth-desk": desk } : {};
+  const slot = getSessionSlot();
+  return {
+    ...(desk ? { "x-auth-desk": desk } : {}),
+    ...(slot ? { "x-cxsun-session-slot": slot } : {})
+  };
 }
 
 async function request<T>(path: string, options: RequestInit = {}, desk?: Desk): Promise<T> {
@@ -220,7 +229,6 @@ export async function login(input: {
   password: string;
   tenantCode?: string;
 }) {
-  clearBrowserSession();
   try {
     const data = await apiPost<
       SessionData & {
@@ -230,6 +238,8 @@ export async function login(input: {
     if (input.desk === "tenant" && (!data.tenantId || !data.tenantDbName)) {
       throw new Error("Tenant login response is incomplete.");
     }
+    if (!data.sessionSlot) throw new Error("Browser session was not issued.");
+    clearBrowserSession();
     writeSession(data);
     return { data, success: true } as const;
   } catch (error: unknown) {
@@ -238,12 +248,13 @@ export async function login(input: {
 }
 
 export async function developmentTenantLogin() {
-  clearBrowserSession();
   try {
     const data = await apiPost<SessionData>("/auth/development/tenant-login");
     if (!data.tenantId || !data.tenantDbName) {
       throw new Error("Tenant login response is incomplete.");
     }
+    if (!data.sessionSlot) throw new Error("Browser session was not issued.");
+    clearBrowserSession();
     writeSession(data);
     return { data, success: true } as const;
   } catch (error: unknown) {
@@ -276,7 +287,6 @@ export async function logout(desk: Desk): Promise<void> {
 }
 
 export async function resetBrowserSession(): Promise<void> {
-  clearBrowserSession();
   try {
     await apiPost<{ reset: true }>("/auth/session/reset", undefined, "sa");
   } finally {

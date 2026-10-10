@@ -21,6 +21,7 @@ import {
   WorkspaceUpsertPage
 } from "@cxsun/ui/workspace/upsert";
 import {
+  contactCreateSchema,
   contactSchema,
   prepareContactPayloadForSave,
   preserveOptionalTextInput
@@ -47,8 +48,7 @@ export function ContactForm({
   lookupsLoading,
   onBack,
   onSubmit,
-  record,
-  nextCode
+  record
 }: {
   createLookup: ContactLookupCreate;
   error: string;
@@ -58,12 +58,11 @@ export function ContactForm({
   onBack: () => void;
   onSubmit: (payload: ContactSavePayload) => void;
   record: ContactRecord | null;
-  nextCode: string;
 }) {
   const [activeTab, setActiveTab] = useState<ContactTab>("details");
   const [validationError, setValidationError] = useState("");
   const [invalidPaths, setInvalidPaths] = useState<string[]>([]);
-  const [form, setForm] = useState<ContactSavePayload>(() => initialPayload(record, nextCode));
+  const [form, setForm] = useState<ContactSavePayload>(() => initialPayload(record));
 
   const set = <Key extends keyof ContactSavePayload>(key: Key, value: ContactSavePayload[Key]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -71,7 +70,7 @@ export function ContactForm({
 
   function submit() {
     const payload = prepareContactPayloadForSave(form);
-    const parsed = contactSchema.safeParse(payload);
+    const parsed = (record ? contactSchema : contactCreateSchema).safeParse(payload);
     if (!parsed.success) {
       const paths = parsed.error.issues.map((issue) => issue.path.join("."));
       setInvalidPaths(paths);
@@ -90,6 +89,7 @@ export function ContactForm({
       label: "Details",
       content: (
         <DetailsTab
+          autoCode={!record}
           createLookup={createLookup}
           form={form}
           invalid={invalid}
@@ -187,6 +187,7 @@ export function ContactForm({
 }
 
 function DetailsTab({
+  autoCode,
   createLookup,
   form,
   invalid,
@@ -194,6 +195,7 @@ function DetailsTab({
   lookups,
   set
 }: {
+  autoCode: boolean;
   createLookup: ContactLookupCreate;
   form: ContactSavePayload;
   invalid: (path: string) => boolean;
@@ -221,15 +223,23 @@ function DetailsTab({
         />
         {invalid("name") ? <FieldError>Contact name is required.</FieldError> : null}
       </WorkspaceFormField>
-      <WorkspaceFormField label="Code" required>
+      <WorkspaceFormField label="Code" required={!autoCode}>
         <Input
           aria-invalid={invalid("code")}
           className={invalid("code") ? "border-destructive" : undefined}
           maxLength={80}
+          placeholder={autoCode ? "Automatic on save" : undefined}
           value={form.code}
           onChange={(event) => set("code", event.target.value.toUpperCase())}
         />
-        {invalid("code") ? <FieldError>Use letters, numbers, and hyphens only.</FieldError> : null}
+        {autoCode && !form.code.trim() ? (
+          <p className="text-xs text-muted-foreground">Leave blank to use the next contact code.</p>
+        ) : null}
+        {invalid("code") ? (
+          <FieldError>
+            {form.code.trim() ? "Use letters, numbers, and hyphens only." : "Code is required."}
+          </FieldError>
+        ) : null}
       </WorkspaceFormField>
       <WorkspaceFormField
         label={
@@ -1095,7 +1105,7 @@ function validatePostalCode(value: string) {
   return "";
 }
 
-function initialPayload(record: ContactRecord | null, nextCode: string): ContactSavePayload {
+function initialPayload(record: ContactRecord | null): ContactSavePayload {
   if (record) {
     return {
       code: record.code,
@@ -1124,7 +1134,7 @@ function initialPayload(record: ContactRecord | null, nextCode: string): Contact
     };
   }
   return {
-    code: nextCode,
+    code: "",
     name: "",
     legalName: null,
     typeId: 0,

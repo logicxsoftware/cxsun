@@ -7,6 +7,7 @@ import { WorkspaceSelect } from "@cxsun/ui/workspace/select";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
 import { useEnquiryReport, useEnquiryUsers, type EnquiryReportFilters } from "../enquiry/index";
 import { ReportsTable } from "./reports.table";
+import { LiveReportsWorkspace } from "./reports.live";
 import type { ReportView } from "./reports.model";
 
 const views: Array<{ id: ReportView; label: string }> = [
@@ -21,25 +22,41 @@ export function CrmReportsWorkspace({
 }: {
   onOpenEnquiries: (filters: EnquiryReportFilters) => void;
 }) {
-  const [view, setView] = useState<ReportView>("list-in");
-  const [draft, setDraft] = useState<EnquiryReportFilters>({});
-  const [filters, setFilters] = useState<EnquiryReportFilters>({});
-  const report = useEnquiryReport(filters);
   const source = useQuery({
     queryKey: ["crm", "enquiries", "source"],
     queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source")
   });
+  if (source.isLoading)
+    return (
+      <WorkspacePage title="Reports" technicalName="page.crm.reports.loading">
+        Loading report source…
+      </WorkspacePage>
+    );
+  if (source.error)
+    return (
+      <WorkspacePage title="Reports" technicalName="page.crm.reports.error">
+        <p role="alert">{source.error.message}</p>
+      </WorkspacePage>
+    );
+  if (source.data?.provider === "frappe")
+    return <LiveReportsWorkspace onOpenEnquiries={onOpenEnquiries} />;
+  return <LocalReportsWorkspace onOpenEnquiries={onOpenEnquiries} />;
+}
+
+function LocalReportsWorkspace({
+  onOpenEnquiries
+}: {
+  onOpenEnquiries: (filters: EnquiryReportFilters) => void;
+}) {
+  const [view, setView] = useState<ReportView>("list-in");
+  const [draft, setDraft] = useState<EnquiryReportFilters>({});
+  const [filters, setFilters] = useState<EnquiryReportFilters>({});
+  const report = useEnquiryReport(filters);
   const users = useEnquiryUsers();
   const invalidDates = Boolean(draft.fromDate && draft.toDate && draft.fromDate > draft.toDate);
   return (
     <WorkspacePage title="" className="pt-0 lg:pt-0" technicalName="page.crm.reports">
       <div className="space-y-4">
-        {source.data?.provider === "frappe" ? (
-          <p className="rounded-md border bg-muted/30 p-3 text-sm">
-            These reports use local CRM enquiries. The Frappe Live switch applies to the enquiry
-            lists; report counts and drilldowns remain local.
-          </p>
-        ) : null}
         <div className="flex flex-wrap gap-2" aria-label="Enquiry report views">
           {views.map((item) => (
             <Button

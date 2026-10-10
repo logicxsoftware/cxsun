@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  contactCreateSchema,
   contactSchema,
   prepareContactPayloadForSave,
   preserveOptionalTextInput
@@ -25,6 +26,20 @@ test("contact payload trims text only when prepared for save", () => {
   assert.equal(prepared.bankAccounts[0]?.branch, "Tiruppur Main Road");
   assert.equal(prepared.description, "Preferred billing contact");
   assert.equal(contactSchema.safeParse(prepared).success, true);
+});
+
+test("new contacts may leave code blank for server numbering", () => {
+  const blankCode = prepareContactPayloadForSave({ ...contactPayload(), code: "   " });
+  assert.equal(blankCode.code, "");
+  assert.equal(contactCreateSchema.safeParse(blankCode).success, true);
+  assert.equal(contactSchema.safeParse(blankCode).success, false);
+
+  const manualCode = prepareContactPayloadForSave(contactPayload());
+  assert.equal(contactCreateSchema.safeParse(manualCode).success, true);
+  assert.equal(manualCode.code, "CUSTOMER-SOUTH-1");
+
+  const invalidCode = prepareContactPayloadForSave({ ...contactPayload(), code: "!!!" });
+  assert.equal(contactCreateSchema.safeParse(invalidCode).success, false);
 });
 
 function contactPayload(): ContactSavePayload {

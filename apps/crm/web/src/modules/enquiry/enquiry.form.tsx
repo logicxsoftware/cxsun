@@ -15,6 +15,7 @@ import {
 } from "@cxsun/ui/workspace/upsert";
 import { enquirySchema } from "./enquiry.schema";
 import { EnquiryCustomerFields } from "./enquiry.customer-fields";
+import { EnquiryMobileContext } from "./enquiry.mobile-context";
 import { useEnquiryMasterCreate } from "./enquiry.master-create";
 import type {
   EnquiryLookup,
@@ -121,12 +122,17 @@ export function EnquiryForm({
   };
   return (
     <WorkspaceUpsertPage
-      className={record ? "max-w-5xl" : "max-w-6xl pt-0 lg:pt-0"}
+      className={
+        record
+          ? "max-w-5xl"
+          : "grid max-w-[92rem] items-start gap-4 space-y-0 pt-0 lg:pt-0 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_20rem]"
+      }
       title={record ? `Edit enquiry #${record.enquiryNo}` : ""}
       {...(record ? { description: record.title } : {})}
       {...(record ? { onBack } : {})}
     >
       <form
+        className="min-w-0"
         {...(record ? {} : { id: newEnquiryFormId })}
         noValidate
         onKeyDownCapture={(event) => {
@@ -388,6 +394,16 @@ export function EnquiryForm({
           ) : null}
         </WorkspaceFormSurface>
       </form>
+      {!record ? (
+        <EnquiryMobileContext
+          mobile={value.capturedPhone}
+          contactId={value.contactId}
+          users={users}
+          onSelectMobile={(mobile) =>
+            setCustomer({ capturedPhone: mobile, contactId: null, capturedName: mobile })
+          }
+        />
+      ) : null}
     </WorkspaceUpsertPage>
   );
 }

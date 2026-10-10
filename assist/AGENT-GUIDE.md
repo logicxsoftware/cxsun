@@ -245,7 +245,8 @@ Do not describe planned, inferred, or unexecuted verification as completed.
 - A custom host may narrow tenant resolution only after its domain mapping is active and DNS-verified, but tenant login must still require an exact matching Corporate ID before user credentials are checked. The canonical host can never be assigned to one tenant.
 - The server owns tenant routing. Never trust browser-supplied tenant ID, database name, company ID, or financial-year headers without replacing and validating them from signed session claims and the tenant registry.
 - Tenant database secrets are server-only references and resolution fails closed. Never fall back to a global password for an unknown tenant secret reference.
-- Browser authentication uses one encrypted, `HttpOnly`, `Secure`, host-only, `SameSite=Strict` cookie. Never persist JWTs, refresh tokens, or session IDs in localStorage or sessionStorage.
-- Every login clears legacy browser auth material and revokes the current server session before establishing the new identity. A tenant switch must reload the desk and clear client query/runtime caches.
+- Each browser login gets a separate encrypted, `HttpOnly`, host-only, `SameSite=Strict` cookie. Production cookies must also use `Secure` and the `__Host-` prefix.
+- Each tab stores only its non-secret cookie slot in sessionStorage. Send that slot as `x-cxsun-session-slot` on application API requests. Never store a JWT, refresh token, or session ID in browser storage.
+- A login creates a new slot and must not revoke or clear another tab's session. Logout and session reset revoke and clear only the selected slot. A tenant switch must reload the desk and clear that tab's query and runtime caches.
 - Cache only non-secret session context: tenant/company labels and IDs, default company, financial year, enabled modules, landing page, and safe settings. Never cache credentials, authorization decisions, permissions, secrets, or raw tokens. Clear this cache on login and logout.
 - Authorization and tenant status are checked live for protected requests; cached session context is a performance convenience, not an authority.

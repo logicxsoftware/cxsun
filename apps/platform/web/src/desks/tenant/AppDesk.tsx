@@ -1850,7 +1850,10 @@ function reportFiltersFromLocation(): EnquiryReportFilters | undefined {
     "listInId",
     "createdBy",
     "assignedUserId",
-    "filter"
+    "filter",
+    "group",
+    "creatorEmployee",
+    "assigneeEmployee"
   ] as const) {
     const value = search.get(key);
     if (value) filters[key] = value;

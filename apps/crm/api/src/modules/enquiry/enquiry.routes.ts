@@ -5,6 +5,7 @@ import { registerContractRoute } from "@cxsun/framework/http";
 import type {} from "@cxsun/framework/api";
 import { EnquiryRepository } from "./enquiry.repository.js";
 import { EnquiryService, type EnquiryRelations } from "./enquiry.service.js";
+import { EnquiryReadService, type EnquiryRemoteSource } from "./enquiry.read-source.js";
 import type { EnquiryDatabase } from "./enquiry.types.js";
 import { registerEnquiryWorkRoutes } from "./enquiry.work.routes.js";
 
@@ -59,7 +60,12 @@ const listQuerySchema = z.object({
   assignedUserId: z
     .string()
     .regex(/^(none|[1-9]\d*)$/)
-    .optional()
+    .optional(),
+  group: z.string().trim().min(1).max(191).optional(),
+  creatorEmployee: z.string().trim().min(1).max(191).optional(),
+  assigneeEmployee: z.string().trim().min(1).max(191).optional(),
+  fromDate: z.iso.date().optional(),
+  toDate: z.iso.date().optional()
 });
 const liveQuerySchema = z.object({
   scope: z.enum(["all", "assigned", "created"]).default("all"),
@@ -92,6 +98,8 @@ const livePageSchema = z.object({
   page: z.number().int().positive(),
   pageSize: z.number().int().positive(),
   hasMore: z.boolean(),
+  total: z.number().int().nonnegative(),
+  statusCounts: z.array(z.object({ code: z.string(), count: z.number().int().nonnegative() })),
   items: z.array(liveRecordSchema)
 });
 const reportQuerySchema = listQuerySchema.pick({
@@ -159,8 +167,7 @@ export type EnquiryRequestContext = {
   actorUserId: number | null;
   canViewAll: boolean;
   relations: EnquiryRelations;
-  listLive: (query: z.infer<typeof liveQuerySchema>) => Promise<z.infer<typeof livePageSchema>>;
-  source: () => Promise<"local" | "frappe">;
+  remote: EnquiryRemoteSource;
 };
 
 export function registerEnquiryRoutes(
@@ -169,24 +176,31 @@ export function registerEnquiryRoutes(
 ) {
   const service = async (request: FastifyRequest) => {
     const scope = await context(request);
-    return {
-      scope,
-      enquiry: new EnquiryService(new EnquiryRepository(scope.database), scope.relations, scope)
-    };
+    const enquiry = new EnquiryService(
+      new EnquiryRepository(scope.database),
+      scope.relations,
+      scope
+    );
+    return { scope, enquiry, read: new EnquiryReadService(enquiry, scope.remote) };
+  };
+  const localService = async (request: FastifyRequest) => {
+    const current = await service(request);
+    await current.read.assertLocal();
+    return current;
   };
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/source",
     schemas: { response: z.object({ provider: z.enum(["local", "frappe"]) }) },
-    handler: async ({ request }) => ({ provider: await (await context(request)).source() })
+    handler: async ({ request }) => ({ provider: await (await service(request)).read.source() })
   });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/live",
     schemas: { querystring: liveQuerySchema, response: livePageSchema },
     handler: async ({ query, request }) => {
-      const scope = await context(request);
-      return scope.listLive(query);
+      const { scope } = await service(request);
+      return scope.remote.list(query);
     }
   });
   registerContractRoute(app, {
@@ -194,22 +208,64 @@ export function registerEnquiryRoutes(
     url: "/crm/enquiries",
     schemas: {
       querystring: listQuerySchema,
-      response: pageSchema
+      response: z.union([pageSchema.extend({ source: z.literal("local") }), livePageSchema])
     },
-    handler: async ({ query, request }) => (await service(request)).enquiry.listPage(query)
+    handler: async ({ query, request }) => (await service(request)).read.list(query)
   });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/reports",
     schemas: { querystring: reportQuerySchema, response: z.array(reportRowSchema) },
-    handler: async ({ query, request }) => (await service(request)).enquiry.report(query)
+    handler: async ({ query, request }) => (await localService(request)).enquiry.report(query)
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/live/reports",
+    schemas: {
+      querystring: z.object({
+        view: z.enum(["list-in", "creator", "assignee", "status"]),
+        fromDate: z.iso.date().optional(),
+        toDate: z.iso.date().optional(),
+        assignee: z.string().trim().min(1).max(191).optional()
+      }),
+      response: z.array(
+        z.object({
+          group: nullableText,
+          status: nullableText,
+          count: z.number().int().nonnegative()
+        })
+      )
+    },
+    handler: async ({ query, request }) => (await service(request)).scope.remote.report(query)
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/live/summary",
+    schemas: {
+      querystring: z.object({ today: z.iso.date() }),
+      response: z.object({
+        allCount: z.number().int().nonnegative(),
+        assigned: z.object({
+          total: z.number().int().nonnegative(),
+          statusCounts: scopeSummarySchema.shape.statusCounts,
+          priorityCounts: scopeSummarySchema.shape.priorityCounts
+        }),
+        created: z.object({
+          total: z.number().int().nonnegative(),
+          statusCounts: scopeSummarySchema.shape.statusCounts,
+          priorityCounts: scopeSummarySchema.shape.priorityCounts
+        })
+      })
+    },
+    handler: async ({ query, request }) =>
+      (await service(request)).scope.remote.summary(query.today)
   });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/overview-activity",
     schemas: { response: z.object({ commentsByYou30Days: z.number().int().nonnegative() }) },
     handler: async ({ request }) => {
-      const { enquiry, scope } = await service(request);
+      const { enquiry, scope } = await localService(request);
       return enquiry.overviewActivity(scope.actorEmail);
     }
   });
@@ -231,7 +287,8 @@ export function registerEnquiryRoutes(
         due: z.array(recordSchema)
       })
     },
-    handler: async ({ query, request }) => (await service(request)).enquiry.attention(query.today)
+    handler: async ({ query, request }) =>
+      (await localService(request)).enquiry.attention(query.today)
   });
   registerContractRoute(app, {
     method: "GET",
@@ -244,7 +301,8 @@ export function registerEnquiryRoutes(
         created: scopeSummarySchema
       })
     },
-    handler: async ({ query, request }) => (await service(request)).enquiry.summary(query.today)
+    handler: async ({ query, request }) =>
+      (await localService(request)).enquiry.summary(query.today)
   });
   registerContractRoute(app, {
     method: "POST",
@@ -254,20 +312,20 @@ export function registerEnquiryRoutes(
       response: z.object({ read: z.boolean() })
     },
     handler: async ({ params, request }) =>
-      (await service(request)).enquiry.readAlert(params.alertId)
+      (await localService(request)).enquiry.readAlert(params.alertId)
   });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/:id",
     schemas: { params: idSchema, response: recordSchema },
-    handler: async ({ params, request }) => (await service(request)).enquiry.get(params.id)
+    handler: async ({ params, request }) => (await localService(request)).enquiry.get(params.id)
   });
   registerContractRoute(app, {
     method: "POST",
     url: "/crm/enquiries",
     schemas: { body: inputSchema, response: recordSchema },
     handler: async ({ body, request }) => {
-      const { enquiry, scope } = await service(request);
+      const { enquiry, scope } = await localService(request);
       return enquiry.create(body, scope.actorEmail);
     }
   });
@@ -276,7 +334,7 @@ export function registerEnquiryRoutes(
     url: "/crm/enquiries/:id",
     schemas: { body: inputSchema, params: idSchema, response: recordSchema },
     handler: async ({ body, params, request }) => {
-      const { enquiry, scope } = await service(request);
+      const { enquiry, scope } = await localService(request);
       return enquiry.update(params.id, body, scope.actorEmail);
     }
   });
@@ -285,7 +343,7 @@ export function registerEnquiryRoutes(
     url: "/crm/enquiries/:id/properties",
     schemas: { body: propertySchema, params: idSchema, response: recordSchema },
     handler: async ({ body, params, request }) => {
-      const { enquiry, scope } = await service(request);
+      const { enquiry, scope } = await localService(request);
       return enquiry.updateProperties(params.id, body, scope.actorEmail);
     }
   });
@@ -294,7 +352,7 @@ export function registerEnquiryRoutes(
     url: "/crm/enquiries/:id/open-new-call",
     schemas: { params: idSchema, response: recordSchema },
     handler: async ({ params, request }) => {
-      const { enquiry, scope } = await service(request);
+      const { enquiry, scope } = await localService(request);
       return enquiry.openNewCall(params.id, scope.actorEmail);
     }
   });
@@ -302,14 +360,15 @@ export function registerEnquiryRoutes(
     method: "GET",
     url: "/crm/enquiries/:id/comments",
     schemas: { params: idSchema, response: z.array(commentSchema) },
-    handler: async ({ params, request }) => (await service(request)).enquiry.listComments(params.id)
+    handler: async ({ params, request }) =>
+      (await localService(request)).enquiry.listComments(params.id)
   });
   registerContractRoute(app, {
     method: "POST",
     url: "/crm/enquiries/:id/comments",
     schemas: { params: idSchema, body: commentInputSchema, response: commentSchema },
     handler: async ({ params, body, request }) => {
-      const { enquiry, scope } = await service(request);
+      const { enquiry, scope } = await localService(request);
       return enquiry.addComment(
         params.id,
         body.body,
@@ -319,5 +378,8 @@ export function registerEnquiryRoutes(
       );
     }
   });
-  registerEnquiryWorkRoutes(app, context);
+  registerEnquiryWorkRoutes(app, async (request) => {
+    const current = await localService(request);
+    return current.scope;
+  });
 }

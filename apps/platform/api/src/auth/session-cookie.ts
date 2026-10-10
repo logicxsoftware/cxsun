@@ -4,6 +4,8 @@ import { env } from "../env.js";
 
 const cookieVersion = "v1";
 const cookieAad = Buffer.from("cxsun.auth.session.v1", "utf8");
+export const sessionSlotHeader = "x-cxsun-session-slot";
+const sessionSlotPattern = /^[0-9a-f]{32}$/u;
 const legacyCookieNames = [
   "cxsun_session",
   "cxsun_session_admin",
@@ -12,25 +14,43 @@ const legacyCookieNames = [
   "__Host-cxsun_session"
 ] as const;
 
-export function authCookieName() {
-  return env.NODE_ENV === "production" ? "__Host-cxsun_session" : "cxsun_session";
+export function authCookieName(slot?: string) {
+  const base = env.NODE_ENV === "production" ? "__Host-cxsun_session" : "cxsun_session";
+  return slot ? `${base}_${slot}` : base;
 }
 
 export function readEncryptedSessionCookie(request: FastifyRequest) {
-  const value = request.cookies[authCookieName()];
+  const slot = selectedSessionSlot(request);
+  if (request.headers[sessionSlotHeader] !== undefined && !slot) return "";
+  const value = request.cookies[authCookieName(slot ?? undefined)];
   return value ? decryptSessionCookie(value) : "";
 }
 
 export function writeEncryptedSessionCookie(reply: FastifyReply, token: string) {
-  if (env.AUTH_MODE === "jwt") return;
-  clearAllSessionCookies(reply);
-  reply.setCookie(authCookieName(), encryptSessionCookie(token), {
+  if (env.AUTH_MODE === "jwt") return null;
+  const slot = randomBytes(16).toString("hex");
+  reply.setCookie(authCookieName(slot), encryptSessionCookie(token), {
     httpOnly: true,
     maxAge: env.AUTH_SESSION_TTL_HOURS * 60 * 60,
     path: "/",
     sameSite: "strict",
     secure: env.NODE_ENV === "production"
   });
+  return slot;
+}
+
+export function clearSelectedSessionCookie(reply: FastifyReply, request: FastifyRequest) {
+  const slot = selectedSessionSlot(request);
+  if (slot) {
+    reply.clearCookie(authCookieName(slot), {
+      httpOnly: true,
+      path: "/",
+      sameSite: "strict",
+      secure: env.NODE_ENV === "production"
+    });
+  } else if (request.headers[sessionSlotHeader] === undefined) {
+    clearAllSessionCookies(reply);
+  }
 }
 
 export function clearAllSessionCookies(reply: FastifyReply) {
@@ -42,6 +62,11 @@ export function clearAllSessionCookies(reply: FastifyReply) {
       secure: name.startsWith("__Host-") || env.NODE_ENV === "production"
     });
   }
+}
+
+function selectedSessionSlot(request: FastifyRequest): string | null {
+  const value = request.headers[sessionSlotHeader];
+  return typeof value === "string" && sessionSlotPattern.test(value) ? value : null;
 }
 
 export function encryptSessionCookie(token: string) {

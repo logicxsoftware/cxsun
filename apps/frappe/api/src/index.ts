@@ -9,6 +9,7 @@ export { listLiveFrappeEnquiries } from "./modules/connection/index.js";
 export { FrappeConnectionRepository } from "./modules/connection/index.js";
 export type { LiveEnquiryQuery } from "./modules/connection/index.js";
 export type { FrappeDatabase, FrappeSettings } from "./modules/connection/index.js";
+export { FrappeCrmEnquirySource } from "./modules/connection/index.js";
 export {
   frappeEnquirySyncModule,
   frappeEnquiryImportJobName,

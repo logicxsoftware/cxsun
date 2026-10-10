@@ -2,6 +2,11 @@ export { enquiryModule, seedEnquiryModule } from "./modules/enquiry/index.js";
 export type { EnquiryRequestContext, EnquiryDatabase } from "./modules/enquiry/index.js";
 export { EnquiryRepository } from "./modules/enquiry/index.js";
 export type { EnquiryListOptions, EnquiryRecord } from "./modules/enquiry/index.js";
+export type {
+  EnquiryRemoteSource,
+  LiveEnquiryQuery,
+  LiveEnquiryPage
+} from "./modules/enquiry/index.js";
 export {
   crmTenantMigrations,
   migrateCrmTenantDatabase,

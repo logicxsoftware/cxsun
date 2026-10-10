@@ -5,6 +5,7 @@ import { Input } from "@cxsun/ui/components/input";
 import { WorkspaceLookup } from "@cxsun/ui/workspace/lookup";
 import { WorkspaceFormField } from "@cxsun/ui/workspace/upsert";
 import type { EnquiryLookup, EnquirySavePayload } from "./enquiry.types";
+import { enquiryPhoneKey } from "./enquiry.phone";
 
 type CustomerValue = Pick<EnquirySavePayload, "contactId" | "capturedName" | "capturedPhone">;
 
@@ -49,7 +50,7 @@ export function EnquiryCustomerFields({
       label: contact.name,
       ...(contact.primaryPhone ? { description: contact.primaryPhone } : {})
     }));
-  const mobileDigits = phoneKey(value.capturedPhone);
+  const mobileDigits = enquiryPhoneKey(value.capturedPhone);
   const selectedContact = contacts.find((contact) => contact.id === value.contactId);
 
   return (
@@ -60,6 +61,11 @@ export function EnquiryCustomerFields({
           autoComplete="tel"
           autoFocus={autoFocusMobile}
           aria-invalid={Boolean(mobileError)}
+          className={
+            matches.length === 1 && !loading && !mobileError
+              ? "border-emerald-500 ring-1 ring-emerald-500/35 focus-visible:border-emerald-600 focus-visible:ring-emerald-500/50"
+              : undefined
+          }
           value={value.capturedPhone ?? ""}
           onChange={(event) => {
             const mobile = event.target.value;
@@ -146,20 +152,13 @@ export function EnquiryCustomerFields({
 }
 
 function matchingContacts(contacts: EnquiryLookup[], mobile: string | null) {
-  const key = phoneKey(mobile);
+  const key = enquiryPhoneKey(mobile);
   if (key.length < 7) return [];
   return contacts.filter(
     (contact) =>
       contact.status === "active" &&
       [contact.primaryPhone, ...(contact.phones ?? []).map((item) => item.phone)].some(
-        (phone) => phoneKey(phone) === key
+        (phone) => enquiryPhoneKey(phone) === key
       )
   );
-}
-
-function phoneKey(value: string | null | undefined) {
-  const digits = (value ?? "").replace(/\D/g, "");
-  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
-  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
-  return digits;
 }

@@ -28,7 +28,6 @@ import {
   createPincodeLookup,
   createStateLookup,
   forceDeleteContact,
-  getNextContactCode,
   setContactActive,
   updateContact
 } from "./contact.services";
@@ -64,7 +63,6 @@ export function ContactWorkspace({
     [page, setPage] = useState(1),
     [rowsPerPage, setRowsPerPage] = useState(100),
     [editing, setLocalEditing] = useState<ContactRecord | null | undefined>(undefined),
-    [newCode, setNewCode] = useState(""),
     query = useContacts(search),
     lookupsQuery = useContactLookups(),
     records = query.data ?? [];
@@ -111,30 +109,10 @@ export function ContactWorkspace({
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: contactsQueryKey });
       toast.success("Contact saved");
-      setNewCode("");
       setEditing(undefined);
     },
     onError: (error) => toast.error("Unable to save contact", { description: error.message })
   });
-  const generateCode = useMutation({
-    mutationFn: getNextContactCode,
-    onSuccess: ({ code }) => {
-      setNewCode(code);
-      setEditing(null);
-    },
-    onError: (error) =>
-      toast.error("Unable to generate contact code", { description: error.message })
-  });
-  useEffect(() => {
-    if (
-      location.pathname !== `${basePath}/new` ||
-      newCode ||
-      generateCode.isPending ||
-      generateCode.isError
-    )
-      return;
-    generateCode.mutate();
-  }, [basePath, location.pathname, newCode, generateCode.isPending, generateCode.isError]);
   const action = useMutation({
     mutationFn: ({ record, type }: { record: ContactRecord; type: "delete" | "toggle" }) =>
       type === "delete"
@@ -165,15 +143,14 @@ export function ContactWorkspace({
   if (editing !== undefined)
     return (
       <ContactForm
+        key={editing?.id ?? "new"}
         createLookup={createLookup}
         error={save.error?.message ?? ""}
         loading={save.isPending}
         lookups={lookupsQuery.data ?? emptyLookups}
         lookupsLoading={lookupsQuery.isLoading}
-        nextCode={newCode}
         record={editing}
         onBack={() => {
-          setNewCode("");
           setEditing(undefined);
         }}
         onSubmit={(payload) => save.mutate(payload)}
@@ -188,7 +165,7 @@ export function ContactWorkspace({
               "Manage contact identity, tax, communication, address, finance, and lifecycle details.",
             actions: (
               <div className="flex gap-2">
-                <Button disabled={generateCode.isPending} onClick={() => generateCode.mutate()}>
+                <Button onClick={() => setEditing(null)}>
                   <Plus className="size-4" />
                   New
                 </Button>

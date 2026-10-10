@@ -95,6 +95,10 @@ export const contactSchema = z.object({
   )
 });
 
+export const contactCreateSchema = contactSchema.extend({
+  code: contactSchema.shape.code.or(z.literal(""))
+});
+
 export function preserveOptionalTextInput(value: string) {
   return value === "" ? null : value;
 }
@@ -102,7 +106,7 @@ export function preserveOptionalTextInput(value: string) {
 export function prepareContactPayloadForSave(form: ContactSavePayload): ContactSavePayload {
   return {
     ...form,
-    code: canonicalContactCode(form.code),
+    code: canonicalContactCode(form.code) || form.code.trim(),
     name: form.name.trim(),
     legalName: trimmedNullable(form.legalName),
     gstin: trimmedNullable(form.gstin),

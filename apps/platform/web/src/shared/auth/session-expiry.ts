@@ -1,4 +1,5 @@
 import type { Desk } from "../api/platform-api";
+import { getSessionSlot, isPlatformApiRequest } from "./tab-session";
 
 export const SESSION_EXPIRED_REASON = "session-expired";
 export const SESSION_EXPIRED_ERROR_CODE = "AUTH_SESSION_EXPIRED";
@@ -56,12 +57,25 @@ export function installSessionExpiryInterceptor(onClearSession: () => void): voi
   interceptorInstalled = true;
   const browserFetch = window.fetch.bind(window);
   window.fetch = async (...arguments_: Parameters<typeof window.fetch>) => {
-    const response = await browserFetch(...arguments_);
+    const [input, init] = arguments_;
+    const slot = getSessionSlot();
+    const options =
+      slot && isPlatformApiRequest(input)
+        ? { ...init, headers: withSessionSlot(input, init, slot) }
+        : init;
+    const response = await browserFetch(input, options);
     if (await isExpiredSessionResponse(response)) {
       redirectForExpiredSession();
     }
     return response;
   };
+}
+
+function withSessionSlot(input: RequestInfo | URL, init: RequestInit | undefined, slot: string) {
+  const headers = new Headers(input instanceof Request ? input.headers : undefined);
+  new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
+  headers.set("x-cxsun-session-slot", slot);
+  return headers;
 }
 
 export async function isExpiredSessionResponse(response: Response): Promise<boolean> {

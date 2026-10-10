@@ -3,7 +3,7 @@ import { fail, ok } from "@cxsun/framework/http";
 import { z } from "zod";
 import { AuthService } from "./auth.service.js";
 import { AuthSessionRepository } from "./auth-session.repository.js";
-import { clearAllSessionCookies, writeEncryptedSessionCookie } from "./session-cookie.js";
+import { clearSelectedSessionCookie, writeEncryptedSessionCookie } from "./session-cookie.js";
 import { enforceBrowserRequestOrigin, requestHost } from "./auth-request-context.js";
 import { isSharedApplicationHost } from "../modules/tenant-domain/tenant-domain.repository.js";
 import { TenantRepository } from "../modules/tenant/tenant.repository.js";
@@ -67,8 +67,6 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           )
         );
     }
-    await replaceCurrentSession(request);
-    clearAllSessionCookies(reply);
     const result = await authService.login({
       corporateId: "CODEXSUN",
       desk: "tenant",
@@ -79,8 +77,8 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     if (!result || !("tenantId" in result)) {
       return reply.code(401).send(invalidCredentials(request));
     }
-    writeEncryptedSessionCookie(reply, result.accessToken);
-    return ok(publicResult(request, result), {
+    const sessionSlot = writeEncryptedSessionCookie(reply, result.accessToken);
+    return ok(publicResult(request, result, sessionSlot), {
       requestId: request.id,
       tenantId: result.tenantId
     });
@@ -100,8 +98,6 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           )
         );
     }
-    await replaceCurrentSession(request);
-    clearAllSessionCookies(reply);
     const loginInput: {
       corporateId?: string;
       desk: typeof body.desk;
@@ -133,8 +129,8 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       return reply.code(401).send(invalidCredentials(request));
     }
     await attempts.clear(key);
-    writeEncryptedSessionCookie(reply, result.accessToken);
-    return ok(publicResult(request, result), {
+    const sessionSlot = writeEncryptedSessionCookie(reply, result.accessToken);
+    return ok(publicResult(request, result, sessionSlot), {
       requestId: request.id,
       ...("tenantId" in result && result.tenantId ? { tenantId: result.tenantId } : {})
     });
@@ -174,13 +170,13 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   app.post("/auth/session/reset", async (request, reply) => {
     enforceBrowserRequestOrigin(request);
     await replaceCurrentSession(request);
-    clearAllSessionCookies(reply);
+    clearSelectedSessionCookie(reply, request);
     return ok({ reset: true }, { requestId: request.id });
   });
 
   app.post("/auth/logout", async (request, reply) => {
     await replaceCurrentSession(request);
-    clearAllSessionCookies(reply);
+    clearSelectedSessionCookie(reply, request);
     return ok({ loggedOut: true }, { requestId: request.id });
   });
 }
@@ -202,12 +198,17 @@ function invalidCredentials(request: FastifyRequest) {
   );
 }
 
-function publicResult<T extends { accessToken: string }>(request: FastifyRequest, result: T) {
+function publicResult<T extends { accessToken: string }>(
+  request: FastifyRequest,
+  result: T,
+  sessionSlot: string | null
+) {
   const { accessToken, ...safe } = result;
+  const data = sessionSlot ? { ...safe, sessionSlot } : safe;
   return env.AUTH_MODE === "jwt" ||
     String(request.headers["x-auth-token-delivery"] ?? "").toLowerCase() === "bearer"
-    ? { ...safe, accessToken }
-    : safe;
+    ? { ...data, accessToken }
+    : data;
 }
 
 async function replaceCurrentSession(request: FastifyRequest) {

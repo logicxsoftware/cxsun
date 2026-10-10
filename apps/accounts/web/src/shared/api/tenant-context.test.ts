@@ -25,11 +25,10 @@ function storage(values: Record<string, string>): Storage {
 
 test("accounts reads the company and financial year published by the application desk", () => {
   Object.assign(globalThis, {
-    localStorage: storage({
+    sessionStorage: storage({
       "cxsun.tenant.company-id": "17",
       "cxsun.tenant.financial-year-id": "23"
-    }),
-    sessionStorage: storage({})
+    })
   });
 
   assert.equal(getCompanyId(), 17);
@@ -38,7 +37,7 @@ test("accounts reads the company and financial year published by the application
 
 test("accounts rejects missing and invalid company scope values", () => {
   Object.assign(globalThis, {
-    localStorage: storage({
+    sessionStorage: storage({
       "cxsun.tenant.company-id": "0",
       "cxsun.tenant.financial-year-id": "not-a-number"
     })
@@ -50,11 +49,9 @@ test("accounts rejects missing and invalid company scope values", () => {
 
 test("accounts mutations send the published company and financial year headers", async () => {
   Object.assign(globalThis, {
-    localStorage: storage({
-      "cxsun.tenant.company-id": "17",
-      "cxsun.tenant.financial-year-id": "23"
-    }),
     sessionStorage: storage({
+      "cxsun.tenant.company-id": "17",
+      "cxsun.tenant.financial-year-id": "23",
       cxsun_tenant_db_name: "cxsun_tenant_test",
       cxsun_tenant_id: "tenant-test"
     }),

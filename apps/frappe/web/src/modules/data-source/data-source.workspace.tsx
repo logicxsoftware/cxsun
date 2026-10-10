@@ -18,7 +18,7 @@ export function FrappeDataSourceWorkspace() {
     mutationFn: saveFrappeDataSource,
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: frappeDataSourceKey });
-      await client.invalidateQueries({ queryKey: ["crm", "enquiries", "source"] });
+      await client.invalidateQueries({ queryKey: ["crm"] });
       toast.success("CRM enquiry source updated");
     },
     onError: (error) => toast.error("Unable to change source", { description: error.message })
@@ -56,8 +56,8 @@ export function FrappeDataSourceWorkspace() {
         <div>
           <h2 className="text-sm font-semibold">CRM Enquiries</h2>
           <p className="text-sm text-muted-foreground">
-            Select the source used by CRM enquiry lists. Local records and Frappe documents remain
-            separate.
+            Select the source used by CRM enquiries, overview and reports. Local records and Frappe
+            documents remain separate.
           </p>
         </div>
         {source.error ? (

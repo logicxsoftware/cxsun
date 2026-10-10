@@ -43,6 +43,14 @@ test("live CRM query sends paged TechMedia enquiry filters to Frappe", async () 
   globalThis.fetch = async (input, init) => {
     const url = new URL(String(input));
     assert.equal(url.pathname, "/api/resource/Enquiry");
+    if (url.searchParams.has("group_by")) {
+      assert.equal(url.searchParams.get("group_by"), "status");
+      assert.deepEqual(JSON.parse(url.searchParams.get("filters") ?? "[]"), [
+        ["assigned_to_employee", "=", "EMP-1"],
+        ["title", "like", "%printer%"]
+      ]);
+      return Response.json({ data: [{ status: "Pending", count: 12 }] });
+    }
     assert.equal(url.searchParams.get("limit_start"), "1");
     assert.equal(url.searchParams.get("limit_page_length"), "2");
     assert.deepEqual(JSON.parse(url.searchParams.get("filters") ?? "[]"), [
@@ -70,6 +78,8 @@ test("live CRM query sends paged TechMedia enquiry filters to Frappe", async () 
     false
   );
   assert.equal(result.hasMore, true);
+  assert.equal(result.total, 12);
+  assert.deepEqual(result.statusCounts, [{ code: "Pending", count: 12 }]);
   assert.deepEqual(
     result.items.map((item) => item.name),
     ["ENQ-2"]
@@ -113,5 +123,37 @@ test("all enquiries for a restricted user use Frappe employee OR filters", async
     { ...query, scope: "all" },
     "EMP-1",
     false
+  );
+});
+
+test("live report drilldown applies group, assignee, status and date filters", async () => {
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.deepEqual(JSON.parse(url.searchParams.get("filters") ?? "[]"), [
+      ...(url.searchParams.has("group_by") ? [] : [["status", "=", "New"]]),
+      ["group", "=", "Service"],
+      ["assigned_to_employee", "=", "EMP-2"],
+      ["date", ">=", "2026-10-01"],
+      ["date", "<=", "2026-10-10"]
+    ]);
+    return Response.json({ data: [] });
+  };
+  await listLiveFrappeEnquiries(
+    database("frappe"),
+    defaults,
+    "test-secret",
+    {
+      scope: "all",
+      page: 1,
+      pageSize: 50,
+      search: "",
+      status: "New",
+      group: "Service",
+      assignee: "EMP-2",
+      fromDate: "2026-10-01",
+      toDate: "2026-10-10"
+    },
+    null,
+    true
   );
 });

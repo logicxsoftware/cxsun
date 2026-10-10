@@ -60,7 +60,7 @@ export function EnquiryWorkspace(props: Parameters<typeof LocalEnquiryWorkspace>
         </p>
       </WorkspacePage>
     );
-  if (source.data?.provider === "frappe" && !props.reportFilters) {
+  if (source.data?.provider === "frappe") {
     if (props.initialCreate)
       return (
         <WorkspacePage title="New enquiry" technicalName="page.crm.enquiries.frappe-create">
@@ -70,7 +70,13 @@ export function EnquiryWorkspace(props: Parameters<typeof LocalEnquiryWorkspace>
           </p>
         </WorkspacePage>
       );
-    return <FrappeLiveEnquiries scope={props.scope ?? "all"} />;
+    return (
+      <FrappeLiveEnquiries
+        scope={props.scope ?? "all"}
+        reportFilters={props.reportFilters}
+        onBackToReports={props.onBackToReports}
+      />
+    );
   }
   return <LocalEnquiryWorkspace {...props} />;
 }

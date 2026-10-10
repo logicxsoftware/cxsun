@@ -40,8 +40,7 @@ import {
 } from "@cxsun/logicx-erp-api";
 import {
   frappeConnectionModule,
-  listLiveFrappeEnquiries,
-  FrappeConnectionRepository,
+  FrappeCrmEnquirySource,
   frappeEnquirySyncModule,
   frappeEnquiryImportJobName,
   processFrappeEnquiryImportJob,
@@ -496,46 +495,38 @@ export async function createApp() {
     } catch (error) {
       if (!(error instanceof AppError) || error.code !== "FORBIDDEN") throw error;
     }
+    const frappeEnabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "frappe")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
     return {
       actorEmail: context.actorEmail,
       actorUserId: actor?.id ?? null,
       canViewAll,
       database: context.database as unknown as import("kysely").Kysely<EnquiryDatabase>,
       relations: enquiryRelations(context),
-      source: async () => {
-        const enabled = await context.database.selectFrom("app_module_settings")
-          .select("id").where("module_key", "=", "frappe")
-          .where("enabled", "=", true).where("status", "=", "active")
-          .executeTakeFirst();
-        if (!enabled) return "local" as const;
-        return new FrappeConnectionRepository(
-          context.database as unknown as import("kysely").Kysely<FrappeDatabase>
-        ).provider("crm.enquiries");
-      },
-      listLive: async (query: import("@cxsun/frappe-api").LiveEnquiryQuery) => {
-        const frappeEnabled = await context.database.selectFrom("app_module_settings")
-          .select("id").where("module_key", "=", "frappe")
-          .where("enabled", "=", true).where("status", "=", "active")
-          .executeTakeFirst();
-        if (!frappeEnabled) throw AppError.forbidden("Frappe is not enabled for this tenant.");
-        const connection = await (context.database as unknown as import("kysely").Kysely<FrappeDatabase>)
-          .selectFrom("frappe_connection_settings")
-          .select("base_url").where("id", "=", 1).executeTakeFirst();
-        const employeeCode = query.scope === "all" && canViewAll ? null : await mappedEmployeeCodeForLocalUser(
-          context.database as unknown as import("kysely").Kysely<FrappeUserMappingDatabase>,
-          context.actorEmail,
-          connection?.base_url ?? ""
-        );
-        return listLiveFrappeEnquiries(
-          context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
-          { baseUrl: env.CXSUN_FRAPPE_BASE_URL, apiKey: env.CXSUN_FRAPPE_APP_KEY,
-            apiSecret: env.CXSUN_FRAPPE_APP_SECRET, enabled: env.CXSUN_FRAPPE_ENABLED === "1" },
-          env.JWT_SECRET,
-          query,
-          employeeCode,
-          canViewAll
-        );
-      }
+      remote: new FrappeCrmEnquirySource(
+        context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
+        {
+          baseUrl: env.CXSUN_FRAPPE_BASE_URL,
+          apiKey: env.CXSUN_FRAPPE_APP_KEY,
+          apiSecret: env.CXSUN_FRAPPE_APP_SECRET,
+          enabled: env.CXSUN_FRAPPE_ENABLED === "1"
+        },
+        env.JWT_SECRET,
+        Boolean(frappeEnabled),
+        context.actorEmail,
+        canViewAll,
+        (email, baseUrl) =>
+          mappedEmployeeCodeForLocalUser(
+            context.database as unknown as import("kysely").Kysely<FrappeUserMappingDatabase>,
+            email,
+            baseUrl
+          )
+      )
     };
   });
   registerContact360Modules(app, async (request, resource) => {
@@ -564,7 +555,8 @@ export async function createApp() {
         throw AppError.forbidden("CRM and Frappe must be enabled for this tenant.");
       const path = request.url.split("?")[0] ?? "";
       const permission =
-        (path.startsWith("/frappe/connection") || path.startsWith("/frappe/data-sources")) && request.method !== "GET"
+        (path.startsWith("/frappe/connection") || path.startsWith("/frappe/data-sources")) &&
+        request.method !== "GET"
           ? "frappe.connection.manage"
           : request.method === "POST" && path.endsWith("/sync")
             ? "crm.enquiry.update"
