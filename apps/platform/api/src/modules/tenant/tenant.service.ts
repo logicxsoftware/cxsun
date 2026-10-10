@@ -24,7 +24,7 @@ import {
   type ApplicationCompanyBranding
 } from "@cxsun/core-api";
 import { AppError, isAppError } from "@cxsun/framework/errors";
-import { isSingleTenantMode } from "../../tenancy-mode.js";
+import { configuredSingleTenant, isSingleTenantMode } from "../../tenancy-mode.js";
 
 export class TenantService {
   constructor(
@@ -374,14 +374,18 @@ function tenantPersistenceError(error: unknown) {
   return AppError.internal(message || "Tenant could not be saved.");
 }
 
-/** Public commerce resolves only verified domains; localhost is an explicit development fixture. */
+/**
+ * Public commerce resolves only verified domains; localhost is an explicit development fixture.
+ * A single-tenant install has exactly one tenant, so its storefront is served on any host.
+ */
 export async function resolvePublicStorefrontTenant(value: string): Promise<Tenant> {
   const host = normalizeTenantDomain(value);
   const repository = new TenantRepository();
-  const tenant =
-    env.NODE_ENV === "development" &&
-    env.ENABLE_DEFAULT_TENANT_SEED === "1" &&
-    (host === "localhost" || host === "127.0.0.1")
+  const tenant = isSingleTenantMode()
+    ? await configuredSingleTenant(repository).catch(() => null)
+    : env.NODE_ENV === "development" &&
+        env.ENABLE_DEFAULT_TENANT_SEED === "1" &&
+        (host === "localhost" || host === "127.0.0.1")
       ? await repository.findByCorporateId(env.DEFAULT_TENANT_CORPORATE_ID)
       : await repository.findByDomain(host);
   if (!tenant || tenant.status !== "active" || !tenant.enabledModuleKeys.includes("ecommerce"))
