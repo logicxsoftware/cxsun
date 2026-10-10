@@ -131,6 +131,9 @@ const FrappeEnquirySyncWorkspace = lazyWorkspace(() =>
 const FrappeConnectionWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/connection").then((module) => module.FrappeConnectionWorkspace)
 );
+const FrappeDataSourceWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/data-source").then((module) => module.FrappeDataSourceWorkspace)
+);
 const FrappeUserSyncWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/user-sync").then((module) => module.FrappeUserSyncWorkspace)
 );
@@ -445,6 +448,7 @@ type AppPage =
   | "frappe.overview"
   | "frappe.enquiry-sync"
   | "frappe.connection"
+  | "frappe.data-sources"
   | "frappe.users"
   | "frappe.user-mapping"
   | "auditor.overview"
@@ -1045,6 +1049,7 @@ export function AppDesk() {
             ) : null}
             {safePage === "frappe.enquiry-sync" ? <FrappeEnquirySyncWorkspace /> : null}
             {safePage === "frappe.connection" ? <FrappeConnectionWorkspace /> : null}
+            {safePage === "frappe.data-sources" ? <FrappeDataSourceWorkspace /> : null}
             {safePage === "frappe.users" ? <FrappeUserSyncWorkspace /> : null}
             {safePage === "frappe.user-mapping" ? <FrappeUserMappingWorkspace /> : null}
             {safePage === "auditor.clients" ? (
@@ -1335,6 +1340,7 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "frappe.overview" ||
     key === "frappe.enquiry-sync" ||
     key === "frappe.connection" ||
+    key === "frappe.data-sources" ||
     key === "frappe.users" ||
     key === "frappe.user-mapping" ||
     key === "auditor.overview" ||
@@ -1939,6 +1945,7 @@ function titleForPage(page: AppPage) {
     "frappe.overview": "Frappe",
     "frappe.enquiry-sync": "Enquiry sync",
     "frappe.connection": "Frappe connection",
+    "frappe.data-sources": "App data sources",
     "frappe.users": "Frappe users",
     "frappe.user-mapping": "User mapping",
     "auditor.overview": "Overview",

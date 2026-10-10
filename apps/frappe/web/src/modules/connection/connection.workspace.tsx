@@ -39,7 +39,7 @@ export function FrappeConnectionWorkspace() {
   return (
     <WorkspacePage
       title="Frappe connection"
-      description="Configure the Frappe destination for manual CRM enquiry sync."
+      description="Configure Frappe for live CRM enquiries and manual sync."
       technicalName="page.frappe.connection"
     >
       <Card className="flex flex-wrap items-center justify-between gap-4 p-4">
@@ -91,7 +91,7 @@ export function FrappeConnectionWorkspace() {
             description={
               enabled !== data?.enabled
                 ? "Save connection to apply this change."
-                : "Allows manual sync to Frappe."
+                : "Allows live reads and manual sync with Frappe."
             }
             checked={enabled}
             disabled={!data || save.isPending || verify.isPending}

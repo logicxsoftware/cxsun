@@ -1,6 +1,8 @@
 export { frappeConnectionModule } from "./connection.module.js";
 export { FrappeConnectionRepository } from "./connection.repository.js";
 export { requestFrappe } from "./connection.service.js";
+export { listLiveFrappeEnquiries } from "./connection.live-enquiries.js";
+export type { LiveEnquiryQuery } from "./connection.live-enquiries.js";
 export { seedFrappeConnectionPermissions } from "./connection.seed.js";
 export {
   frappeTenantMigrations,

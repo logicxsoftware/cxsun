@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -11,12 +11,15 @@ import { buildShowingLabel } from "@cxsun/ui/workspace/utils";
 import {
   localEnquiriesKey,
   remoteEnquiriesKey,
+  enquiryImportKey,
   useConnectionState,
+  useEnquiryImport,
   useLocalEnquiries,
   useRemoteEnquiries
 } from "./enquiry-sync.hooks";
 import { LocalEnquiryList, RemoteEnquiryList } from "./enquiry-sync.list";
-import { postEnquiry, pullEnquiry } from "./enquiry-sync.services";
+import { EnquiryImportPanel } from "./enquiry-sync.import";
+import { postEnquiry, pullEnquiry, startImport } from "./enquiry-sync.services";
 
 type Direction = "pull" | "post";
 type BatchInput = { direction: "pull"; ids: string[] } | { direction: "post"; ids: number[] };
@@ -31,6 +34,7 @@ export function FrappeEnquirySyncWorkspace() {
   const [direction, setDirection] = useState<Direction>("pull");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [remotePage, setRemotePage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [selectedRemote, setSelectedRemote] = useState<Set<string>>(new Set());
   const [selectedLocal, setSelectedLocal] = useState<Set<number>>(new Set());
@@ -38,12 +42,14 @@ export function FrappeEnquirySyncWorkspace() {
   const [lastResult, setLastResult] = useState<BatchResult | null>(null);
   const deferredSearch = useDeferredValue(search);
   const connection = useConnectionState();
-  const remote = useRemoteEnquiries(direction === "pull");
+  const remote = useRemoteEnquiries(direction === "pull", remotePage);
+  const importJob = useEnquiryImport(true);
+  const importBusy = importJob.data?.status === "pending" || importJob.data?.status === "running";
   const local = useLocalEnquiries(direction === "post", page, pageSize, deferredSearch);
   const connected = Boolean(connection.data?.configured && connection.data.enabled);
   const remoteRecords = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return (remote.data ?? []).filter(
+    return (remote.data?.items ?? []).filter(
       (record) =>
         !term ||
         [record.name, record.title, record.mobile ?? "", record.status ?? ""].some((value) =>
@@ -51,6 +57,24 @@ export function FrappeEnquirySyncWorkspace() {
         )
     );
   }, [remote.data, search]);
+
+  const importMutation = useMutation({
+    mutationFn: startImport,
+    onSuccess: async () => {
+      setSelectedRemote(new Set());
+      setLastResult(null);
+      await client.invalidateQueries({ queryKey: enquiryImportKey });
+      toast.info("Frappe enquiry import queued");
+    },
+    onError: (error) => toast.error("Could not queue import", { description: error.message })
+  });
+
+  useEffect(() => {
+    if (importJob.data?.status === "completed" || importJob.data?.status === "failed") {
+      void client.invalidateQueries({ queryKey: remoteEnquiriesKey });
+      void client.invalidateQueries({ queryKey: localEnquiriesKey });
+    }
+  }, [client, importJob.data?.jobId, importJob.data?.status]);
 
   const batch = useMutation({
     mutationFn: async (input: BatchInput): Promise<BatchResult> => {
@@ -91,13 +115,14 @@ export function FrappeEnquirySyncWorkspace() {
     setDirection(value);
     setSearch("");
     setPage(1);
+    setRemotePage(1);
     setSelectedRemote(new Set());
     setSelectedLocal(new Set());
     setLastResult(null);
   }
 
   function runSelection() {
-    if (!connected || batch.isPending) return;
+    if (!connected || batch.isPending || importBusy) return;
     if (direction === "pull" && selectedRemote.size)
       batch.mutate({ direction, ids: [...selectedRemote] });
     if (direction === "post" && selectedLocal.size)
@@ -142,7 +167,7 @@ export function FrappeEnquirySyncWorkspace() {
           <Button
             type="button"
             variant={direction === "pull" ? "default" : "outline"}
-            disabled={batch.isPending}
+            disabled={batch.isPending || importBusy}
             onClick={() => selectDirection("pull")}
           >
             From Frappe
@@ -150,7 +175,7 @@ export function FrappeEnquirySyncWorkspace() {
           <Button
             type="button"
             variant={direction === "post" ? "default" : "outline"}
-            disabled={batch.isPending}
+            disabled={batch.isPending || importBusy}
             onClick={() => selectDirection("post")}
           >
             To Frappe
@@ -160,7 +185,7 @@ export function FrappeEnquirySyncWorkspace() {
           <Button
             type="button"
             variant="outline"
-            disabled={!selectedCount || batch.isPending}
+            disabled={!selectedCount || batch.isPending || importBusy}
             onClick={() =>
               direction === "pull" ? setSelectedRemote(new Set()) : setSelectedLocal(new Set())
             }
@@ -169,7 +194,7 @@ export function FrappeEnquirySyncWorkspace() {
           </Button>
           <Button
             type="button"
-            disabled={!connected || !selectedCount || batch.isPending}
+            disabled={!connected || !selectedCount || batch.isPending || importBusy}
             onClick={runSelection}
           >
             {batch.isPending
@@ -185,22 +210,34 @@ export function FrappeEnquirySyncWorkspace() {
             : "Post creates or updates Frappe records from the selected local CRM enquiries."}
         </p>
       </Card>
-      {connection.error || remote.error || local.error ? (
+      {direction === "pull" ? (
+        <EnquiryImportPanel
+          connected={connected}
+          busy={batch.isPending}
+          job={importJob.data}
+          starting={importMutation.isPending}
+          onStart={() => importMutation.mutate()}
+        />
+      ) : null}
+      {connection.error || remote.error || local.error || importJob.error ? (
         <p role="alert" className="text-sm text-destructive">
-          {connection.error?.message ?? remote.error?.message ?? local.error?.message}
+          {connection.error?.message ??
+            remote.error?.message ??
+            local.error?.message ??
+            importJob.error?.message}
         </p>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-3">
         {direction === "pull" ? (
           <>
-            <CountCard label="Frappe enquiries" value={remote.data?.length} />
+            <CountCard label="Frappe enquiries on page" value={remote.data?.items.length} />
             <CountCard
-              label="Linked locally"
-              value={remote.data?.filter((record) => record.localEnquiryId).length}
+              label="Linked on page"
+              value={remote.data?.items.filter((record) => record.localEnquiryId).length}
             />
             <CountCard
-              label="Not imported"
-              value={remote.data?.filter((record) => !record.localEnquiryId).length}
+              label="Not imported on page"
+              value={remote.data?.items.filter((record) => !record.localEnquiryId).length}
             />
           </>
         ) : (
@@ -225,39 +262,67 @@ export function FrappeEnquirySyncWorkspace() {
       ) : null}
       <div className="max-w-xl">
         <Input
-          aria-label={direction === "pull" ? "Search Frappe enquiries" : "Search local enquiries"}
-          placeholder={direction === "pull" ? "Search Frappe enquiries" : "Search local enquiries"}
+          aria-label={direction === "pull" ? "Search this Frappe page" : "Search local enquiries"}
+          placeholder={direction === "pull" ? "Search this Frappe page" : "Search local enquiries"}
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
             setPage(1);
+            setRemotePage(1);
             setSelectedRemote(new Set());
             setSelectedLocal(new Set());
           }}
         />
       </div>
       {direction === "pull" ? (
-        <RemoteEnquiryList
-          records={remoteRecords}
-          loading={remote.isLoading}
-          selected={selectedRemote}
-          busy={batch.isPending}
-          enabled={connected}
-          onSelect={(name, checked) =>
-            setSelectedRemote((current) => {
-              const next = new Set(current);
-              if (checked) next.add(name);
-              else next.delete(name);
-              return next;
-            })
-          }
-          onSelectAll={(checked) =>
-            setSelectedRemote(
-              checked ? new Set(remoteRecords.map((record) => record.name)) : new Set()
-            )
-          }
-          onPull={(name) => batch.mutate({ direction: "pull", ids: [name] })}
-        />
+        <>
+          <RemoteEnquiryList
+            records={remoteRecords}
+            loading={remote.isLoading}
+            selected={selectedRemote}
+            busy={batch.isPending || importBusy}
+            enabled={connected}
+            onSelect={(name, checked) =>
+              setSelectedRemote((current) => {
+                const next = new Set(current);
+                if (checked) next.add(name);
+                else next.delete(name);
+                return next;
+              })
+            }
+            onSelectAll={(checked) =>
+              setSelectedRemote(
+                checked ? new Set(remoteRecords.map((record) => record.name)) : new Set()
+              )
+            }
+            onPull={(name) => batch.mutate({ direction: "pull", ids: [name] })}
+          />
+          <div className="flex items-center justify-end gap-3">
+            <span className="text-sm text-muted-foreground">Page {remotePage}</span>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={remotePage === 1 || remote.isFetching}
+              onClick={() => {
+                setRemotePage((value) => value - 1);
+                setSelectedRemote(new Set());
+              }}
+            >
+              Previous
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!remote.data?.hasMore || remote.isFetching}
+              onClick={() => {
+                setRemotePage((value) => value + 1);
+                setSelectedRemote(new Set());
+              }}
+            >
+              Next
+            </Button>
+          </div>
+        </>
       ) : (
         <>
           <LocalEnquiryList

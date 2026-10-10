@@ -714,6 +714,12 @@ export function appMenuItemsFor(
   if (appId === "frappe") {
     return [
       {
+        icon: Settings2Icon,
+        isActive: activePage === "frappe.data-sources",
+        onSelect: () => onSelect("frappe.data-sources"),
+        title: "App data sources"
+      },
+      {
         icon: RefreshCwIcon,
         isActive: activePage === "frappe.overview",
         onSelect: () => onSelect("frappe.overview"),

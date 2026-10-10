@@ -158,6 +158,15 @@ export class QueueManagerRepository {
     return this.find(id);
   }
 
+  async updateResult(id: number, result: Record<string, unknown>) {
+    await getPlatformDatabase()
+      .updateTable("queue_jobs")
+      .set({ result_json: JSON.stringify(result), updated_at: new Date() })
+      .where("id", "=", id)
+      .where("status", "=", "running")
+      .execute();
+  }
+
   async markFailed(id: number, errorMessage: string, result: Record<string, unknown> = {}) {
     await getPlatformDatabase()
       .updateTable("queue_jobs")

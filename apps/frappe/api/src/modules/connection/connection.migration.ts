@@ -9,10 +9,24 @@ export const frappeTenantMigrations = [
   {
     name: "frappe.connection-settings.v1",
     description: "Store tenant Frappe connection settings with encrypted credentials."
+  },
+  {
+    name: "frappe.data-sources.v1",
+    description: "Select a tenant data provider for supported app modules."
   }
 ];
 
 export async function migrateFrappeTenantDatabase(database: Kysely<FrappeDatabase>) {
+  await sql
+    .raw(
+      `CREATE TABLE IF NOT EXISTS frappe_data_sources (
+    module_key VARCHAR(191) NOT NULL PRIMARY KEY,
+    provider ENUM('local','frappe') NOT NULL DEFAULT 'local',
+    updated_by VARCHAR(191) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    )
+    .execute(database);
   await sql
     .raw(
       `CREATE TABLE IF NOT EXISTS frappe_connection_settings (
@@ -44,6 +58,7 @@ export async function migrateFrappeTenantDatabase(database: Kysely<FrappeDatabas
 }
 
 export async function rollbackFrappeTenantDatabase(database: Kysely<FrappeDatabase>) {
+  await sql.raw("DROP TABLE IF EXISTS frappe_data_sources").execute(database);
   await sql.raw("DROP TABLE IF EXISTS frappe_enquiry_sync").execute(database);
   await sql.raw("DROP TABLE IF EXISTS frappe_connection_settings").execute(database);
 }

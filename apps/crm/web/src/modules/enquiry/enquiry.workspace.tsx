@@ -1,5 +1,5 @@
 import { useMemo, useState, useDeferredValue, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceFilters } from "@cxsun/ui/workspace/filters";
@@ -22,6 +22,8 @@ import {
   useEnquiryUsers
 } from "./enquiry.hooks";
 import { EnquiryList } from "./enquiry.list";
+import { FrappeLiveEnquiries } from "./enquiry.live";
+import { crmRequest } from "../../crm-request";
 import { EnquiryAttention } from "./enquiry.attention";
 import { EnquiryShow } from "./enquiry.show";
 import { createEnquiry, openNewEnquiryCall, updateEnquiry } from "./enquiry.services";
@@ -39,7 +41,41 @@ const columnOptions = [
   { id: "status", label: "Status" }
 ];
 
-export function EnquiryWorkspace({
+export function EnquiryWorkspace(props: Parameters<typeof LocalEnquiryWorkspace>[0]) {
+  const source = useQuery({
+    queryKey: ["crm", "enquiries", "source"],
+    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source")
+  });
+  if (source.isLoading)
+    return (
+      <WorkspacePage title="Enquiries" technicalName="page.crm.enquiries.loading">
+        <p className="text-sm text-muted-foreground">Loading enquiry source…</p>
+      </WorkspacePage>
+    );
+  if (source.error)
+    return (
+      <WorkspacePage title="Enquiries" technicalName="page.crm.enquiries.source-error">
+        <p role="alert" className="text-sm text-destructive">
+          {source.error.message}
+        </p>
+      </WorkspacePage>
+    );
+  if (source.data?.provider === "frappe" && !props.reportFilters) {
+    if (props.initialCreate)
+      return (
+        <WorkspacePage title="New enquiry" technicalName="page.crm.enquiries.frappe-create">
+          <p className="text-sm text-muted-foreground">
+            Frappe Live creation is not available in CRM yet. Select Local in App data sources to
+            create a local enquiry.
+          </p>
+        </WorkspacePage>
+      );
+    return <FrappeLiveEnquiries scope={props.scope ?? "all"} />;
+  }
+  return <LocalEnquiryWorkspace {...props} />;
+}
+
+function LocalEnquiryWorkspace({
   scope = "all",
   reportFilters,
   onBackToReports,

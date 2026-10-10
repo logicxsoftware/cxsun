@@ -22,6 +22,8 @@ import { MainLayoutPage } from "./gallery/main-layout-page";
 import { MainLayoutLivePreview } from "./gallery/main-layout-live-preview";
 import { LayoutPartPage, type LayoutPart } from "./gallery/layout-part-page";
 import { galleryPageFromUrl, galleryPageUrl } from "./gallery/gallery-routes";
+import { ImportedBlockPage } from "./gallery/imported-block-page";
+import { importedFromPage, importedPage, importedPages, type ImportedPage } from "./gallery/imported-pages";
 import {
   componentFromPage,
   componentPage,
@@ -46,7 +48,7 @@ const InterfaceTopologyGallery = lazy(() =>
 
 type BaseGalleryPage =
   "main-layouts" | LayoutPart | "foundations" | "workspace" | "interface-topology";
-type GalleryPage = BaseGalleryPage | ComponentPageRoute;
+type GalleryPage = BaseGalleryPage | ComponentPageRoute | ImportedPage;
 
 const pageTitles: Record<BaseGalleryPage, string> = {
   "main-layouts": "Main Layout",
@@ -64,11 +66,12 @@ function pageFromUrl(): GalleryPage {
   const requested = galleryPageFromUrl();
   if (requested === "components") return componentPage(componentPages[0].id);
   if (requested && componentFromPage(requested)) return requested as ComponentPageRoute;
+  if (requested && importedFromPage(requested)) return requested as ImportedPage;
   return requested && requested in pageTitles ? (requested as BaseGalleryPage) : "main-layouts";
 }
 
 function pageTitle(page: GalleryPage) {
-  return componentFromPage(page)?.name ?? pageTitles[page as BaseGalleryPage];
+  return componentFromPage(page)?.name ?? importedFromPage(page)?.name ?? pageTitles[page as BaseGalleryPage];
 }
 
 export function UiuxGallery({
@@ -113,6 +116,16 @@ export function UiuxGallery({
           icon: PanelsTopLeftIcon,
           isActive: page === "main-layouts",
           onSelect: () => selectPage("main-layouts")
+        },
+        {
+          title: "Web layouts",
+          icon: PanelsTopLeftIcon,
+          items: importedPages.filter((entry) => entry.kind === "layouts").map((entry) => ({
+            title: entry.name,
+            icon: PanelsTopLeftIcon,
+            isActive: page === importedPage(entry.id),
+            onSelect: () => selectPage(importedPage(entry.id))
+          }))
         }
       ]
     },
@@ -124,7 +137,7 @@ export function UiuxGallery({
         page === "top-menu" ||
         page === "side-menu" ||
         page === "app-header" ||
-        page === "status-bar",
+        page === "status-bar" || Boolean(importedFromPage(page) && page.startsWith("blocks/")),
       items: [
         {
           title: "App Layout",
@@ -157,7 +170,17 @@ export function UiuxGallery({
               onSelect: () => selectPage("status-bar")
             }
           ]
-        }
+        },
+          ...["Workspace", "Agent", "Content", "Commerce"].map((group) => ({
+          title: group,
+          icon: BlocksIcon,
+          items: importedPages.filter((entry) => entry.kind === "blocks" && entry.group === group).map((entry) => ({
+            title: entry.name,
+            icon: BoxIcon,
+            isActive: page === importedPage(entry.id),
+            onSelect: () => selectPage(importedPage(entry.id))
+          }))
+        }))
       ]
     },
     {
@@ -270,6 +293,7 @@ export function UiuxGallery({
                   {...(componentCatalogHref ? { componentCatalogHref } : {})}
                 />
               ) : null}
+              {importedFromPage(page) ? <ImportedBlockPage page={page as ImportedPage} /> : null}
               {page === "interface-topology" ? <InterfaceTopologyGallery /> : null}
             </Suspense>
           )}

@@ -1,4 +1,9 @@
-import type { FrappeConnectionState, LocalEnquiryPage, RemoteEnquiry } from "./enquiry-sync.types";
+import type {
+  EnquiryImportJob,
+  FrappeConnectionState,
+  LocalEnquiryPage,
+  RemoteEnquiryPage
+} from "./enquiry-sync.types";
 
 type Envelope<T> = { data: T; success: true } | { error: { message: string }; success: false };
 
@@ -26,7 +31,10 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 }
 
 export const getConnectionState = () => request<FrappeConnectionState>("/frappe/connection");
-export const getRemoteEnquiries = () => request<RemoteEnquiry[]>("/frappe/enquiries/remote");
+export const getRemoteEnquiries = (page: number) =>
+  request<RemoteEnquiryPage>(`/frappe/enquiries/remote?page=${page}`);
+export const getLatestImport = () => request<EnquiryImportJob | null>("/frappe/enquiries/import");
+export const startImport = () => request<EnquiryImportJob>("/frappe/enquiries/import", {});
 export const getLocalEnquiries = (page: number, pageSize: number, search: string) =>
   request<LocalEnquiryPage>(
     `/frappe/overview?${new URLSearchParams({ page: String(page), pageSize: String(pageSize), search })}`

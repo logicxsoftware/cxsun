@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.80
+Current version: 1.0.81
 
-Release tag: v-1.0.80
+Release tag: v-1.0.81
 
-Changelog label: v 1.0.80
+Changelog label: v 1.0.81
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,27 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.81
+
+### [v 1.0.81] 2026-10-10 12:35 pm - Frappe enquiry sources, CRM workflows, and shared UI
+
+#### Database Changes
+
+- Database update: Yes (manual).
+- Added tenant `frappe_data_sources` to store the selected provider for CRM enquiries. New rows default to the local provider.
+- Existing tenant databases need the Frappe data source migration before the provider setting can be used. No database migration was run as part of this version update.
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.81.
+- Added source-aware CRM enquiry routes and a paged live Frappe enquiry list for all, assigned, and created views.
+- Added a tenant setting to select local or verified Frappe data for CRM enquiry lists. CRM reports still read local records and show that scope in the UI.
+- Added paged Frappe enquiry preview and a queued import of unlinked enquiries with job progress, skip counts, and failure details.
+- Expanded the shared UI library with workspace, agent, content, and commerce blocks, new components and themes, and matching UIUX gallery pages. Updated UI dependencies and the root lockfile.
+- Updated Mermaid to 12.1.0 and pinned patched KaTeX and lodash-es transitive dependencies. Updated the demo build and API images to npm 12.2.0; the dependency audit now reports zero findings.
+- Updated the Windows app manifests and deployment sample to the new lockstep version. No release tag or deployment was created.
+- Passed version alignment, dependency layout, add-on, workspace TypeScript, lint, CRM and Frappe module boundaries, and 13 focused Frappe tests. The full repository check stops at the existing Zetro admin module boundary, which lacks five required frontend role files.
 
 ## v-1.0.80
 

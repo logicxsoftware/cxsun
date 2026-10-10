@@ -38,3 +38,9 @@ export const verifyFrappeConnection = (input: FrappeConnectionInput) =>
     "/frappe/connection/verify",
     input
   );
+
+export type FrappeDataSource = { moduleKey: "crm.enquiries"; provider: "local" | "frappe" };
+export const getFrappeDataSource = () =>
+  request<FrappeDataSource>("GET", "/frappe/data-sources/crm.enquiries");
+export const saveFrappeDataSource = (provider: "local" | "frappe") =>
+  request<FrappeDataSource>("PUT", "/frappe/data-sources/crm.enquiries", { provider });

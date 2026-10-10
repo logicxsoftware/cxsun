@@ -13,6 +13,7 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:shadow-md active:bg-primary/95",
+        success: "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 hover:shadow-md active:bg-destructive/95",
         danger:
@@ -26,9 +27,13 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-9 px-4 py-2",
+        xs: "h-6 rounded-md px-2 text-xs",
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-10 rounded-md px-8",
-        icon: "h-9 w-9"
+        icon: "h-9 w-9",
+        "icon-xs": "h-6 w-6 rounded-md p-0 [&_svg]:size-3",
+        "icon-sm": "h-7 w-7 rounded-md p-0 [&_svg]:size-3.5",
+        "icon-lg": "h-11 w-11 p-0"
       }
     },
     defaultVariants: {
@@ -42,25 +47,26 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   icon?: ReactNode;
+  render?: React.ReactElement | undefined;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ children, className, icon, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+  ({ children, className, icon, variant, size, asChild = false, render, ...props }, ref) => {
+    const Comp = asChild || render ? Slot : "button";
     const defaultVariant = useDesignSystemComponentDefault(
       "button",
       "default"
     ) as ButtonProps["variant"];
     const resolvedVariant = variant ?? defaultVariant;
 
-    if (asChild) {
+    if (asChild || render) {
       return (
         <Comp
           className={cn(buttonVariants({ variant: resolvedVariant, size, className }))}
           ref={ref}
           {...props}
         >
-          {children}
+          {render ? React.cloneElement(render, undefined, children) : children}
         </Comp>
       );
     }

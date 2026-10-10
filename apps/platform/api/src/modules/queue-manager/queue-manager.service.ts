@@ -7,10 +7,12 @@ import type {
   ClientArtifactQueueResult,
   QueueBackend,
   QueueJobFilters,
-  QueueJobPayload
+  QueueJobPayload,
+  QueueJobRecord
 } from "./queue-manager.types.js";
 import { processMailJob } from "@cxsun/mail-api";
 import { getTenantDatabaseByName } from "../../database/tenant-database.js";
+import { queueJobProcessor } from "./queue-manager.worker.js";
 
 export class QueueManagerService {
   constructor(
@@ -75,7 +77,7 @@ export class QueueManagerService {
 
     await this.repository.markRunning(id);
     try {
-      const result = await this.dispatch(job.jobName, job.payload);
+      const result = await this.dispatch(job);
       const completed = await this.repository.markCompleted(id, result);
       await this.activity.recordActivity({
         action: "queue.job.completed",
@@ -88,7 +90,8 @@ export class QueueManagerService {
       return completed;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Queue job failed.";
-      const failed = await this.repository.markFailed(id, message);
+      const progress = await this.repository.find(id);
+      const failed = await this.repository.markFailed(id, message, progress?.result ?? {});
       await this.activity.recordActivity({
         action: "queue.job.failed",
         details: { error: message, jobName: job.jobName, queueName: job.queueName },
@@ -171,7 +174,10 @@ export class QueueManagerService {
     return this.repository.backend();
   }
 
-  private async dispatch(jobName: string, payload: Record<string, unknown>) {
+  private async dispatch(job: QueueJobRecord) {
+    const { jobName, payload } = job;
+    const processor = queueJobProcessor(jobName);
+    if (processor) return processor(job, (result) => this.repository.updateResult(job.id, result));
     if (jobName === "queue.probe") {
       return { echo: payload, processedAt: new Date().toISOString() };
     }

@@ -222,6 +222,7 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import { toast as sonnerToast } from "sonner";
 import { useState, type ComponentType, type ReactNode } from "react";
+import { importedComponentItems, importedStatusBadgeVariants } from "./imported-component-catalog";
 
 export type CatalogCategory =
   "Control" | "Form" | "Feedback" | "Navigation" | "Overlay" | "Data" | "Layout";
@@ -553,7 +554,8 @@ export const catalogItems: CatalogItem[] = [
     variant("blue", "Blue", <StatusBadge tone="blue">Info</StatusBadge>),
     variant("amber", "Amber", <StatusBadge tone="amber">Pending</StatusBadge>),
     variant("red", "Red", <StatusBadge tone="red">Blocked</StatusBadge>),
-    variant("neutral", "Neutral", <StatusBadge>Archived</StatusBadge>)
+    variant("neutral", "Neutral", <StatusBadge>Archived</StatusBadge>),
+    ...importedStatusBadgeVariants
   ]),
   item("switch", "Switch", "Form", "Binary on/off control.", [
     variant("on", "On", <SwitchPreview checked />),
@@ -614,7 +616,8 @@ export const catalogItems: CatalogItem[] = [
   ]),
   item("use-toast", "Use Toast", "Feedback", "Notification action and dismissal hook.", [
     variant("notification", "Notification", <ToastHookPreview />)
-  ])
+  ]),
+  ...importedComponentItems
 ];
 
 export const categoryOrder: CatalogCategory[] = [

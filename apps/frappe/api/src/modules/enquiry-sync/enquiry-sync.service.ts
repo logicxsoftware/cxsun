@@ -5,10 +5,9 @@ import {
   type FrappeSettings
 } from "../connection/index.js";
 import type { EnquiryInput } from "@cxsun/crm-api/enquiry-sync";
-import type { EnquirySyncContext, RemoteEnquiry } from "./enquiry-sync.types.js";
+import type { EnquirySyncContext, ImportProgress, RemoteEnquiry } from "./enquiry-sync.types.js";
 
 const pageSize = 50;
-const maxRecords = 1000;
 const previewFields = ["name", "title", "mobile", "date", "priority", "status", "modified"];
 const detailFields = [
   ...previewFields,
@@ -30,31 +29,15 @@ export class FrappeEnquirySyncService {
     this.repository = new FrappeConnectionRepository(context.database);
   }
 
-  async preview() {
+  async preview(page: number) {
     const settings = await this.settings();
-    const enquiries: RemoteEnquiry[] = [];
-    for (let start = 0; start <= maxRecords; start += pageSize) {
-      const query = new URLSearchParams({
-        fields: JSON.stringify(previewFields),
-        limit_start: String(start),
-        limit_page_length: String(pageSize),
-        order_by: "modified desc"
-      });
-      const response = await requestFrappe<{ data?: RemoteEnquiry[] }>(
-        `/api/resource/Enquiry?${query}`,
-        "GET",
-        settings
-      );
-      if (!Array.isArray(response.data))
-        throw AppError.validation("Frappe returned an invalid enquiry list.");
-      if (start === maxRecords && response.data.length)
-        throw AppError.conflict("Frappe has more than 1,000 enquiries to preview.");
-      enquiries.push(...response.data);
-      if (response.data.length < pageSize) break;
-    }
-    const valid = enquiries.filter((item) => typeof item.name === "string" && item.name.trim());
+    const enquiries = await this.listRemote(settings, (page - 1) * pageSize, pageSize + 1);
+    const hasMore = enquiries.length > pageSize;
+    const valid = enquiries
+      .slice(0, pageSize)
+      .filter((item) => typeof item.name === "string" && item.name.trim());
     const links = await this.repository.linksByRemoteNames(valid.map((item) => item.name));
-    return valid.map((item) => ({
+    const items = valid.map((item) => ({
       name: item.name,
       title: item.title?.trim() || item.name,
       mobile: item.mobile?.trim() || null,
@@ -64,10 +47,91 @@ export class FrappeEnquirySyncService {
       modifiedAt: item.modified || null,
       localEnquiryId: links.get(item.name) ?? null
     }));
+    return { hasMore, items, page, pageSize };
+  }
+
+  async connectionOrigin() {
+    const settings = await this.settings();
+    if (!settings.enabled || !settings.baseUrl || !settings.apiKey || !settings.apiSecret)
+      throw AppError.conflict("Configure and enable the Frappe connection before importing.");
+    return settings.baseUrl;
+  }
+
+  async importUnlinked(
+    report: (progress: ImportProgress) => Promise<void>,
+    expectedBaseUrl?: string
+  ) {
+    const settings = await this.settings();
+    if (expectedBaseUrl && settings.baseUrl !== expectedBaseUrl)
+      throw AppError.conflict("The Frappe connection changed before this import started.");
+    const progress: ImportProgress = {
+      scanned: 0,
+      created: 0,
+      skipped: 0,
+      failed: 0,
+      failures: []
+    };
+    for (let start = 0; ; start += pageSize) {
+      if ((await this.settings()).baseUrl !== settings.baseUrl)
+        throw AppError.conflict("The Frappe connection changed during this import.");
+      const page = await this.listRemote(settings, start, pageSize, "name asc");
+      if (!page.length) break;
+      const names = page
+        .map((item) => item.name)
+        .filter((name): name is string => Boolean(name?.trim()));
+      const links = await this.repository.linksByRemoteNames(names);
+      for (const name of names) {
+        progress.scanned += 1;
+        if (links.has(name)) {
+          progress.skipped += 1;
+          continue;
+        }
+        try {
+          await this.pullWithSettings(name, settings);
+          progress.created += 1;
+        } catch (error) {
+          progress.failed += 1;
+          if (progress.failures.length < 100)
+            progress.failures.push({
+              name,
+              message: error instanceof Error ? error.message : "Import failed."
+            });
+        }
+      }
+      await report(progress);
+      if (page.length < pageSize) break;
+    }
+    return progress;
+  }
+
+  private async listRemote(
+    settings: FrappeSettings,
+    start: number,
+    size: number,
+    orderBy = "modified desc"
+  ) {
+    const query = new URLSearchParams({
+      fields: JSON.stringify(previewFields),
+      limit_start: String(start),
+      limit_page_length: String(size),
+      order_by: orderBy
+    });
+    const response = await requestFrappe<{ data?: RemoteEnquiry[] }>(
+      `/api/resource/Enquiry?${query}`,
+      "GET",
+      settings
+    );
+    if (!Array.isArray(response.data))
+      throw AppError.validation("Frappe returned an invalid enquiry list.");
+    return response.data;
   }
 
   async pull(remoteName: string) {
     const settings = await this.settings();
+    return this.pullWithSettings(remoteName, settings);
+  }
+
+  private async pullWithSettings(remoteName: string, settings: FrappeSettings) {
     const response = await requestFrappe<{ data?: RemoteEnquiry }>(
       `/api/resource/Enquiry/${encodeURIComponent(remoteName)}?fields=${encodeURIComponent(JSON.stringify(detailFields))}`,
       "GET",

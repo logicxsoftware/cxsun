@@ -83,18 +83,127 @@ test("previews remote enquiries and their local link", async () => {
     defaults,
     "secret"
   );
-  assert.deepEqual(await service.preview(), [
+  assert.deepEqual(await service.preview(1), {
+    hasMore: false,
+    page: 1,
+    pageSize: 50,
+    items: [
+      {
+        name: "ENQ27",
+        title: "Machine issue",
+        mobile: null,
+        date: "2026-10-06",
+        status: null,
+        priority: null,
+        modifiedAt: null,
+        localEnquiryId: null
+      }
+    ]
+  });
+});
+
+test("previews a page beyond the former 1,000 enquiry limit", async () => {
+  const scope = database();
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.searchParams.get("limit_start"), "1000");
+    assert.equal(url.searchParams.get("limit_page_length"), "51");
+    return new Response(JSON.stringify({ data: [{ name: "ENQ1001" }] }), { status: 200 });
+  };
+  const service = new FrappeEnquirySyncService(
     {
-      name: "ENQ27",
-      title: "Machine issue",
-      mobile: null,
-      date: "2026-10-06",
-      status: null,
-      priority: null,
-      modifiedAt: null,
-      localEnquiryId: null
+      database: scope.value,
+      createEnquiry: async () => {
+        throw new Error("Unexpected create");
+      },
+      updateEnquiry: async () => {
+        throw new Error("Unexpected update");
+      },
+      localUserForEmployee: async () => null
+    },
+    defaults,
+    "secret"
+  );
+  const result = await service.preview(21);
+  assert.equal(result.items[0]?.name, "ENQ1001");
+  assert.equal(result.hasMore, false);
+});
+
+test("imports unlinked enquiries across multiple remote batches", async () => {
+  const scope = database();
+  const names = Array.from({ length: 51 }, (_, index) => `ENQ${index + 1}`);
+  const created: string[] = [];
+  const reports: number[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/Enquiry")) {
+      const start = Number(url.searchParams.get("limit_start"));
+      return new Response(
+        JSON.stringify({ data: names.slice(start, start + 50).map((name) => ({ name })) }),
+        { status: 200 }
+      );
     }
-  ]);
+    const name = decodeURIComponent(url.pathname.split("/").at(-1) ?? "");
+    return new Response(
+      JSON.stringify({
+        data: {
+          name,
+          mobile: "9994885548",
+          date: "2026-10-06",
+          status: "New",
+          priority: "Normal"
+        }
+      }),
+      { status: 200 }
+    );
+  };
+  const service = new FrappeEnquirySyncService(
+    {
+      database: scope.value,
+      createEnquiry: async (input) => {
+        created.push(input.sourceReference ?? "");
+        return { id: created.length } as EnquiryRecord;
+      },
+      updateEnquiry: async () => {
+        throw new Error("Unexpected update");
+      },
+      localUserForEmployee: async () => null
+    },
+    defaults,
+    "secret"
+  );
+  const result = await service.importUnlinked(async (progress) => {
+    reports.push(progress.scanned);
+  });
+  assert.equal(result.created, 51);
+  assert.equal(result.failed, 0);
+  assert.deepEqual(reports, [50, 51]);
+  assert.deepEqual(created, names);
+});
+
+test("queued import stops when the Frappe connection has changed", async () => {
+  const scope = database();
+  globalThis.fetch = async () => {
+    throw new Error("Unexpected Frappe request");
+  };
+  const service = new FrappeEnquirySyncService(
+    {
+      database: scope.value,
+      createEnquiry: async () => {
+        throw new Error("Unexpected create");
+      },
+      updateEnquiry: async () => {
+        throw new Error("Unexpected update");
+      },
+      localUserForEmployee: async () => null
+    },
+    defaults,
+    "secret"
+  );
+  await assert.rejects(
+    () => service.importUnlinked(async () => {}, "https://old.example.com/"),
+    /connection changed/i
+  );
 });
 
 test("pull creates a local enquiry and records the remote identity", async () => {

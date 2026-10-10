@@ -7,12 +7,14 @@ const Tabs = TabsPrimitive.Root;
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & { variant?: "default" | "line" }
+>(({ className, variant = "default", ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
+    data-variant={variant}
     className={cn(
       "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+      variant === "line" && "h-auto rounded-none border-b bg-transparent p-0 [&_[data-state=active]]:border-b-2 [&_[data-state=active]]:border-foreground [&_[data-state=active]]:bg-transparent [&_[data-state=active]]:shadow-none",
       className
     )}
     {...props}

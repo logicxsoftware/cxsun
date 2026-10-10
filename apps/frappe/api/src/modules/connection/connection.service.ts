@@ -8,7 +8,7 @@ import type { Kysely } from "kysely";
 import type { FrappeConnectionInput, FrappeDatabase, FrappeSettings } from "./connection.types.js";
 import { FrappeConnectionRepository } from "./connection.repository.js";
 
-const maxResponseBytes = 64 * 1024;
+const maxResponseBytes = 1024 * 1024;
 
 export class FrappeConnectionService {
   constructor(
@@ -61,11 +61,51 @@ export class FrappeConnectionService {
   async saveConnection(input: FrappeConnectionInput) {
     const repository = new FrappeConnectionRepository(this.database);
     const current = await repository.connection();
+    if ((await repository.provider("crm.enquiries")) === "frappe") {
+      if (
+        current &&
+        input.enabled &&
+        current.base_url === input.baseUrl &&
+        current.connection_name === input.connectionName &&
+        !input.apiKey &&
+        !input.apiSecret
+      )
+        return this.configured();
+      throw AppError.conflict(
+        "Switch CRM Enquiries to Local before changing or disabling the live Frappe connection."
+      );
+    }
     if (current?.base_url !== input.baseUrl && (!input.apiKey || !input.apiSecret)) {
       throw AppError.validation("Enter both API credentials when changing the Frappe URL.");
     }
     await repository.saveConnection(input, this.encryptionSecret);
     return this.configured();
+  }
+
+  async provider() {
+    return {
+      moduleKey: "crm.enquiries" as const,
+      provider: await new FrappeConnectionRepository(this.database).provider("crm.enquiries")
+    };
+  }
+
+  async saveProvider(provider: "local" | "frappe", actorEmail: string) {
+    const repository = new FrappeConnectionRepository(this.database);
+    if (provider === "frappe") {
+      const connection = await repository.connection();
+      if (!connection || !connection.enabled || connection.verification_status !== "verified") {
+        throw AppError.conflict(
+          "Save, enable and verify the Frappe connection before selecting Frappe Live."
+        );
+      }
+      if (!connection.api_key_ciphertext || !connection.api_secret_ciphertext) {
+        throw AppError.conflict("Frappe API credentials are required for live enquiries.");
+      }
+    }
+    return {
+      moduleKey: "crm.enquiries" as const,
+      provider: await repository.saveProvider("crm.enquiries", provider, actorEmail)
+    };
   }
 
   async verify(input?: {

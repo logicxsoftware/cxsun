@@ -40,7 +40,11 @@ import {
 } from "@cxsun/logicx-erp-api";
 import {
   frappeConnectionModule,
+  listLiveFrappeEnquiries,
+  FrappeConnectionRepository,
   frappeEnquirySyncModule,
+  frappeEnquiryImportJobName,
+  processFrappeEnquiryImportJob,
   frappeUserMappingModule,
   mappedEmployeeCodeForLocalUser,
   mappedLocalUserForEmployeeCode,
@@ -85,6 +89,7 @@ import { credentialRecoveryModule } from "./modules/credential-recovery/index.js
 import { appOrchestrationModule } from "./modules/app-orchestration/index.js";
 import { startQueueManagerWorker } from "./modules/queue-manager/queue-manager.runtime.js";
 import { QueueManagerService } from "./modules/queue-manager/queue-manager.service.js";
+import { registerQueueJobProcessor } from "./modules/queue-manager/queue-manager.worker.js";
 import { platformReadinessChecks } from "./readiness.js";
 import { tenantAccessContext } from "./auth/tenant-access-context.js";
 import { recordTenantAccessAudit } from "./database/tenant-access-audit.js";
@@ -447,7 +452,9 @@ export async function createApp() {
       database: context.database as unknown as import("kysely").Kysely<PriorityDatabase>
     };
   });
-  const enquiryRelations = (context: ReturnType<typeof tenantAccessContext>) => ({
+  const enquiryRelations = (
+    context: Pick<ReturnType<typeof tenantAccessContext>, "database" | "tenantDatabase">
+  ) => ({
     contact: (id: number) => getActiveContactForDatabase(context.tenantDatabase, id),
     resolveOrCreateCustomer: (input: { name: string | null; mobile: string | null }) =>
       resolveOrCreateCustomerForDatabase(context.tenantDatabase, input),
@@ -494,7 +501,41 @@ export async function createApp() {
       actorUserId: actor?.id ?? null,
       canViewAll,
       database: context.database as unknown as import("kysely").Kysely<EnquiryDatabase>,
-      relations: enquiryRelations(context)
+      relations: enquiryRelations(context),
+      source: async () => {
+        const enabled = await context.database.selectFrom("app_module_settings")
+          .select("id").where("module_key", "=", "frappe")
+          .where("enabled", "=", true).where("status", "=", "active")
+          .executeTakeFirst();
+        if (!enabled) return "local" as const;
+        return new FrappeConnectionRepository(
+          context.database as unknown as import("kysely").Kysely<FrappeDatabase>
+        ).provider("crm.enquiries");
+      },
+      listLive: async (query: import("@cxsun/frappe-api").LiveEnquiryQuery) => {
+        const frappeEnabled = await context.database.selectFrom("app_module_settings")
+          .select("id").where("module_key", "=", "frappe")
+          .where("enabled", "=", true).where("status", "=", "active")
+          .executeTakeFirst();
+        if (!frappeEnabled) throw AppError.forbidden("Frappe is not enabled for this tenant.");
+        const connection = await (context.database as unknown as import("kysely").Kysely<FrappeDatabase>)
+          .selectFrom("frappe_connection_settings")
+          .select("base_url").where("id", "=", 1).executeTakeFirst();
+        const employeeCode = query.scope === "all" && canViewAll ? null : await mappedEmployeeCodeForLocalUser(
+          context.database as unknown as import("kysely").Kysely<FrappeUserMappingDatabase>,
+          context.actorEmail,
+          connection?.base_url ?? ""
+        );
+        return listLiveFrappeEnquiries(
+          context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
+          { baseUrl: env.CXSUN_FRAPPE_BASE_URL, apiKey: env.CXSUN_FRAPPE_APP_KEY,
+            apiSecret: env.CXSUN_FRAPPE_APP_SECRET, enabled: env.CXSUN_FRAPPE_ENABLED === "1" },
+          env.JWT_SECRET,
+          query,
+          employeeCode,
+          canViewAll
+        );
+      }
     };
   });
   registerContact360Modules(app, async (request, resource) => {
@@ -523,7 +564,7 @@ export async function createApp() {
         throw AppError.forbidden("CRM and Frappe must be enabled for this tenant.");
       const path = request.url.split("?")[0] ?? "";
       const permission =
-        path.startsWith("/frappe/connection") && request.method !== "GET"
+        (path.startsWith("/frappe/connection") || path.startsWith("/frappe/data-sources")) && request.method !== "GET"
           ? "frappe.connection.manage"
           : request.method === "POST" && path.endsWith("/sync")
             ? "crm.enquiry.update"
@@ -544,6 +585,7 @@ export async function createApp() {
       }
       return {
         database: context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
+        actorEmail: context.actorEmail,
         viewer: { actorEmail: context.actorEmail, actorUserId: actor?.id ?? null, canViewAll },
         mappedEmployeeCode: (localEmail: string, baseUrl: string) =>
           mappedEmployeeCodeForLocalUser(
@@ -576,6 +618,93 @@ export async function createApp() {
     },
     env.JWT_SECRET
   );
+  const frappeSettings = {
+    baseUrl: env.CXSUN_FRAPPE_BASE_URL,
+    apiKey: env.CXSUN_FRAPPE_APP_KEY,
+    apiSecret: env.CXSUN_FRAPPE_APP_SECRET,
+    enabled: env.CXSUN_FRAPPE_ENABLED === "1"
+  };
+  const enquirySyncContext = (
+    context: Pick<
+      ReturnType<typeof tenantAccessContext>,
+      "database" | "tenantDatabase" | "actorEmail"
+    >
+  ) => {
+    const database = context.database as unknown as import("kysely").Kysely<EnquiryDatabase>;
+    const enquiries = new EnquiryService(
+      new EnquiryRepository(database),
+      enquiryRelations(context),
+      { actorEmail: context.actorEmail, actorUserId: null, canViewAll: true }
+    );
+    return {
+      database: context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
+      createEnquiry: (input: import("@cxsun/crm-api/enquiry-sync").EnquiryInput) =>
+        enquiries.create(input, context.actorEmail),
+      updateEnquiry: (id: number, input: import("@cxsun/crm-api/enquiry-sync").EnquiryInput) =>
+        enquiries.update(id, input, context.actorEmail),
+      localUserForEmployee: (employeeCode: string, baseUrl: string) =>
+        mappedLocalUserForEmployeeCode(
+          context.database as unknown as import("kysely").Kysely<FrappeUserMappingDatabase>,
+          employeeCode,
+          baseUrl
+        )
+    };
+  };
+  const importJobStatus = (job: NonNullable<Awaited<ReturnType<typeof queueService.findJob>>>) => ({
+    jobId: job.id,
+    status: job.status,
+    progress:
+      typeof job.result.scanned === "number"
+        ? (job.result as import("@cxsun/frappe-api").ImportProgress)
+        : null,
+    errorMessage: job.errorMessage
+  });
+  registerQueueJobProcessor(frappeEnquiryImportJobName, async (job, report) => {
+    const tenant = await new TenantRepository().findByIdOrCode(job.tenantId ?? "");
+    if (!tenant || tenant.dbName !== job.payload.tenantDatabase || !job.actorEmail)
+      throw new Error("The Frappe import tenant is no longer valid.");
+    if (typeof job.payload.baseUrl !== "string")
+      throw new Error("The Frappe import connection is missing.");
+    const database = getTenantDatabase(tenant);
+    const enabled = await database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "in", ["crm", "frappe"])
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .execute();
+    if (enabled.length !== 2) throw new Error("CRM and Frappe are no longer enabled.");
+    for (const key of [
+      "frappe.connection.manage",
+      "crm.enquiry.view-all",
+      "crm.enquiry.create",
+      "crm.enquiry.update"
+    ]) {
+      const allowed = await database
+        .selectFrom("app_users as user")
+        .innerJoin("app_user_roles as userRole", "userRole.user_id", "user.id")
+        .innerJoin("app_roles as role", "role.id", "userRole.role_id")
+        .innerJoin("app_role_permissions as rolePermission", "rolePermission.role_id", "role.id")
+        .innerJoin("app_permissions as permission", "permission.id", "rolePermission.permission_id")
+        .select("permission.id")
+        .where("user.email", "=", job.actorEmail)
+        .where("user.status", "=", "active")
+        .where("userRole.status", "=", "active")
+        .where("role.status", "=", "active")
+        .where("rolePermission.status", "=", "active")
+        .where("permission.status", "=", "active")
+        .where("permission.key", "=", key)
+        .executeTakeFirst();
+      if (!allowed) throw new Error(`Permission ${key} is no longer available.`);
+    }
+    return processFrappeEnquiryImportJob(
+      enquirySyncContext({ database, tenantDatabase: tenant.dbName, actorEmail: job.actorEmail }),
+      frappeSettings,
+      env.JWT_SECRET,
+      job.payload.baseUrl,
+      report
+    );
+  });
   frappeEnquirySyncModule.register(
     app,
     async (request) => {
@@ -595,33 +724,58 @@ export async function createApp() {
         await context.authorize("crm.enquiry.create");
         await context.authorize("crm.enquiry.update");
       }
-      const database = context.database as unknown as import("kysely").Kysely<EnquiryDatabase>;
-      const enquiries = new EnquiryService(
-        new EnquiryRepository(database),
-        enquiryRelations(context),
-        { actorEmail: context.actorEmail, actorUserId: null, canViewAll: true }
-      );
-      return {
-        database: context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
-        createEnquiry: (input: import("@cxsun/crm-api/enquiry-sync").EnquiryInput) =>
-          enquiries.create(input, context.actorEmail),
-        updateEnquiry: (id: number, input: import("@cxsun/crm-api/enquiry-sync").EnquiryInput) =>
-          enquiries.update(id, input, context.actorEmail),
-        localUserForEmployee: (employeeCode: string, baseUrl: string) =>
-          mappedLocalUserForEmployeeCode(
-            context.database as unknown as import("kysely").Kysely<FrappeUserMappingDatabase>,
-            employeeCode,
-            baseUrl
-          )
-      };
+      return enquirySyncContext(context);
     },
+    frappeSettings,
+    env.JWT_SECRET,
     {
-      baseUrl: env.CXSUN_FRAPPE_BASE_URL,
-      apiKey: env.CXSUN_FRAPPE_APP_KEY,
-      apiSecret: env.CXSUN_FRAPPE_APP_SECRET,
-      enabled: env.CXSUN_FRAPPE_ENABLED === "1"
-    },
-    env.JWT_SECRET
+      start: async (request, baseUrl) => {
+        const context = tenantAccessContext(request);
+        const active = (
+          await queueService.listJobs({ tenantId: context.tenantId, queueName: "reports" })
+        ).find(
+          (job) =>
+            job.jobName === frappeEnquiryImportJobName &&
+            ["pending", "running"].includes(job.status)
+        );
+        if (active) return importJobStatus(active);
+        const job = await queueService.enqueue({
+          actorEmail: context.actorEmail,
+          correlationId: request.id,
+          jobName: frappeEnquiryImportJobName,
+          maxAttempts: 2,
+          payload: { tenantDatabase: context.tenantDatabase, baseUrl },
+          queueName: "reports",
+          sourceModule: "frappe.enquiry-sync",
+          tenantId: context.tenantId
+        });
+        if (!job) throw AppError.conflict("The Frappe import job could not be queued.");
+        return importJobStatus(job);
+      },
+      latest: async (request) => {
+        const context = tenantAccessContext(request);
+        const job = (
+          await queueService.listJobs({ tenantId: context.tenantId, queueName: "reports" })
+        ).find(
+          (item) =>
+            item.jobName === frappeEnquiryImportJobName &&
+            item.payload.tenantDatabase === context.tenantDatabase
+        );
+        return job ? importJobStatus(job) : null;
+      },
+      status: async (request, jobId) => {
+        const context = tenantAccessContext(request);
+        const job = await queueService.findJob(jobId);
+        if (
+          !job ||
+          job.jobName !== frappeEnquiryImportJobName ||
+          job.tenantId !== context.tenantId ||
+          job.payload.tenantDatabase !== context.tenantDatabase
+        )
+          throw AppError.notFound("Frappe import job was not found.");
+        return importJobStatus(job);
+      }
+    }
   );
   frappeUserSyncModule.register(
     app,

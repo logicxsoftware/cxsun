@@ -1,10 +1,26 @@
 import type { QueueJobRecord } from "./queue-manager.types.js";
 
+type QueueJobProcessor = (
+  job: QueueJobRecord,
+  report: (result: Record<string, unknown>) => Promise<void>
+) => Promise<Record<string, unknown>>;
+
+const processors = new Map<string, QueueJobProcessor>();
+
+export function registerQueueJobProcessor(jobName: string, processor: QueueJobProcessor) {
+  processors.set(jobName, processor);
+}
+
+export function queueJobProcessor(jobName: string) {
+  return processors.get(jobName);
+}
+
 export const queueManagerWorker = {
   backends: ["database", "bullmq-redis"],
   jobs: [
     "client-artifact.prepare",
     "database-maintenance.run",
+    "frappe.enquiries.import",
     "mail.send",
     "mail.sync",
     "mail.system-send",

@@ -50,11 +50,16 @@ const connectionResponseSchema = z.object({
   lastCheckedAt: z.string().nullable(),
   lastVerifiedAt: z.string().nullable()
 });
+const providerSchema = z.object({
+  moduleKey: z.literal("crm.enquiries"),
+  provider: z.enum(["local", "frappe"])
+});
 
 export function registerFrappeRoutes(
   app: FastifyInstance,
   context: (request: FastifyRequest) => Promise<{
     database: Kysely<FrappeDatabase>;
+    actorEmail: string;
     loadEnquiry: (id: number) => Promise<EnquiryRecord>;
     mappedEmployeeCode: (localEmail: string, baseUrl: string) => Promise<string | null>;
     viewer: Pick<EnquiryListOptions, "actorEmail" | "actorUserId" | "canViewAll">;
@@ -105,6 +110,21 @@ export function registerFrappeRoutes(
     url: "/frappe/connection",
     schemas: { response: connectionResponseSchema },
     handler: async ({ request }) => (await service(request)).configured()
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/frappe/data-sources/crm.enquiries",
+    schemas: { response: providerSchema },
+    handler: async ({ request }) => (await service(request)).provider()
+  });
+  registerContractRoute(app, {
+    method: "PUT",
+    url: "/frappe/data-sources/crm.enquiries",
+    schemas: { body: providerSchema.pick({ provider: true }), response: providerSchema },
+    handler: async ({ body, request }) => {
+      const scope = await context(request);
+      return (await service(request)).saveProvider(body.provider, scope.actorEmail);
+    }
   });
   registerContractRoute(app, {
     method: "PUT",

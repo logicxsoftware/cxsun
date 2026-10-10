@@ -31,6 +31,9 @@ export function startQueueManagerWorker(app: FastifyInstance, service = new Queu
           startBullMqWorker("mail", (queueJobId) =>
             service.runJob(queueJobId, { fromWorker: true })
           );
+          startBullMqWorker("reports", (queueJobId) =>
+            service.runJob(queueJobId, { fromWorker: true })
+          );
           startBullMqWorker("system", (queueJobId) =>
             service.runJob(queueJobId, { fromWorker: true })
           );

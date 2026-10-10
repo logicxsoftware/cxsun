@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/frappe-api",
-  "version": "1.0.80",
+  "version": "1.0.81",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,8 +12,8 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/crm-api": "^1.0.80",
-    "@cxsun/framework": "^1.0.80",
+    "@cxsun/crm-api": "^1.0.81",
+    "@cxsun/framework": "^1.0.81",
     "fastify": "^5.12.5",
     "kysely": "^0.29.6",
     "zod": "^4.6.5"

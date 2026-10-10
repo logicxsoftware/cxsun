@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { crmRequest } from "../../crm-request";
 import { Button } from "@cxsun/ui/components/button";
 import { Input } from "@cxsun/ui/components/input";
 import { WorkspaceSelect } from "@cxsun/ui/workspace/select";
@@ -23,11 +25,21 @@ export function CrmReportsWorkspace({
   const [draft, setDraft] = useState<EnquiryReportFilters>({});
   const [filters, setFilters] = useState<EnquiryReportFilters>({});
   const report = useEnquiryReport(filters);
+  const source = useQuery({
+    queryKey: ["crm", "enquiries", "source"],
+    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source")
+  });
   const users = useEnquiryUsers();
   const invalidDates = Boolean(draft.fromDate && draft.toDate && draft.fromDate > draft.toDate);
   return (
     <WorkspacePage title="" className="pt-0 lg:pt-0" technicalName="page.crm.reports">
       <div className="space-y-4">
+        {source.data?.provider === "frappe" ? (
+          <p className="rounded-md border bg-muted/30 p-3 text-sm">
+            These reports use local CRM enquiries. The Frappe Live switch applies to the enquiry
+            lists; report counts and drilldowns remain local.
+          </p>
+        ) : null}
         <div className="flex flex-wrap gap-2" aria-label="Enquiry report views">
           {views.map((item) => (
             <Button

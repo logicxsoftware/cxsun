@@ -17,6 +17,14 @@ export type RemoteEnquiry = {
   user_employee?: string | null;
 };
 
+export type ImportProgress = {
+  scanned: number;
+  created: number;
+  skipped: number;
+  failed: number;
+  failures: { name: string; message: string }[];
+};
+
 export type EnquirySyncContext = {
   database: Kysely<FrappeDatabase>;
   createEnquiry: (input: EnquiryInput) => Promise<EnquiryRecord>;

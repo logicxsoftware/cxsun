@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { FrappeSettings } from "../connection/index.js";
-import { registerFrappeEnquirySyncRoutes } from "./enquiry-sync.routes.js";
+import { registerFrappeEnquirySyncRoutes, type EnquiryImportQueue } from "./enquiry-sync.routes.js";
 import type { EnquirySyncContext } from "./enquiry-sync.types.js";
 
 export const frappeEnquirySyncModule = {
@@ -9,8 +9,9 @@ export const frappeEnquirySyncModule = {
     app: FastifyInstance,
     context: (request: FastifyRequest) => Promise<EnquirySyncContext>,
     defaults: FrappeSettings,
-    encryptionSecret: string
+    encryptionSecret: string,
+    queue: EnquiryImportQueue
   ) {
-    registerFrappeEnquirySyncRoutes(app, context, defaults, encryptionSecret);
+    registerFrappeEnquirySyncRoutes(app, context, defaults, encryptionSecret, queue);
   }
 };

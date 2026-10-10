@@ -8,11 +8,13 @@ const Card = React.forwardRef<
     action?: React.ReactNode;
     description?: React.ReactNode;
     title?: React.ReactNode;
+    size?: "default" | "sm";
   }
->(({ action, children, className, description, title, ...props }, ref) => (
+>(({ action, children, className, description, size = "default", title, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+    data-size={size}
+    className={cn("rounded-xl border bg-card text-card-foreground shadow", size === "sm" && "[&_[data-slot=card-header]]:p-3 [&_[data-slot=card-content]]:px-3 [&_[data-slot=card-footer]]:px-3", className)}
     {...props}
   >
     {title || description ? (
@@ -70,4 +72,11 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+const CardAction = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} data-slot="card-action" className={cn("ml-auto shrink-0", className)} {...props} />
+  )
+);
+CardAction.displayName = "CardAction";
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, CardAction };

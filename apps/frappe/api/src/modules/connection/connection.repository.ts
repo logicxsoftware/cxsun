@@ -16,6 +16,25 @@ export class FrappeConnectionRepository {
       .executeTakeFirst();
   }
 
+  async provider(moduleKey: string): Promise<"local" | "frappe"> {
+    const row = await this.database
+      .selectFrom("frappe_data_sources")
+      .select("provider")
+      .where("module_key", "=", moduleKey)
+      .executeTakeFirst();
+    return row?.provider ?? "local";
+  }
+
+  async saveProvider(moduleKey: string, provider: "local" | "frappe", actorEmail: string) {
+    const values = { provider, updated_by: actorEmail };
+    await this.database
+      .insertInto("frappe_data_sources")
+      .values({ module_key: moduleKey, ...values })
+      .onDuplicateKeyUpdate(values)
+      .execute();
+    return this.provider(moduleKey);
+  }
+
   async saveConnection(input: FrappeConnectionInput, encryptionSecret: string) {
     const current = await this.connection();
     const values = {

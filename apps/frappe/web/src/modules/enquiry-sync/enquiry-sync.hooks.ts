@@ -1,14 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { getConnectionState, getLocalEnquiries, getRemoteEnquiries } from "./enquiry-sync.services";
+import {
+  getConnectionState,
+  getLatestImport,
+  getLocalEnquiries,
+  getRemoteEnquiries
+} from "./enquiry-sync.services";
 
 export const remoteEnquiriesKey = ["frappe", "enquiry-sync", "remote"] as const;
+export const enquiryImportKey = ["frappe", "enquiry-sync", "import"] as const;
 export const localEnquiriesKey = ["frappe", "overview"] as const;
 
-export function useRemoteEnquiries(active: boolean) {
+export function useRemoteEnquiries(active: boolean, page: number) {
   return useQuery({
-    queryKey: remoteEnquiriesKey,
-    queryFn: getRemoteEnquiries,
+    queryKey: [...remoteEnquiriesKey, page],
+    queryFn: () => getRemoteEnquiries(page),
     enabled: active
+  });
+}
+
+export function useEnquiryImport(active: boolean) {
+  return useQuery({
+    queryKey: enquiryImportKey,
+    queryFn: getLatestImport,
+    enabled: active,
+    refetchInterval: (query) =>
+      query.state.data?.status === "pending" || query.state.data?.status === "running"
+        ? 2000
+        : false
   });
 }
 

@@ -9,6 +9,26 @@ export type RemoteEnquiry = {
   localEnquiryId: number | null;
 };
 
+export type RemoteEnquiryPage = {
+  hasMore: boolean;
+  items: RemoteEnquiry[];
+  page: number;
+  pageSize: number;
+};
+
+export type EnquiryImportJob = {
+  jobId: number;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  progress: {
+    scanned: number;
+    created: number;
+    skipped: number;
+    failed: number;
+    failures: { name: string; message: string }[];
+  } | null;
+  errorMessage: string | null;
+};
+
 export type LocalEnquiry = {
   id: number;
   enquiryNo: number;

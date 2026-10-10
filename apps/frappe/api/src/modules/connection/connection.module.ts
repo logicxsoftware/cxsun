@@ -11,6 +11,7 @@ export const frappeConnectionModule = {
     app: FastifyInstance,
     context: (request: FastifyRequest) => Promise<{
       database: Kysely<FrappeDatabase>;
+      actorEmail: string;
       loadEnquiry: (id: number) => Promise<EnquiryRecord>;
       mappedEmployeeCode: (localEmail: string, baseUrl: string) => Promise<string | null>;
       viewer: Pick<EnquiryListOptions, "actorEmail" | "actorUserId" | "canViewAll">;

@@ -2,11 +2,13 @@ ARG NODE_RUNTIME_VERSION=26.5.0
 FROM node:${NODE_RUNTIME_VERSION}-bookworm-slim AS build
 
 WORKDIR /app
+RUN npm install --global npm@12.2.0
 COPY . .
 RUN npm ci && npm run build
 
 FROM node:${NODE_RUNTIME_VERSION}-bookworm-slim AS api
 WORKDIR /app
+RUN npm install --global npm@12.2.0
 ENV NODE_ENV=production
 ENV CXSUN_ZETRO_CODEX_CLI_PATH=/opt/cxsun-codex-cli/node_modules/.bin/codex
 ENV CXSUN_ZETRO_CODEX_HOME_ROOT=/var/lib/cxsun/zetro-codex

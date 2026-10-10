@@ -1,6 +1,6 @@
 {
   "name": "cxsun",
-  "version": "1.0.80",
+  "version": "1.0.81",
   "private": true,
   "packageManager": "npm@12.2.0",
   "description": "CODEXSUN",
@@ -122,7 +122,9 @@
     "npm": ">=12.2.0"
   },
   "overrides": {
-    "deepmerge-ts": "$deepmerge-ts"
+    "deepmerge-ts": "$deepmerge-ts",
+    "katex": "0.18.8",
+    "lodash-es": "4.18.1"
   },
   "allowScripts": {
     "esbuild": true

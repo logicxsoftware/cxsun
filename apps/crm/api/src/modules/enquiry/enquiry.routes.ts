@@ -61,6 +61,39 @@ const listQuerySchema = z.object({
     .regex(/^(none|[1-9]\d*)$/)
     .optional()
 });
+const liveQuerySchema = z.object({
+  scope: z.enum(["all", "assigned", "created"]).default("all"),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  search: z.string().trim().max(191).default(""),
+  status: z.string().trim().max(80).optional(),
+  fromDate: z.iso.date().optional(),
+  toDate: z.iso.date().optional()
+});
+const liveRecordSchema = z.object({
+  name: z.string(),
+  title: z.string(),
+  details: z.string(),
+  customer: nullableText,
+  mobile: nullableText,
+  date: nullableText,
+  dueDate: nullableText,
+  group: nullableText,
+  creator: nullableText,
+  assignee: nullableText,
+  priority: nullableText,
+  status: nullableText,
+  statusDetails: nullableText,
+  createdAt: nullableText,
+  modifiedAt: nullableText
+});
+const livePageSchema = z.object({
+  source: z.literal("frappe"),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+  hasMore: z.boolean(),
+  items: z.array(liveRecordSchema)
+});
 const reportQuerySchema = listQuerySchema.pick({
   fromAt: true,
   toAt: true,
@@ -126,6 +159,8 @@ export type EnquiryRequestContext = {
   actorUserId: number | null;
   canViewAll: boolean;
   relations: EnquiryRelations;
+  listLive: (query: z.infer<typeof liveQuerySchema>) => Promise<z.infer<typeof livePageSchema>>;
+  source: () => Promise<"local" | "frappe">;
 };
 
 export function registerEnquiryRoutes(
@@ -139,6 +174,21 @@ export function registerEnquiryRoutes(
       enquiry: new EnquiryService(new EnquiryRepository(scope.database), scope.relations, scope)
     };
   };
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/source",
+    schemas: { response: z.object({ provider: z.enum(["local", "frappe"]) }) },
+    handler: async ({ request }) => ({ provider: await (await context(request)).source() })
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/live",
+    schemas: { querystring: liveQuerySchema, response: livePageSchema },
+    handler: async ({ query, request }) => {
+      const scope = await context(request);
+      return scope.listLive(query);
+    }
+  });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries",

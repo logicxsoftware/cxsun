@@ -35,7 +35,15 @@ export type FrappeSyncRow = {
   synced_at: ColumnType<string, string | undefined, string>;
 };
 
+export type FrappeDataSourceRow = {
+  module_key: string;
+  provider: "local" | "frappe";
+  updated_by: string;
+  updated_at: ColumnType<string | Date, string | undefined, string>;
+};
+
 export type FrappeDatabase = EnquiryDatabase & {
   frappe_connection_settings: FrappeConnectionRow;
+  frappe_data_sources: FrappeDataSourceRow;
   frappe_enquiry_sync: FrappeSyncRow;
 };
