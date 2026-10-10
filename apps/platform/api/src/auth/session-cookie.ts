@@ -14,8 +14,14 @@ const legacyCookieNames = [
   "__Host-cxsun_session"
 ] as const;
 
+// Production sessions are Secure __Host- cookies. AUTH_COOKIE_SECURE=0 is an explicit opt-out
+// for plain-HTTP LAN installs, where browsers would otherwise drop the cookie after login.
+function secureSessionCookies() {
+  return env.NODE_ENV === "production" && env.AUTH_COOKIE_SECURE === "1";
+}
+
 export function authCookieName(slot?: string) {
-  const base = env.NODE_ENV === "production" ? "__Host-cxsun_session" : "cxsun_session";
+  const base = secureSessionCookies() ? "__Host-cxsun_session" : "cxsun_session";
   return slot ? `${base}_${slot}` : base;
 }
 
@@ -34,7 +40,7 @@ export function writeEncryptedSessionCookie(reply: FastifyReply, token: string) 
     maxAge: env.AUTH_SESSION_TTL_HOURS * 60 * 60,
     path: "/",
     sameSite: "strict",
-    secure: env.NODE_ENV === "production"
+    secure: secureSessionCookies()
   });
   return slot;
 }
@@ -46,7 +52,7 @@ export function clearSelectedSessionCookie(reply: FastifyReply, request: Fastify
       httpOnly: true,
       path: "/",
       sameSite: "strict",
-      secure: env.NODE_ENV === "production"
+      secure: secureSessionCookies()
     });
   } else if (request.headers[sessionSlotHeader] === undefined) {
     clearAllSessionCookies(reply);
@@ -59,7 +65,7 @@ export function clearAllSessionCookies(reply: FastifyReply) {
       httpOnly: true,
       path: "/",
       sameSite: "strict",
-      secure: name.startsWith("__Host-") || env.NODE_ENV === "production"
+      secure: name.startsWith("__Host-") || secureSessionCookies()
     });
   }
 }

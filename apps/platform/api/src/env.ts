@@ -5,6 +5,7 @@ const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "staging", "production"]),
     AUTH_MODE: z.enum(["cookie", "jwt", "hybrid"]),
+    AUTH_COOKIE_SECURE: z.enum(["0", "1"]).default("1"),
     AUTH_SESSION_RENEWAL_HOURS: z.coerce.number().int().positive(),
     AUTH_SESSION_TTL_HOURS: z.coerce.number().int().positive().max(720),
     PLATFORM_API_PORT: z.coerce.number().int().positive(),
