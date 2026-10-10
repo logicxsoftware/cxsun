@@ -79,7 +79,8 @@ export type PlatformAppsTable = {
     | "crm"
     | "frappe"
     | "zetro"
-    | "logicx-erp";
+    | "logicx-erp"
+    | "ecommerce";
   updated_at: TimestampColumn;
   uuid: string;
 };

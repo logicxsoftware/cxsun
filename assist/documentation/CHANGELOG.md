@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.81
+Current version: 1.0.82
 
-Release tag: v-1.0.81
+Release tag: v-1.0.82
 
-Changelog label: v 1.0.81
+Changelog label: v 1.0.82
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,29 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.82
+
+### [v 1.0.82] 2026-10-10 1:28 pm - Ecommerce catalog and Techmedia computer storefront
+
+#### Database Changes
+
+- Database update: Yes. Added owner migrations `ecommerce.catalog.database-v1` and `ecommerce.storefront.database-v1`, ordered after Core and recorded in `migration_schema`.
+- Added `ecommerce_catalog` and retained catalog activity, with unique existing Core product references, SKU/slug, merchandising fields, publication and lifecycle status. Core product/category tables and historical migration checksums remain unchanged.
+- Added singleton storefront configuration, quote requests, quote item snapshots and storefront activity. Quotes persist contact consent, request idempotency and hashed client rate limits; foreign keys protect referenced catalog records.
+- Tenant provisioning now seeds Ecommerce overview/catalog/storefront permissions and a disabled public store. Migration and seeding were verified on the isolated development MariaDB tenant; existing production tenants must run these migrations and permission seeds before activation.
+- Imported eight actual public Techmedia products into the isolated development tenant and enabled its preview. This is a bounded development import, not live ERP synchronisation or a production data change.
+
+#### App Codebase Changes
+
+- Bumped root/workspace packages, internal dependency ranges, lockfile, Windows manifests and deployment sample to lockstep version 1.0.82.
+- Added the tenant Ecommerce app to entitlement and app registry contracts, tenant desk navigation and launcher. Its authenticated frontend runs separately on 7030 with a non-secret session-slot handoff and the existing Platform backend on 7010.
+- Added catalog management in both Platform and Ecommerce: Core lookups, search/filter/pagination, create/edit/details/activity, publication, suspend/restore and dependency-protected permanent deletion.
+- Added the responsive Techmedia computer storefront on 7040 with real published products, category/search/sort, details, seller attribution and an in-memory quote basket. Bundled eight owned public reference product images; missing prices show Price on request and availability requires seller confirmation.
+- Added verified-host public tenant resolution, safe public catalog projections, validated quote intake, protected staff publishing settings and a persisted quote inbox with audited status updates in both staff frontends.
+- Extended the public industries/vendors/offers contract and documented future industry mapping, seller onboarding/offers, paid checkout, settlements and operations. Multiple persisted vendors and paid orders are not implemented; Techmedia.in and its DNS were not changed.
+- Updated root development supervision, preflight, module-boundary checks, API source watching, production package resolution, workspace configuration, shared select disabled support and authoritative app/inventory documentation.
+- Verified repository check/build, catalog and composed-runtime E2E, storefront domain/origin isolation, protected inbox, quote persistence/idempotency and Core preservation. Desktop/mobile browser checks and customer quote submission through staff inbox/status update passed.
 
 ## v-1.0.81
 

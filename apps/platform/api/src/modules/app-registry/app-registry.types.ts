@@ -11,7 +11,8 @@ export type PlatformAppId =
   | "crm"
   | "frappe"
   | "zetro"
-  | "logicx-erp";
+  | "logicx-erp"
+  | "ecommerce";
 
 export type PlatformAppDefinition = {
   alwaysEnabled: boolean;
@@ -34,7 +35,8 @@ export type PlatformAppDefinition = {
     | "crm"
     | "frappe"
     | "zetro"
-    | "logicx-erp";
+    | "logicx-erp"
+    | "ecommerce";
   uuid: string;
 };
 

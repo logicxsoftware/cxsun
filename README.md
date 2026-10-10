@@ -36,7 +36,7 @@ npm install
 npm run dev
 ```
 
-The single root command starts the Platform API and Platform web shell together.
+The single root command starts the Platform API, Platform web shell, and separate Ecommerce frontend together.
 It supervises each process separately. An API restart does not stop the web process,
 and a web restart does not stop the API process.
 
@@ -49,7 +49,7 @@ Set `CXSUN_DEV_PORT_POLICY=abort` to refuse a port takeover, or `force` to repla
 an unrelated listener on the configured port. Normal API restarts and shutdowns
 run HTTP and application close hooks before the process exits.
 
-Use `npm run dev:api` or `npm run dev:web` when you need only one development process.
+Use `npm run dev:api`, `npm run dev:web`, `npm run dev:ecommerce`, or `npm run dev:storefront` when you need only one development process.
 The separate web command waits for a healthy API before it starts.
 Use one runner for each service; an IDE that relaunches a stopped process can race another runner.
 
@@ -64,6 +64,10 @@ tools resolve dependencies from the root `node_modules`; workspace-local
 Platform API: <http://127.0.0.1:7010>
 
 Platform web: <http://127.0.0.1:7020>
+
+Ecommerce web: <http://127.0.0.1:7030> (`CXSUN_ECOMMERCE_WEB_PORT`)
+
+Techmedia public shop: <http://127.0.0.1:7040> (`CXSUN_STOREFRONT_WEB_PORT`)
 
 ## Docker Deployment
 
@@ -142,6 +146,9 @@ full port map, registry flow, persistence contract, and verification commands.
 ```text
 apps/platform/api
 apps/platform/web
+apps/ecommerce/api
+apps/ecommerce/web
+apps/ecommerce/storefront
 apps/core/api
 apps/core/web
 apps/billing/api

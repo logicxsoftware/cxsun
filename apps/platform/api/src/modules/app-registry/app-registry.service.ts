@@ -15,10 +15,22 @@ export const defaultTenantModuleKeys = [
   "crm",
   "frappe",
   "zetro",
-  "logicx-erp"
+  "logicx-erp",
+  "ecommerce"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    appId: "ecommerce",
+    id: 0,
+    label: "Ecommerce",
+    moduleKey: "ecommerce",
+    stack: "ecommerce",
+    uuid: "",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Tenant ecommerce operations and storefront workspace."
+  },
   {
     alwaysEnabled: false,
     defaultLanding: false,

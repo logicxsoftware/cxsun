@@ -7,3 +7,5 @@ export type {
   ProductSaveInput,
   ProductStatus
 } from "./product.types.js";
+
+export { listProductCatalogLookupsForDatabase } from "./product.service.js";

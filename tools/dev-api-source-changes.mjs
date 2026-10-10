@@ -5,6 +5,7 @@ import { join, relative } from "node:path";
 export async function captureApiInputs(root) {
   const files = new Map();
   await captureDirectory(root, join(root, "apps/platform/api/src"), files);
+  await captureDirectory(root, join(root, "apps/ecommerce/api/src"), files);
   await captureFile(root, join(root, ".env"), files);
   return files;
 }
@@ -16,7 +17,13 @@ export function changedApiInputs(previous, current) {
 }
 
 async function captureDirectory(root, directory, files) {
-  const entries = await readdir(directory, { withFileTypes: true });
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
   for (const entry of entries) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await captureDirectory(root, path, files);

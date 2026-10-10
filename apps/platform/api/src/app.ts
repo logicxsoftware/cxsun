@@ -1,5 +1,5 @@
 import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxsun/framework/api";
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { registerModules } from "@cxsun/framework/modules";
 import { createMailModule } from "@cxsun/mail-api";
 import { accountsApiModuleKeys, registerAccountsApi } from "@cxsun/accounts-api";
@@ -32,6 +32,18 @@ import {
   type StatusDatabase,
   type PriorityDatabase
 } from "@cxsun/crm-api";
+import {
+  ecommerceOverviewModule,
+  ecommerceCatalogModule,
+  ecommerceStorefrontModule,
+  listPublishedCatalogForStorefront,
+  type StorefrontDatabase,
+  type CatalogDatabase
+} from "@cxsun/ecommerce-api";
+import {
+  listProductCatalogLookupsForDatabase,
+  listProductCategoryLookupsForDatabase
+} from "@cxsun/core-api";
 import { auditorClientModule, type AuditorClientDatabase } from "@cxsun/auditor-api";
 import {
   logicxErpOverviewModule,
@@ -90,6 +102,8 @@ import { startQueueManagerWorker } from "./modules/queue-manager/queue-manager.r
 import { QueueManagerService } from "./modules/queue-manager/queue-manager.service.js";
 import { registerQueueJobProcessor } from "./modules/queue-manager/queue-manager.worker.js";
 import { platformReadinessChecks } from "./readiness.js";
+import { resolvePublicStorefrontTenant } from "./modules/tenant/index.js";
+import { requestHost, enforceBrowserRequestOrigin } from "./auth/auth-request-context.js";
 import { tenantAccessContext } from "./auth/tenant-access-context.js";
 import { recordTenantAccessAudit } from "./database/tenant-access-audit.js";
 import { TenantRepository } from "./modules/tenant/tenant.repository.js";
@@ -173,6 +187,9 @@ export async function createApp() {
             ...coreApiModuleKeys,
             enquiryModule.key,
             auditorClientModule.key,
+            ecommerceOverviewModule.key,
+            ecommerceCatalogModule.key,
+            ecommerceStorefrontModule.key,
             logicxErpOverviewModule.key,
             logicxErpSchemeModule.key,
             zetroChatModule.key,
@@ -894,6 +911,87 @@ export async function createApp() {
     };
   });
   console.info("[platform.routes] Auditor package ready");
+  await ecommerceStorefrontModule.register({
+    app,
+    publicContext: async (request) => {
+      if (request.method !== "GET") enforceBrowserRequestOrigin(request);
+      const tenant = await resolvePublicStorefrontTenant(requestHost(request));
+      const database = getTenantDatabase(tenant);
+      const enabled = await database
+        .selectFrom("app_module_settings")
+        .select("id")
+        .where("module_key", "=", "ecommerce")
+        .where("enabled", "=", true)
+        .where("status", "=", "active")
+        .executeTakeFirst();
+      if (!enabled) throw AppError.notFound("Storefront is not available.");
+      return {
+        database: database as unknown as import("kysely").Kysely<StorefrontDatabase>,
+        clientKey: createHmac("sha256", env.JWT_SECRET).update(request.ip).digest("hex"),
+        catalog: () =>
+          listPublishedCatalogForStorefront({
+            database: database as unknown as import("kysely").Kysely<CatalogDatabase>,
+            products: () => listProductCatalogLookupsForDatabase(database as never),
+            categories: () => listProductCategoryLookupsForDatabase(database as never)
+          })
+      };
+    },
+    adminContext: async (request) => {
+      const context = tenantAccessContext(request);
+      const enabled = await context.database
+        .selectFrom("app_module_settings")
+        .select("id")
+        .where("module_key", "=", "ecommerce")
+        .where("enabled", "=", true)
+        .where("status", "=", "active")
+        .executeTakeFirst();
+      if (!enabled) throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
+      return {
+        database: context.database as unknown as import("kysely").Kysely<StorefrontDatabase>,
+        actorEmail: context.actorEmail,
+        authorize: context.authorize
+      };
+    }
+  });
+  await ecommerceCatalogModule.register({
+    app,
+    context: async (request) => {
+      const context = tenantAccessContext(request);
+      const enabled = await context.database
+        .selectFrom("app_module_settings")
+        .select("id")
+        .where("module_key", "=", "ecommerce")
+        .where("enabled", "=", true)
+        .where("status", "=", "active")
+        .executeTakeFirst();
+      if (!enabled) throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
+      return {
+        database: context.database as unknown as import("kysely").Kysely<CatalogDatabase>,
+        actorEmail: context.actorEmail,
+        authorize: context.authorize,
+        products: () => listProductCatalogLookupsForDatabase(context.database as never),
+        categories: () => listProductCategoryLookupsForDatabase(context.database as never)
+      };
+    }
+  });
+  await ecommerceOverviewModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "ecommerce")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
+    const tenant = await new TenantRepository().findByIdOrCode(context.tenantId);
+    if (!tenant) throw AppError.notFound("Tenant was not found.");
+    return {
+      actorEmail: context.actorEmail,
+      authorize: context.authorize,
+      tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
+  });
   await logicxErpOverviewModule.register(app, async (request) => {
     const context = tenantAccessContext(request);
     const enabled = await context.database

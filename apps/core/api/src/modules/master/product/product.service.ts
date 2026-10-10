@@ -60,3 +60,5 @@ export class ProductService {
     }
   }
 }
+
+export { listProductCatalogLookupsForDatabase } from "./product.repository.js";

@@ -1,6 +1,6 @@
 {
   "name": "cxsun",
-  "version": "1.0.81",
+  "version": "1.0.82",
   "private": true,
   "packageManager": "npm@12.2.0",
   "description": "CODEXSUN",
@@ -97,7 +97,12 @@
     "desktop:assets": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/generate-assets.ps1",
     "desktop:package": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 package",
     "desktop:install": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 install",
-    "desktop:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 uninstall"
+    "desktop:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 uninstall",
+    "dev:ecommerce": "node tools/preflight.mjs ecommerce-web",
+    "test:e2e:ecommerce": "tsx tools/e2e/ecommerce-access.e2e.ts",
+    "test:e2e:ecommerce-catalog": "tsx tools/e2e/ecommerce-catalog.e2e.ts",
+    "dev:storefront": "node tools/preflight.mjs ecommerce-storefront",
+    "test:e2e:storefront": "tsx tools/e2e/ecommerce-storefront.e2e.ts"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -46,7 +46,8 @@ export type PlatformAppId =
   | "crm"
   | "frappe"
   | "zetro"
-  | "logicx-erp";
+  | "logicx-erp"
+  | "ecommerce";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -60,7 +61,8 @@ export type PlatformAppRootPage =
   | "crm.overview"
   | "frappe.overview"
   | "zetro.chat"
-  | "logicx-erp.overview";
+  | "logicx-erp.overview"
+  | "ecommerce.overview";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -91,7 +93,8 @@ export type PlatformAppDefinition = {
     | "crm"
     | "frappe"
     | "zetro"
-    | "logicx-erp";
+    | "logicx-erp"
+    | "ecommerce";
 };
 
 export const defaultTenantModuleKeys = [
@@ -104,10 +107,22 @@ export const defaultTenantModuleKeys = [
   "crm",
   "frappe",
   "zetro",
-  "logicx-erp"
+  "logicx-erp",
+  "ecommerce"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    id: "ecommerce",
+    label: "Ecommerce",
+    moduleKey: "ecommerce",
+    stack: "ecommerce",
+    icon: PackageIcon,
+    accentClass: "bg-indigo-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Tenant ecommerce operations workspace."
+  },
   {
     accentClass: "bg-slate-950",
     alwaysEnabled: true,
@@ -263,6 +278,7 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 }
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
+  if (appId === "ecommerce") return "ecommerce.overview";
   if (appId === "logicx-erp") return "logicx-erp.overview";
   if (appId === "zetro") return "zetro.chat";
   if (appId === "frappe") return "frappe.overview";
@@ -287,6 +303,34 @@ export function appMenuFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem {
+  if (appId === "ecommerce") {
+    const item = {
+      icon: PackageIcon,
+      title: "Overview",
+      isActive: activePage === "ecommerce.overview",
+      onSelect: () => onSelect("ecommerce.overview")
+    };
+    return {
+      icon: PackageIcon,
+      title: "Ecommerce",
+      isActive: activePage.startsWith("ecommerce"),
+      items: [
+        item,
+        {
+          icon: PackageIcon,
+          title: "Catalog",
+          isActive: activePage === "ecommerce.catalog",
+          onSelect: () => onSelect("ecommerce.catalog")
+        },
+        {
+          icon: PackageIcon,
+          title: "Storefront",
+          isActive: activePage === "ecommerce.storefront",
+          onSelect: () => onSelect("ecommerce.storefront")
+        }
+      ]
+    };
+  }
   if (appId === "logicx-erp") {
     return {
       icon: BoxesIcon,
@@ -686,6 +730,29 @@ export function appMenuItemsFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem[] {
+  if (appId === "ecommerce") {
+    const item = {
+      icon: PackageIcon,
+      title: "Overview",
+      isActive: activePage === "ecommerce.overview",
+      onSelect: () => onSelect("ecommerce.overview")
+    };
+    return [
+      item,
+      {
+        icon: PackageIcon,
+        title: "Catalog",
+        isActive: activePage === "ecommerce.catalog",
+        onSelect: () => onSelect("ecommerce.catalog")
+      },
+      {
+        icon: PackageIcon,
+        title: "Storefront",
+        isActive: activePage === "ecommerce.storefront",
+        onSelect: () => onSelect("ecommerce.storefront")
+      }
+    ];
+  }
   if (appId === "logicx-erp") {
     return [
       {

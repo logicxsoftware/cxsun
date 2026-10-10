@@ -22,7 +22,8 @@ export type Tenant = {
     | "crm"
     | "frappe"
     | "zetro"
-    | "logicx-erp";
+    | "logicx-erp"
+    | "ecommerce";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;

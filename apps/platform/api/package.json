@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/platform-api",
-  "version": "1.0.81",
+  "version": "1.0.82",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,23 +10,24 @@
   },
   "dependencies": {
     "@codexsun/blog": "1.0.16",
-    "@cxsun/accounts-api": "^1.0.81",
-    "@cxsun/auditor-api": "^1.0.81",
-    "@cxsun/billing-api": "^1.0.81",
-    "@cxsun/core-api": "^1.0.81",
-    "@cxsun/crm-api": "^1.0.81",
-    "@cxsun/frappe-api": "^1.0.81",
-    "@cxsun/logicx-erp-api": "^1.0.81",
-    "@cxsun/zetro-api": "^1.0.81",
-    "@cxsun/project-manager-api": "^1.0.81",
-    "@cxsun/zuno-api": "^1.0.81",
-    "@cxsun/framework": "^1.0.81",
-    "@cxsun/mail-api": "^1.0.81",
+    "@cxsun/accounts-api": "^1.0.82",
+    "@cxsun/auditor-api": "^1.0.82",
+    "@cxsun/billing-api": "^1.0.82",
+    "@cxsun/core-api": "^1.0.82",
+    "@cxsun/crm-api": "^1.0.82",
+    "@cxsun/frappe-api": "^1.0.82",
+    "@cxsun/logicx-erp-api": "^1.0.82",
+    "@cxsun/zetro-api": "^1.0.82",
+    "@cxsun/project-manager-api": "^1.0.82",
+    "@cxsun/zuno-api": "^1.0.82",
+    "@cxsun/framework": "^1.0.82",
+    "@cxsun/mail-api": "^1.0.82",
     "bullmq": "^6.3.11",
     "fastify": "^5.12.5",
     "ioredis": "^6.0.0",
     "kysely": "^0.29.6",
     "mysql2": "^3.24.5",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "@cxsun/ecommerce-api": "^1.0.82"
   }
 }

@@ -15,7 +15,20 @@ const webPort = requiredDevPort(
   process.env.PLATFORM_WEB_PORT ?? env.PLATFORM_WEB_PORT,
   "PLATFORM_WEB_PORT"
 );
+const ecommercePort = requiredDevPort(
+  process.env.CXSUN_ECOMMERCE_WEB_PORT ?? env.CXSUN_ECOMMERCE_WEB_PORT,
+  "CXSUN_ECOMMERCE_WEB_PORT"
+);
+const storefrontPort = requiredDevPort(process.env.CXSUN_STOREFRONT_WEB_PORT ?? env.CXSUN_STOREFRONT_WEB_PORT, "CXSUN_STOREFRONT_WEB_PORT");
 const services = {
+  "ecommerce-storefront": { color: "\x1b[33m", healthUrl: `http://127.0.0.1:${storefrontPort}/`, readyUrl: `http://127.0.0.1:${storefrontPort}/`, label: "storefront", readyTimeoutMs: 30_000 },
+  "ecommerce-web": {
+    color: "\x1b[35m",
+    healthUrl: `http://127.0.0.1:${ecommercePort}/`,
+    readyUrl: `http://127.0.0.1:${ecommercePort}/`,
+    label: "ecommerce",
+    readyTimeoutMs: 30_000
+  },
   "platform-api": {
     color: "\x1b[36m",
     healthUrl: `http://127.0.0.1:${apiPort}/health`,
@@ -59,6 +72,8 @@ try {
   await startAndWait("platform-api");
   if (stopping) await shutdown(0);
   await startAndWait("platform-web");
+  await startAndWait("ecommerce-web");
+  await startAndWait("ecommerce-storefront");
   if (stopping) await shutdown(0);
   if (stopping) process.exit(0);
   console.log("  ok Platform API and Web are ready");

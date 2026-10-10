@@ -28,7 +28,9 @@ export default defineConfig(({ command, mode }) => {
     cacheDir: "../../../node_modules/.vite/platform-web",
     envDir: "../../..",
     define: {
-      __APP_VERSION__: JSON.stringify(rootPackage.version)
+      __CXSUN_STOREFRONT_WEB_PORT__: JSON.stringify(Number(runtimeEnv.CXSUN_STOREFRONT_WEB_PORT)),
+      __APP_VERSION__: JSON.stringify(rootPackage.version),
+      __CXSUN_ECOMMERCE_WEB_PORT__: JSON.stringify(Number(runtimeEnv.CXSUN_ECOMMERCE_WEB_PORT))
     },
     optimizeDeps: {
       exclude: [

@@ -16,6 +16,7 @@ export type WorkspaceSelectOption = {
 
 export function WorkspaceSelect({
   ariaLabel,
+  disabled = false,
   onValueChange,
   options,
   placeholder = "Select",
@@ -23,6 +24,7 @@ export function WorkspaceSelect({
   value
 }: {
   ariaLabel?: string;
+  disabled?: boolean;
   onValueChange: (value: string) => void;
   options: WorkspaceSelectOption[];
   placeholder?: string;
@@ -30,7 +32,7 @@ export function WorkspaceSelect({
   value: string;
 }) {
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select disabled={disabled} value={value} onValueChange={onValueChange}>
       <SelectTrigger
         aria-label={ariaLabel ?? placeholder}
         className="h-11 w-full rounded-md border-border/80 bg-white text-sm shadow-sm"

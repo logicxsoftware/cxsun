@@ -57,3 +57,5 @@ function isDuplicate(error: unknown): error is { code: string } {
     (error as { code?: unknown }).code === "ER_DUP_ENTRY"
   );
 }
+
+export { listProductCategoryLookupsForDatabase } from "./product-categories.repository.js";

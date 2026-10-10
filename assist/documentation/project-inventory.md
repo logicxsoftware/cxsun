@@ -273,3 +273,16 @@ Use these files first for active work:
 
 Some execution and handoff files preserve earlier foundation history or future direction. Validate their code paths
 against this inventory before treating them as current implementation state.
+
+## Ecommerce app
+
+- `apps/ecommerce/api` owns the `ecommerce.overview` module and its tenant permission seed. Platform composes `GET /ecommerce/overview`; authenticated tenant routing, enabled `ecommerce` module settings, and `ecommerce.overview.view` permission are required.
+- `apps/ecommerce/web` owns the overview screen and a separate MainLayout frontend. Platform also mounts the overview at `/app/ecommerce/overview`, registers Ecommerce in the tenant launcher, side menu, landing desk choices, and app registry. The tenant launcher opens its separate frontend directly.
+- `CXSUN_ECOMMERCE_WEB_PORT` selects the separate frontend (7030 in development). It proxies `/api/platform` to the existing Platform API and accepts the non-secret tab-session slot via a URL fragment; authentication remains in the existing HttpOnly cookie. The fragment is removed on startup. Deploy both frontends on the same hostname for this cookie handoff.
+- Root `npm run dev` starts all four services; `npm run dev:ecommerce` starts only the ecommerce frontend after Platform API readiness. Ecommerce builds to root `dist/apps/ecommerce/web`.
+- `ecommerce.catalog` owns the eight-role API and frontend CRUD modules. Both `/app/ecommerce/catalog` and the separate frontend `/catalog` use the Platform-composed `/ecommerce/catalog` API. Public Core product/category lookups provide live category, unit, tax, and parent status without private sibling imports.
+- Catalog includes search/filter/pagination, name-based Core product selection, create/edit/details/activity, selling prices and currency, SKU/slug uniqueness, images/SEO, publication/featured flags, suspension/reactivation, and protected permanent deletion. Paid checkout, orders, payments and authoritative inventory availability remain future workflows.
+- Existing tenants receive the overview and five catalog permissions through tenant seeding when Ecommerce is enabled. The `ecommerce.catalog.database-v1` migration runs after Core and creates only `ecommerce_catalog` and `ecommerce_catalog_activity`, with a restrictive product foreign key and retained mutation history. Existing Core table schemas and historical migration checksums remain unchanged.
+- `npm run test:e2e:ecommerce-catalog` verifies the isolated development tenant catalog flow, permissions, forged-header isolation, validation, lifecycle, audit, and Core data/schema preservation.
+
+- `apps/ecommerce/storefront` serves the anonymous Techmedia computer shop on 7040 using the Platform public storefront API. `ecommerce.storefront` owns verified-domain resolution, disabled-by-default publishing settings, consented/idempotent/rate-limited quote intake, protected quote inbox and four new Ecommerce tables. Platform and the separate staff desk both mount Storefront settings. See `apps/ecommerce/README.md` for marketplace phases and production routing.

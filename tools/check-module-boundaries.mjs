@@ -9,6 +9,10 @@ const moduleRoots = [
     path: join(process.cwd(), "apps", "auditor", "api", "src", "modules")
   },
   {
+    app: "ecommerce-api",
+    path: join(process.cwd(), "apps", "ecommerce", "api", "src", "modules")
+  },
+  {
     app: "logicx-erp-api",
     path: join(process.cwd(), "apps", "logicx-erp", "api", "src", "modules")
   },
@@ -97,6 +101,9 @@ const crmContact360Leaves = [
 ];
 const capabilityBackendRoles = new Map([
   ["auditor-api/client", ["module", "service", "repository", "routes", "migration", "types"]],
+  ["ecommerce-api/catalog", reducedBackendRoles],
+  ["ecommerce-api/storefront", reducedBackendRoles],
+  ["ecommerce-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["logicx-erp-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["logicx-erp-api/scheme", reducedBackendRoles],
   ["project-manager-api/platform-registry", reducedBackendRoles],
@@ -129,9 +136,14 @@ const capabilityBackendRoles = new Map([
 ]);
 
 const webModuleRoots = [
+  { app: "ecommerce-storefront", path: join(process.cwd(), "apps", "ecommerce", "storefront", "src", "modules") },
   {
     app: "auditor-web",
     path: join(process.cwd(), "apps", "auditor", "web", "src", "modules")
+  },
+  {
+    app: "ecommerce-web",
+    path: join(process.cwd(), "apps", "ecommerce", "web", "src", "modules")
   },
   {
     app: "logicx-erp-web",
@@ -180,6 +192,7 @@ const shellOnlyFrontendModules = new Set();
 const shellOnlyFrontendRoles = ["module", "workspace", "services", "hooks", "types"];
 const capabilityFrontendRoles = new Map([
   ["auditor-web/overview", ["workspace"]],
+  ["ecommerce-web/overview", ["workspace", "services", "hooks", "types"]],
   ["logicx-erp-web/overview", ["workspace", "services", "hooks", "types"]],
   ["zuno-web/diagnostics", ["workspace", "list", "form", "services", "hooks", "types", "schema"]],
   ["zuno-web/cases", ["workspace", "list", "form", "services", "hooks", "types", "schema"]],

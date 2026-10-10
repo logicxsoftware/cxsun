@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/crm-web",
-  "version": "1.0.81",
+  "version": "1.0.82",
   "private": true,
   "type": "module",
   "exports": {
@@ -20,8 +20,8 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/core-web": "^1.0.81",
-    "@cxsun/ui": "^1.0.81",
+    "@cxsun/core-web": "^1.0.82",
+    "@cxsun/ui": "^1.0.82",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-table": "^9.2.6",
     "lucide-react": "^1.52.0",

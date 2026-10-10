@@ -29,8 +29,18 @@ test("API watcher restarts only for changed source or environment content", asyn
     const changedEnv = await captureApiInputs(root);
     assert.deepEqual(changedApiInputs(changedSource, changedEnv), [".env"]);
 
+    const ecommerceDirectory = join(root, "apps/ecommerce/api/src/modules/overview");
+    await mkdir(ecommerceDirectory, { recursive: true });
+    await writeFile(
+      join(ecommerceDirectory, "overview.service.ts"),
+      "export const ecommerce = true;\n"
+    );
+    const ecommerceInputs = await captureApiInputs(root);
+    assert.deepEqual(changedApiInputs(changedEnv, ecommerceInputs), [
+      "apps/ecommerce/api/src/modules/overview/overview.service.ts"
+    ]);
     await rm(sourceFile);
-    assert.deepEqual(changedApiInputs(changedEnv, await captureApiInputs(root)), [
+    assert.deepEqual(changedApiInputs(ecommerceInputs, await captureApiInputs(root)), [
       "apps/platform/api/src/server.ts"
     ]);
   } finally {

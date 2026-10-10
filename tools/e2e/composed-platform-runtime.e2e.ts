@@ -25,6 +25,21 @@ try {
     "Project Manager package was not composed into Platform API."
   );
 
+  assert.ok(
+    modules.includes("ecommerce.catalog"),
+    "Ecommerce catalog was not composed into Platform API."
+  );
+  const catalogResponse = await app.inject({
+    method: "GET",
+    url: "/ecommerce/catalog",
+    headers: { "x-tenant-db": "cxsun_composed_runtime_probe", "x-tenant-id": "00000000" }
+  });
+  assert.equal(
+    catalogResponse.statusCode,
+    401,
+    "Ecommerce catalog is not protected inside Platform API."
+  );
+
   const corsResponse = await app.inject({
     headers: {
       "access-control-request-headers": "content-type",
@@ -162,29 +177,46 @@ try {
       origin: applicationHost.origin
     },
     method: "POST",
-    url: "/auth/development/tenant-login"
+    payload: {
+      desk: "tenant",
+      corporateId: process.env.DEFAULT_TENANT_CORPORATE_ID,
+      email: process.env.DEFAULT_TENANT_ADMIN_EMAIL,
+      password: process.env.DEFAULT_TENANT_ADMIN_PASSWORD
+    },
+    url: "/auth/login"
   });
   assert.equal(loginResponse.statusCode, 200, loginResponse.body);
+  const previousSlot = loginResponse.json().data.sessionSlot as string;
+  assert.match(previousSlot, /^[0-9a-f]{32}$/);
   const previousCookies = loginResponse.cookies
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join("; ");
   const previousSessionCookie = loginResponse.cookies.findLast(
-    (cookie) => cookie.name.endsWith("cxsun_session") && cookie.value.length > 0
+    (cookie) => cookie.name.endsWith(`cxsun_session_${previousSlot}`) && cookie.value.length > 0
   );
-  assert.ok(previousSessionCookie, "Development login did not issue a session cookie.");
+  assert.ok(previousSessionCookie, "Tenant login did not issue a session cookie.");
 
   const freshLoginResponse = await app.inject({
     headers: {
       cookie: previousCookies,
+      "x-cxsun-session-slot": previousSlot,
       host: applicationHost.host,
       origin: applicationHost.origin
     },
     method: "POST",
-    url: "/auth/development/tenant-login"
+    payload: {
+      desk: "tenant",
+      corporateId: process.env.DEFAULT_TENANT_CORPORATE_ID,
+      email: process.env.DEFAULT_TENANT_ADMIN_EMAIL,
+      password: process.env.DEFAULT_TENANT_ADMIN_PASSWORD
+    },
+    url: "/auth/login"
   });
   assert.equal(freshLoginResponse.statusCode, 200, freshLoginResponse.body);
+  const freshSlot = freshLoginResponse.json().data.sessionSlot as string;
+  assert.notEqual(freshSlot, previousSlot);
   const freshSessionCookie = freshLoginResponse.cookies.findLast(
-    (cookie) => cookie.name.endsWith("cxsun_session") && cookie.value.length > 0
+    (cookie) => cookie.name.endsWith(`cxsun_session_${freshSlot}`) && cookie.value.length > 0
   );
   assert.ok(freshSessionCookie, "Fresh login did not issue a replacement session cookie.");
   assert.notEqual(
@@ -193,9 +225,21 @@ try {
     "Fresh login reused the existing session cookie."
   );
 
+  const logoutResponse = await app.inject({
+    method: "POST",
+    url: "/auth/logout",
+    headers: {
+      cookie: previousCookies,
+      "x-cxsun-session-slot": previousSlot,
+      host: applicationHost.host,
+      origin: applicationHost.origin
+    }
+  });
+  assert.equal(logoutResponse.statusCode, 200, logoutResponse.body);
   const retiredSessionResponse = await app.inject({
     headers: {
       cookie: `${previousSessionCookie.name}=${previousSessionCookie.value}`,
+      "x-cxsun-session-slot": previousSlot,
       host: applicationHost.host,
       origin: applicationHost.origin
     },
@@ -209,6 +253,7 @@ try {
   const freshSessionResponse = await app.inject({
     headers: {
       cookie: cookies,
+      "x-cxsun-session-slot": freshSlot,
       host: applicationHost.host,
       origin: applicationHost.origin
     },
@@ -221,6 +266,7 @@ try {
   const authenticatedProjectManagerResponse = await app.inject({
     headers: {
       cookie: cookies,
+      "x-cxsun-session-slot": freshSlot,
       host: applicationHost.host,
       origin: applicationHost.origin
     },
@@ -243,6 +289,7 @@ try {
     const retiredResponse = await app.inject({
       headers: {
         cookie: cookies,
+        "x-cxsun-session-slot": freshSlot,
         host: applicationHost.host,
         origin: applicationHost.origin
       },
@@ -255,6 +302,7 @@ try {
   const tenantTaskLookups = await app.inject({
     headers: {
       cookie: cookies,
+      "x-cxsun-session-slot": freshSlot,
       host: applicationHost.host,
       origin: applicationHost.origin
     },
@@ -292,6 +340,7 @@ try {
   const masterProjectManagerResponse = await app.inject({
     headers: {
       cookie: superAdminCookies,
+      "x-cxsun-session-slot": superAdminLoginResponse.json().data.sessionSlot,
       host: applicationHost.host,
       origin: applicationHost.origin
     },

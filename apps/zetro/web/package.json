@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/zetro-web",
-  "version": "1.0.81",
+  "version": "1.0.82",
   "private": true,
   "type": "module",
   "exports": {
@@ -16,7 +16,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.81",
+    "@cxsun/ui": "^1.0.82",
     "@tanstack/react-query": "^5.104.1",
     "lucide-react": "^1.52.0",
     "react": "^19.3.0",

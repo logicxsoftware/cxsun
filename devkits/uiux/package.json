@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/uiux",
-  "version": "1.0.81",
+  "version": "1.0.82",
   "private": true,
   "type": "module",
   "exports": {
@@ -13,7 +13,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.81",
+    "@cxsun/ui": "^1.0.82",
     "lucide-react": "^1.52.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

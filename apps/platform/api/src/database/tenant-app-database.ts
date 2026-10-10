@@ -1,4 +1,19 @@
 import {
+  seedEcommerceOverviewPermissions,
+  migrateStorefrontDatabase,
+  rollbackStorefrontDatabase,
+  storefrontMigrations,
+  seedStorefront,
+  seedStorefrontPermissions,
+  type StorefrontDatabase,
+  rollbackCatalogDatabase,
+  migrateCatalogDatabase,
+  catalogMigrations,
+  seedCatalogPermissions,
+  type CatalogDatabase,
+  type EcommercePermissionDatabase
+} from "@cxsun/ecommerce-api";
+import {
   billingTenantMigrations,
   migrateBillingTenantDatabase,
   rollbackBillingTenantDatabase,
@@ -101,6 +116,12 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
       ...migration,
       statements: [`RUN ${migration.name}`]
     })),
+    ...(enabled.has("ecommerce")
+      ? [...catalogMigrations, ...storefrontMigrations].map((migration) => ({
+          ...migration,
+          statements: [`RUN ${migration.name}`]
+        }))
+      : []),
     ...projectManagerTenantMigrations.map(({ description, name }) => ({
       description,
       name,
@@ -182,6 +203,11 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
 
   await migrateCoreTenantDatabase(tenant.dbName);
   await migrateProjectManagerDatabase(database as never);
+  if (enabled.has("ecommerce")) {
+    await migrateCatalogDatabase(database as unknown as Kysely<CatalogDatabase>);
+    await migrateStorefrontDatabase(database as unknown as Kysely<StorefrontDatabase>);
+    provisionedApps.push("ecommerce");
+  }
   if (enabled.has("crm")) {
     await migrateCrmTenantDatabase(database as unknown as Kysely<EnquiryDatabase>);
     provisionedApps.push("crm");
@@ -251,6 +277,18 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
     await seedAuditorClientPermissions(database as unknown as Kysely<AuditorClientDatabase>);
     seededApps.push("auditor");
   }
+  if (enabled.has("ecommerce")) {
+    await seedEcommerceOverviewPermissions(
+      database as unknown as Kysely<EcommercePermissionDatabase>
+    );
+    await seedCatalogPermissions(database as unknown as Kysely<EcommercePermissionDatabase>);
+    await seedStorefrontPermissions(database as unknown as Kysely<EcommercePermissionDatabase>);
+    await seedStorefront(database as unknown as Kysely<StorefrontDatabase>, {
+      code: tenant.tenantCode,
+      name: tenant.tenantName
+    });
+    seededApps.push("ecommerce");
+  }
   if (enabled.has("logicx-erp")) {
     await seedLogicxErpOverviewPermissions(
       database as unknown as Kysely<LogicxErpPermissionDatabase>
@@ -314,6 +352,10 @@ export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase
     await rollbackLogicxErpSchemeDatabase(database as unknown as Kysely<LogicxErpSchemeDatabase>);
   if (enabled.has("billing.sales")) await rollbackBillingTenantDatabase(tenant.dbName);
   if (enabled.has("accounts.accounting")) await rollbackAccountsTenantDatabase(tenant.dbName);
+  if (enabled.has("ecommerce"))
+    await rollbackStorefrontDatabase(database as unknown as Kysely<StorefrontDatabase>);
+  if (enabled.has("ecommerce"))
+    await rollbackCatalogDatabase(database as unknown as Kysely<CatalogDatabase>);
   await rollbackCoreTenantDatabase(tenant.dbName);
 }
 

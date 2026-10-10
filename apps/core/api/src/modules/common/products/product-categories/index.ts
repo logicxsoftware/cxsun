@@ -6,3 +6,5 @@ export type {
   ProductCategoriesRecord,
   ProductCategoriesSavePayload
 } from "./product-categories.types.js";
+
+export { listProductCategoryLookupsForDatabase } from "./product-categories.service.js";

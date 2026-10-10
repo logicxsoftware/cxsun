@@ -373,3 +373,18 @@ function tenantPersistenceError(error: unknown) {
   const message = error instanceof Error && error.message ? error.message : String(error);
   return AppError.internal(message || "Tenant could not be saved.");
 }
+
+/** Public commerce resolves only verified domains; localhost is an explicit development fixture. */
+export async function resolvePublicStorefrontTenant(value: string): Promise<Tenant> {
+  const host = normalizeTenantDomain(value);
+  const repository = new TenantRepository();
+  const tenant =
+    env.NODE_ENV === "development" &&
+    env.ENABLE_DEFAULT_TENANT_SEED === "1" &&
+    (host === "localhost" || host === "127.0.0.1")
+      ? await repository.findByCorporateId(env.DEFAULT_TENANT_CORPORATE_ID)
+      : await repository.findByDomain(host);
+  if (!tenant || tenant.status !== "active" || !tenant.enabledModuleKeys.includes("ecommerce"))
+    throw AppError.notFound("Storefront is not available for this domain.");
+  return tenant;
+}

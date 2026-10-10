@@ -92,3 +92,20 @@ function normalizeString(value: unknown) {
   const normalized = String(value ?? "").trim();
   return normalized || null;
 }
+
+export async function listProductCategoryLookupsForDatabase(
+  database: import("kysely").Kysely<import("../../../../database/core-database.js").CoreDatabase>
+) {
+  const rows = (
+    await sql<{
+      id: number;
+      name: string;
+      status: string;
+    }>`SELECT id, name, status FROM core_product_categories ORDER BY name, id`.execute(database)
+  ).rows;
+  return rows.map((row) => ({
+    id: Number(row.id),
+    name: row.name,
+    active: row.status === "active"
+  }));
+}

@@ -219,3 +219,35 @@ function numberValue(value: unknown) {
 function dateValue(value: Date | string) {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
+
+// Public, tenant-scoped lookup for apps extending Core product records.
+export async function listProductCatalogLookupsForDatabase(
+  database: import("kysely").Kysely<import("../../../database/core-database.js").CoreDatabase>
+) {
+  const rows = (
+    await sql<{
+      id: number;
+      uuid: string;
+      name: string;
+      categoryId: number | null;
+      categoryName: string | null;
+      unitName: string | null;
+      taxRate: number | null;
+      status: string;
+      deletedAt: Date | null;
+    }>`SELECT p.id, p.uuid, p.name, p.product_category_id AS categoryId, c.name AS categoryName, u.name AS unitName, t.rate_percent AS taxRate, p.status, p.deleted_at AS deletedAt
+    FROM core_products p LEFT JOIN core_product_categories c ON c.id=p.product_category_id
+    LEFT JOIN core_units u ON u.id=p.unit_id LEFT JOIN core_taxes t ON t.id=p.gst_tax_id
+    ORDER BY p.name, p.id`.execute(database)
+  ).rows;
+  return rows.map((row) => ({
+    id: Number(row.id),
+    uuid: row.uuid,
+    name: row.name,
+    categoryId: row.categoryId === null ? null : Number(row.categoryId),
+    categoryName: row.categoryName,
+    unitName: row.unitName,
+    taxRate: row.taxRate === null ? null : Number(row.taxRate),
+    active: row.status === "active" && row.deletedAt === null
+  }));
+}

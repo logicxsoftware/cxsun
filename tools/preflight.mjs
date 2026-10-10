@@ -18,6 +18,15 @@ const root = resolve(import.meta.dirname, "..");
 const app = process.argv[2];
 
 const apps = {
+  "ecommerce-storefront": { displayName: "public storefront", cwd: "apps/ecommerce/storefront", envKey: "CXSUN_STOREFRONT_WEB_PORT", host: "127.0.0.1", command: process.execPath, args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"] },
+  "ecommerce-web": {
+    displayName: "ecommerce web",
+    cwd: "apps/ecommerce/web",
+    envKey: "CXSUN_ECOMMERCE_WEB_PORT",
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"]
+  },
   "platform-api": {
     displayName: "api",
     cwd: "apps/platform/api",
@@ -82,7 +91,7 @@ await freePort(port, host);
 
 if (app === "platform-api") {
   ensurePlatformApiDependencies();
-} else if (app === "platform-web") {
+} else if (app === "platform-web" || app === "ecommerce-web" || app === "ecommerce-storefront") {
   await waitForPlatformApi(
     requiredDevPort(process.env.PLATFORM_API_PORT ?? env.PLATFORM_API_PORT, "PLATFORM_API_PORT")
   );
@@ -173,6 +182,7 @@ function watchApiSources() {
     restartTimer = setTimeout(() => void checkApiInputs(), 500);
   };
   addWatcher(watch(resolve(root, "apps/platform/api/src"), { recursive: true }, schedule));
+  addWatcher(watch(resolve(root, "apps/ecommerce/api/src"), { recursive: true }, schedule));
   addWatcher(
     watch(root, (_event, filename) => {
       if (String(filename) === ".env") schedule();
