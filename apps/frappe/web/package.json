@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/frappe-web",
-  "version": "1.0.83",
+  "version": "1.0.84",
   "private": true,
   "type": "module",
   "exports": {
@@ -17,7 +17,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.83",
+    "@cxsun/ui": "^1.0.84",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-table": "^9.2.6",
     "lucide-react": "^1.52.0",

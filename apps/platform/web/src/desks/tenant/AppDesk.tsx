@@ -1,10 +1,11 @@
-import { EcommerceStorefrontWorkspace } from "@cxsun/ecommerce-web/modules/storefront";
-import { EcommerceCatalogWorkspace } from "@cxsun/ecommerce-web/modules/catalog";
+import {
+  EcommerceModuleWorkspace,
+  ecommerceModulePages,
+  type EcommerceModulePage
+} from "@cxsun/ecommerce-web/modules/pages";
 import { EcommerceOverviewWorkspace } from "@cxsun/ecommerce-web/modules/overview";
 import {
   ecommerceOverviewGateway,
-  ecommerceCatalogGateway,
-  ecommerceStorefrontGateway,
   openPublicStorefront,
   openEcommerceDesk
 } from "../../modules/ecommerce/ecommerce-host";
@@ -466,6 +467,16 @@ type AppPage =
   | "ecommerce.overview"
   | "ecommerce.catalog"
   | "ecommerce.storefront"
+  | "ecommerce.product-information"
+  | "ecommerce.product-variants"
+  | "ecommerce.product-images"
+  | "ecommerce.catalog-data-source"
+  | "ecommerce.storefront-sliders"
+  | "ecommerce.promotions"
+  | "ecommerce.featured-cards"
+  | "ecommerce.season-strips"
+  | "ecommerce.service-banner"
+  | "ecommerce.trusted-strip"
   | "logicx-erp.overview"
   | "logicx-erp.schemes"
   | "crm.overview"
@@ -800,6 +811,13 @@ export function AppDesk() {
     });
   }
 
+  function openLiveEnquiry(name: string) {
+    void navigate({
+      params: { _splat: `crm/enquiries/${encodeURIComponent(name)}` },
+      to: "/app/$"
+    });
+  }
+
   function openNewContact() {
     void navigate({ params: { _splat: "crm/contacts/new" }, to: "/app/$" });
   }
@@ -1083,14 +1101,11 @@ export function AppDesk() {
               <BlogsEditorWorkspace host={blogEditorHost} />
             ) : null}
             {safePage === "auditor.overview" ? <AuditorOverviewWorkspace /> : null}
-            {safePage === "ecommerce.storefront" ? (
-              <EcommerceStorefrontWorkspace
-                gateway={ecommerceStorefrontGateway}
+            {ecommerceModulePages.includes(safePage as EcommerceModulePage) ? (
+              <EcommerceModuleWorkspace
+                page={safePage as EcommerceModulePage}
                 onOpenStore={openPublicStorefront}
               />
-            ) : null}
-            {safePage === "ecommerce.catalog" ? (
-              <EcommerceCatalogWorkspace gateway={ecommerceCatalogGateway} />
             ) : null}
             {safePage === "ecommerce.overview" ? (
               <EcommerceOverviewWorkspace
@@ -1152,6 +1167,9 @@ export function AppDesk() {
                 reportFilters={reportFiltersFromLocation()}
                 mobileFilter={mobileFilterFromLocation(location.href)}
                 initialRecordId={enquiryRecordIdFromLocation(location.href)}
+                initialLiveName={liveEnquiryNameFromLocation(location.pathname)}
+                onOpenLiveEnquiry={openLiveEnquiry}
+                onCloseLiveEnquiry={() => requestListNavigation("crm.enquiries")}
                 onClearMobileFilter={() => requestListNavigation("crm.enquiries")}
                 onBackToReports={() => requestListNavigation("crm.reports")}
               />
@@ -1357,6 +1375,15 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
 
   if (
     app === "crm" &&
+    children[0] === "enquiries" &&
+    children.length === 2 &&
+    children[1] &&
+    children[1] !== "new"
+  )
+    return "crm.enquiries";
+
+  if (
+    app === "crm" &&
     children[0] === "contacts" &&
     (children.length === 1 ||
       (children.length === 2 && children[1] === "new") ||
@@ -1423,8 +1450,7 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "auditor.overview" ||
     key === "auditor.clients" ||
     key === "ecommerce.overview" ||
-    key === "ecommerce.catalog" ||
-    key === "ecommerce.storefront" ||
+    ecommerceModulePages.includes(key as EcommerceModulePage) ||
     key === "logicx-erp.overview" ||
     key === "logicx-erp.schemes" ||
     key === "crm.overview" ||
@@ -1508,6 +1534,7 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
 function tenantPathMatchesPage(pathname: string, page: AppPage): boolean {
   const canonicalPath = `/app/${page.replaceAll(".", "/")}`;
   if (pathname === canonicalPath) return true;
+  if (page === "crm.enquiries") return Boolean(liveEnquiryNameFromLocation(pathname));
   if (
     [
       "billing.quotation",
@@ -1968,6 +1995,16 @@ function enquiryRecordIdFromLocation(href: string) {
   return Number.isSafeInteger(id) ? id : undefined;
 }
 
+function liveEnquiryNameFromLocation(pathname: string) {
+  const match = /^\/app\/crm\/enquiries\/([^/]+)$/.exec(pathname);
+  if (!match || match[1] === "new") return undefined;
+  try {
+    return decodeURIComponent(match[1]!);
+  } catch {
+    return undefined;
+  }
+}
+
 function recordIdFromUrl() {
   return new URLSearchParams(window.location.search).get("record") || undefined;
 }
@@ -2063,6 +2100,16 @@ function titleForPage(page: AppPage) {
     "ecommerce.overview": "Overview",
     "ecommerce.catalog": "Catalog",
     "ecommerce.storefront": "Storefront",
+    "ecommerce.product-information": "Items",
+    "ecommerce.product-variants": "Variants",
+    "ecommerce.product-images": "Images",
+    "ecommerce.catalog-data-source": "Data Sources",
+    "ecommerce.storefront-sliders": "Sliders",
+    "ecommerce.promotions": "Promotions",
+    "ecommerce.featured-cards": "Featured Cards",
+    "ecommerce.season-strips": "Season Strips",
+    "ecommerce.service-banner": "Service Banner",
+    "ecommerce.trusted-strip": "Trusted Strip",
     "logicx-erp.overview": "Overview",
     "logicx-erp.schemes": "Schemes",
     "crm.overview": "Overview",

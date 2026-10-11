@@ -247,6 +247,31 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
   }
 ];
 
+const ecommerceMenuPages = [
+  ["Overview", "ecommerce.overview", LayoutDashboardIcon],
+  ["Catalog", "ecommerce.catalog", PackageIcon],
+  ["Items", "ecommerce.product-information", BoxesIcon],
+  ["Variants", "ecommerce.product-variants", LayersIcon],
+  ["Images", "ecommerce.product-images", PackageIcon],
+  ["Data Sources", "ecommerce.catalog-data-source", Settings2Icon],
+  ["Storefront", "ecommerce.storefront", Globe2Icon],
+  ["Sliders", "ecommerce.storefront-sliders", PackageIcon],
+  ["Promotions", "ecommerce.promotions", BadgePercentIcon],
+  ["Featured Cards", "ecommerce.featured-cards", PackageIcon],
+  ["Season Strips", "ecommerce.season-strips", PackageIcon],
+  ["Service Banner", "ecommerce.service-banner", PackageIcon],
+  ["Trusted Strip", "ecommerce.trusted-strip", PackageIcon]
+] as const;
+
+function ecommerceMenuItems(activePage: string, onSelect: (page: string) => void): SidemenuItem[] {
+  return ecommerceMenuPages.map(([title, page, icon]) => ({
+    icon,
+    title,
+    isActive: activePage === page,
+    onSelect: () => onSelect(page)
+  }));
+}
+
 export function normalizeModuleKeys(moduleKeys: string[]) {
   return Array.from(
     new Set([
@@ -304,31 +329,11 @@ export function appMenuFor(
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem {
   if (appId === "ecommerce") {
-    const item = {
-      icon: PackageIcon,
-      title: "Overview",
-      isActive: activePage === "ecommerce.overview",
-      onSelect: () => onSelect("ecommerce.overview")
-    };
     return {
       icon: PackageIcon,
       title: "Ecommerce",
       isActive: activePage.startsWith("ecommerce"),
-      items: [
-        item,
-        {
-          icon: PackageIcon,
-          title: "Catalog",
-          isActive: activePage === "ecommerce.catalog",
-          onSelect: () => onSelect("ecommerce.catalog")
-        },
-        {
-          icon: PackageIcon,
-          title: "Storefront",
-          isActive: activePage === "ecommerce.storefront",
-          onSelect: () => onSelect("ecommerce.storefront")
-        }
-      ]
+      items: ecommerceMenuItems(activePage, onSelect)
     };
   }
   if (appId === "logicx-erp") {
@@ -731,27 +736,7 @@ export function appMenuItemsFor(
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem[] {
   if (appId === "ecommerce") {
-    const item = {
-      icon: PackageIcon,
-      title: "Overview",
-      isActive: activePage === "ecommerce.overview",
-      onSelect: () => onSelect("ecommerce.overview")
-    };
-    return [
-      item,
-      {
-        icon: PackageIcon,
-        title: "Catalog",
-        isActive: activePage === "ecommerce.catalog",
-        onSelect: () => onSelect("ecommerce.catalog")
-      },
-      {
-        icon: PackageIcon,
-        title: "Storefront",
-        isActive: activePage === "ecommerce.storefront",
-        onSelect: () => onSelect("ecommerce.storefront")
-      }
-    ];
+    return ecommerceMenuItems(activePage, onSelect);
   }
   if (appId === "logicx-erp") {
     return [

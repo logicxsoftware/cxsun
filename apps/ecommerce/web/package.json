@@ -1,13 +1,13 @@
 {
   "name": "@cxsun/ecommerce-web",
-  "version": "1.0.83",
+  "version": "1.0.84",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./modules/overview": "./src/modules/overview/index.ts",
     "./modules/overview/gateway": "./src/modules/overview/overview.services.ts",
-    "./modules/catalog": "./src/modules/catalog/index.ts",
+    "./modules/pages": "./src/modules/ecommerce-composition/ecommerce-composition.pages.tsx",
     "./modules/storefront": "./src/modules/storefront/index.ts"
   },
   "scripts": {
@@ -16,7 +16,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.83",
+    "@cxsun/ui": "^1.0.84",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "lucide-react": "^1.52.0",

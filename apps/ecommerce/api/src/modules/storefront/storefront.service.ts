@@ -1,81 +1,161 @@
-import { AppError } from "@cxsun/framework/errors";
-import { StorefrontRepository } from "./storefront.repository.js";
-import type { QuoteInput, StorefrontPublicContext, StorefrontProduct } from "./storefront.types.js";
+import type { StorefrontCatalogFilters } from "./storefront.types.js";
+import type { StorefrontCatalogSource } from "../catalog-data-source/catalog-data-source.types.js";
+import { StorefrontProfileService } from "../storefront-profile/storefront-profile.service.js";
+import { sliderContentUrl } from "../storefront-slider/storefront-slider.storage.js";
+import { StorefrontAnnouncementService } from "../storefront-announcement/storefront-announcement.service.js";
+import { readStorefrontCache } from "./storefront.cache.js";
+
 export class StorefrontService {
-  private readonly repository: StorefrontRepository;
-  constructor(private readonly context: StorefrontPublicContext) {
-    this.repository = new StorefrontRepository(context.database);
+  constructor(private readonly source: StorefrontCatalogSource) {}
+  catalog(filters: StorefrontCatalogFilters) {
+    return this.source.catalog({
+      ...filters,
+      brand: filters.brand?.trim(),
+      category: filters.category?.trim(),
+      search: filters.search?.trim()
+    });
   }
-  async bootstrap() {
-    const config = await this.repository.config();
-    if (!config.enabled) throw AppError.notFound("Storefront is not available.");
-    const catalog = await this.context.catalog();
-    const products: StorefrontProduct[] = catalog.map(
-      ({ price, compareAtPrice, currency, ...entry }) => ({
-        ...entry,
-        industryKey: config.industryKey,
-        offers: [
-          {
-            uuid: entry.uuid,
-            vendorUuid: config.uuid,
-            vendorName: config.brandName,
-            price: price > 0 ? price : null,
-            compareAtPrice,
-            currency,
-            availability: "confirm_with_seller"
-          }
-        ]
-      })
-    );
-    const counts = new Map<string, number>();
-    for (const product of products) {
-      const category =
-        product.categoryName?.trim() === "-"
-          ? "Uncategorised"
-          : (product.categoryName ?? "Uncategorised");
-      product.categoryName = category;
-      counts.set(category, (counts.get(category) ?? 0) + 1);
-    }
-    return {
-      store: {
-        brandName: config.brandName,
-        tagline: config.tagline,
-        location: config.location,
-        phone: config.phone,
-        email: config.email,
-        logoUrl: config.logoUrl
-      },
-      industries: [{ key: config.industryKey, name: config.industryName }],
-      vendors: [{ uuid: config.uuid, name: config.brandName, location: config.location }],
-      categories: [...counts]
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-      products
-    };
+  categories() {
+    return this.source.categories();
   }
-  async quote(input: QuoteInput) {
-    const snapshot = await this.bootstrap();
-    const keys = new Set<string>();
-    const items = input.items.map((selection) => {
-      const key = `${selection.catalogUuid}:${selection.vendorUuid}`;
-      if (keys.has(key))
-        throw AppError.validation("Combine duplicate quote items into a single quantity.");
-      keys.add(key);
-      const product = snapshot.products.find((entry) => entry.uuid === selection.catalogUuid);
-      const offer = product?.offers.find((entry) => entry.vendorUuid === selection.vendorUuid);
-      if (!product || !offer)
-        throw AppError.validation(
-          "One or more selected products or sellers are no longer available. Refresh your basket."
-        );
+  discovery() {
+    return this.source.discovery();
+  }
+  product(slug: string) {
+    return this.source.product(slug.trim().toLowerCase());
+  }
+  async sliders() {
+    return (await this.source.sliders()).map((slider) => ({
+      ...slider,
+      imageUrl: sliderContentUrl(slider.imageUrl)
+    }));
+  }
+  promotions() {
+    return this.source.promotions();
+  }
+  featuredCards() {
+    return this.source.featuredCards();
+  }
+  bootstrap() {
+    return readStorefrontCache("home-bootstrap", async () => {
+      const startedAt = performance.now();
+      const [
+        discovery,
+        siteNavigation,
+        sliders,
+        promotions,
+        featuredCards,
+        brandStrips,
+        seasonStrips,
+        campaignEvents,
+        announcement
+      ] = await Promise.all([
+        resilient("discovery", () => this.discovery(), {
+          brands: [],
+          categories: [],
+          priceRange: { maximum: 0, minimum: 0 }
+        }),
+        resilient("site-navigation", () => this.siteNavigation(), null),
+        resilient("sliders", () => this.sliders(), []),
+        resilient("promotions", () => this.promotions(), []),
+        resilient("featured-cards", () => this.featuredCards(), []),
+        resilient("brand-strips", () => this.source.brandStrips(), []),
+        resilient("season-strips", () => this.source.seasonStrips(), []),
+        resilient("campaign-events", () => this.source.campaignEvents(), []),
+        resilient("announcement", () => new StorefrontAnnouncementService().active(), null)
+      ]);
+      console.info(
+        `[ecommerce.storefront] bootstrap ready in ${Math.round(performance.now() - startedAt)}ms`
+      );
       return {
-        catalogUuid: product.uuid,
-        vendorUuid: offer.vendorUuid,
-        title: product.title,
-        quantity: selection.quantity,
-        price: offer.price,
-        currency: offer.currency
+        announcement,
+        brandStrips,
+        campaignEvents,
+        discovery,
+        featuredCards,
+        promotions,
+        seasonStrips,
+        siteNavigation,
+        sliders
       };
     });
-    return this.repository.createQuote(input, items, this.context.clientKey);
+  }
+  async siteNavigation() {
+    const profile = await new StorefrontProfileService().get();
+    return {
+      about: profile.aboutUs,
+      copyrightText: profile.copyrightText,
+      groups: [
+        {
+          title: "Shop",
+          links: [
+            { label: "All products", href: "/shop" },
+            { label: "Promotions", href: "/#promotions" },
+            { label: "Solutions", href: "/#solutions" },
+            { label: "Brands", href: "/#brands" }
+          ]
+        },
+        {
+          title: "Company",
+          links: [
+            { label: "About", href: "/about" },
+            { label: "Campaigns & events", href: "/campaigns" },
+            { label: "Team", href: "/team" },
+            { label: "Blog", href: "/blog" },
+            { label: "Contact", href: "/contact" }
+          ]
+        },
+        {
+          title: "Help",
+          links: [
+            { label: "Shipping", href: "/shipping" },
+            { label: "Returns & refunds", href: "/returns" },
+            { label: "Order help", href: "/login" }
+          ]
+        }
+      ],
+      paymentMethods: profile.paymentMethods,
+      poweredByText: profile.poweredByText,
+      serviceBanner: {
+        actionLabel: profile.serviceActionLabel,
+        actionUrl: profile.serviceActionUrl,
+        description: profile.serviceDescription,
+        eyebrow: profile.serviceEyebrow,
+        title: profile.serviceTitle
+      },
+      socialLinks: [
+        { label: "Facebook", href: profile.facebookUrl },
+        { label: "LinkedIn", href: profile.linkedinUrl },
+        { label: "Instagram", href: profile.instagramUrl },
+        { label: "X", href: profile.xUrl },
+        { label: "YouTube", href: profile.youtubeUrl },
+        { label: "WhatsApp", href: profile.whatsappUrl },
+        { label: "Threads", href: profile.threadsUrl }
+      ].filter((link) => link.href),
+      tagline: profile.tagline,
+      trustedStrip: {
+        description: profile.trustedDescription,
+        eyebrow: profile.trustedEyebrow,
+        proofPoints: profile.trustedProofPoints
+          .split(/\r?\n/u)
+          .map((value) => value.trim())
+          .filter(Boolean),
+        title: profile.trustedTitle
+      }
+    };
+  }
+}
+
+async function resilient<T>(name: string, loader: () => Promise<T>, fallback: T) {
+  try {
+    return await Promise.race([
+      loader(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`${name} timed out`)), 4_000)
+      )
+    ]);
+  } catch (error) {
+    console.warn(`[ecommerce.storefront] ${name} unavailable`, error);
+    return fallback;
   }
 }

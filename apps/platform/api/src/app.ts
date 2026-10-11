@@ -1,5 +1,5 @@
 import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxsun/framework/api";
-import { createHmac, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { registerModules } from "@cxsun/framework/modules";
 import { createMailModule } from "@cxsun/mail-api";
 import { accountsApiModuleKeys, registerAccountsApi } from "@cxsun/accounts-api";
@@ -34,16 +34,12 @@ import {
 } from "@cxsun/crm-api";
 import {
   ecommerceOverviewModule,
-  ecommerceCatalogModule,
-  ecommerceStorefrontModule,
-  listPublishedCatalogForStorefront,
-  type StorefrontDatabase,
-  type CatalogDatabase
+  ecommerceModuleKeys,
+  registerEcommerceStaffModules,
+  registerEcommercePublicModules,
+  runWithEcommerceRequestScope,
+  type EcommerceDatabase
 } from "@cxsun/ecommerce-api";
-import {
-  listProductCatalogLookupsForDatabase,
-  listProductCategoryLookupsForDatabase
-} from "@cxsun/core-api";
 import { auditorClientModule, type AuditorClientDatabase } from "@cxsun/auditor-api";
 import {
   logicxErpOverviewModule,
@@ -188,8 +184,7 @@ export async function createApp() {
             enquiryModule.key,
             auditorClientModule.key,
             ecommerceOverviewModule.key,
-            ecommerceCatalogModule.key,
-            ecommerceStorefrontModule.key,
+            ...ecommerceModuleKeys,
             logicxErpOverviewModule.key,
             logicxErpSchemeModule.key,
             zetroChatModule.key,
@@ -911,68 +906,83 @@ export async function createApp() {
     };
   });
   console.info("[platform.routes] Auditor package ready");
-  await ecommerceStorefrontModule.register({
-    app,
-    publicContext: async (request) => {
-      if (request.method !== "GET") enforceBrowserRequestOrigin(request);
-      const tenant = await resolvePublicStorefrontTenant(requestHost(request));
-      const database = getTenantDatabase(tenant);
-      const enabled = await database
-        .selectFrom("app_module_settings")
-        .select("id")
-        .where("module_key", "=", "ecommerce")
-        .where("enabled", "=", true)
-        .where("status", "=", "active")
-        .executeTakeFirst();
-      if (!enabled) throw AppError.notFound("Storefront is not available.");
-      return {
-        database: database as unknown as import("kysely").Kysely<StorefrontDatabase>,
-        clientKey: createHmac("sha256", env.JWT_SECRET).update(request.ip).digest("hex"),
-        catalog: () =>
-          listPublishedCatalogForStorefront({
-            database: database as unknown as import("kysely").Kysely<CatalogDatabase>,
-            products: () => listProductCatalogLookupsForDatabase(database as never),
-            categories: () => listProductCategoryLookupsForDatabase(database as never)
-          })
-      };
-    },
-    adminContext: async (request) => {
-      const context = tenantAccessContext(request);
-      const enabled = await context.database
-        .selectFrom("app_module_settings")
-        .select("id")
-        .where("module_key", "=", "ecommerce")
-        .where("enabled", "=", true)
-        .where("status", "=", "active")
-        .executeTakeFirst();
-      if (!enabled) throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
-      return {
-        database: context.database as unknown as import("kysely").Kysely<StorefrontDatabase>,
-        actorEmail: context.actorEmail,
-        authorize: context.authorize
-      };
-    }
+  await app.register(async (scoped) => {
+    scoped.addHook("onRequest", (request, _reply, done) => {
+      void (async () => {
+        if (request.method !== "GET") enforceBrowserRequestOrigin(request);
+        const tenant = await resolvePublicStorefrontTenant(requestHost(request));
+        const database = getTenantDatabase(tenant);
+        const enabled = await database
+          .selectFrom("app_module_settings")
+          .select("id")
+          .where("module_key", "=", "ecommerce")
+          .where("enabled", "=", true)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        if (!enabled) throw AppError.notFound("Storefront is not available.");
+        return { database, databaseName: tenant.dbName, tenantKey: tenant.uuid };
+      })().then(
+        ({ database, databaseName, tenantKey }) =>
+          runWithEcommerceRequestScope(
+            database as unknown as import("kysely").Kysely<EcommerceDatabase>,
+            tenantKey,
+            done,
+            databaseName
+          ),
+        done
+      );
+    });
+    await registerEcommercePublicModules(scoped, env.JWT_SECRET);
   });
-  await ecommerceCatalogModule.register({
-    app,
-    context: async (request) => {
-      const context = tenantAccessContext(request);
-      const enabled = await context.database
-        .selectFrom("app_module_settings")
-        .select("id")
-        .where("module_key", "=", "ecommerce")
-        .where("enabled", "=", true)
-        .where("status", "=", "active")
-        .executeTakeFirst();
-      if (!enabled) throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
-      return {
-        database: context.database as unknown as import("kysely").Kysely<CatalogDatabase>,
-        actorEmail: context.actorEmail,
-        authorize: context.authorize,
-        products: () => listProductCatalogLookupsForDatabase(context.database as never),
-        categories: () => listProductCategoryLookupsForDatabase(context.database as never)
-      };
-    }
+  await app.register(async (scoped) => {
+    scoped.addHook("onRequest", (request, _reply, done) => {
+      void (async () => {
+        const context = tenantAccessContext(request);
+        const enabled = await context.database
+          .selectFrom("app_module_settings")
+          .select("id")
+          .where("module_key", "=", "ecommerce")
+          .where("enabled", "=", true)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        if (!enabled) throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
+        const area = request.url.startsWith("/ecommerce/storefront/") ? "storefront" : "catalog";
+        const action =
+          request.method === "GET" ? "view" : area === "storefront" ? "manage" : "edit";
+        await context.authorize(`ecommerce.${area}.${action}`);
+        const frappeOperation =
+          request.method !== "GET" &&
+          (request.url.startsWith("/ecommerce/settings/data-source/frappe/") ||
+            request.url === "/ecommerce/settings/data-source/frappe" ||
+            (request.url.startsWith("/ecommerce/settings/data-source/sync/") &&
+              !request.url.startsWith("/ecommerce/settings/data-source/sync/seed-demo")));
+        if (frappeOperation) {
+          const frappeEnabled = await context.database
+            .selectFrom("app_module_settings")
+            .select("id")
+            .where("module_key", "=", "frappe")
+            .where("enabled", "=", true)
+            .where("status", "=", "active")
+            .executeTakeFirst();
+          if (!frappeEnabled) throw AppError.forbidden("Frappe is not enabled for this tenant.");
+          await context.authorize("frappe.connection.manage");
+        }
+        return context;
+      })().then(
+        (context) =>
+          runWithEcommerceRequestScope(
+            context.database as unknown as import("kysely").Kysely<EcommerceDatabase>,
+            context.tenantId,
+            done
+          ),
+        done
+      );
+    });
+    await registerEcommerceStaffModules(
+      scoped,
+      env.JWT_SECRET,
+      (request) => tenantAccessContext(request).actorEmail
+    );
   });
   await ecommerceOverviewModule.register(app, async (request) => {
     const context = tenantAccessContext(request);

@@ -2,7 +2,7 @@ import { AppError } from "@cxsun/framework/errors";
 import type { EnquiryRemoteSource, LiveEnquiryQuery } from "@cxsun/crm-api";
 import type { Kysely } from "kysely";
 import { FrappeConnectionRepository } from "./connection.repository.js";
-import { listLiveFrappeEnquiries } from "./connection.live-enquiries.js";
+import { getLiveFrappeEnquiry, listLiveFrappeEnquiries } from "./connection.live-enquiries.js";
 import type { FrappeDatabase, FrappeSettings } from "./connection.types.js";
 import { aggregateFrappeEnquiries } from "./connection.aggregate-enquiries.js";
 
@@ -39,6 +39,20 @@ export class FrappeCrmEnquirySource implements EnquiryRemoteSource {
       this.settings,
       this.encryptionSecret,
       query,
+      employee,
+      this.canViewAll
+    );
+  }
+
+  async get(name: string) {
+    if (!this.frappeEnabled) throw AppError.forbidden("Frappe is not enabled for this tenant.");
+    const settings = await this.verifiedSettings();
+    const employee = this.canViewAll ? null : await this.employeeCode(settings.baseUrl);
+    return getLiveFrappeEnquiry(
+      this.database,
+      this.settings,
+      this.encryptionSecret,
+      name,
       employee,
       this.canViewAll
     );
@@ -84,21 +98,24 @@ export class FrappeCrmEnquirySource implements EnquiryRemoteSource {
   async summary(_today: string) {
     const settings = await this.verifiedSettings();
     const employee = await this.employeeCode(settings.baseUrl);
-    if (!employee)
-      throw AppError.forbidden(
-        "Map this CRM user to a Frappe employee to view personal live totals."
-      );
     const grouped = async (
       field: "status" | "priority",
       filters: Array<[string, string, string]>
     ) => aggregateFrappeEnquiries(settings, [field], filters, employee, this.canViewAll);
-    const [allStatuses, assignedStatuses, assignedPriorities, createdStatuses, createdPriorities] =
+    const allStatuses = await grouped("status", []);
+    const allCount = allStatuses.reduce((total, row) => total + row.count, 0);
+    if (!employee)
+      return {
+        allCount,
+        assigned: { total: 0, statusCounts: [], priorityCounts: [] },
+        created: { total: 0, statusCounts: [], priorityCounts: [] }
+      };
+    const [assignedStatuses, assignedPriorities, createdStatuses, createdPriorities] =
       await Promise.all([
-        grouped("status", []),
-        grouped("status", [["assigned_to_employee", "=", employee ?? ""]]),
-        grouped("priority", [["assigned_to_employee", "=", employee ?? ""]]),
-        grouped("status", [["user_employee", "=", employee ?? ""]]),
-        grouped("priority", [["user_employee", "=", employee ?? ""]])
+        grouped("status", [["assigned_to_employee", "=", employee]]),
+        grouped("priority", [["assigned_to_employee", "=", employee]]),
+        grouped("status", [["user_employee", "=", employee]]),
+        grouped("priority", [["user_employee", "=", employee]])
       ]);
     const scope = (statuses: typeof assignedStatuses, priorities: typeof assignedPriorities) => ({
       total: statuses.reduce((total, row) => total + row.count, 0),
@@ -109,7 +126,7 @@ export class FrappeCrmEnquirySource implements EnquiryRemoteSource {
       }))
     });
     return {
-      allCount: allStatuses.reduce((total, row) => total + row.count, 0),
+      allCount,
       assigned: scope(assignedStatuses, assignedPriorities),
       created: scope(createdStatuses, createdPriorities)
     };

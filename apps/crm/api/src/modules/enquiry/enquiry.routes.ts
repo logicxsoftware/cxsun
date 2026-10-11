@@ -115,6 +115,7 @@ const livePageSchema = z.object({
   statusCounts: z.array(z.object({ code: z.string(), count: z.number().int().nonnegative() })),
   items: z.array(liveRecordSchema)
 });
+const liveNameSchema = z.object({ name: z.string().trim().min(1).max(191) });
 const reportQuerySchema = listQuerySchema.pick({
   fromAt: true,
   toAt: true,
@@ -215,6 +216,12 @@ export function registerEnquiryRoutes(
       const { scope } = await service(request);
       return scope.remote.list(query);
     }
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/live/:name",
+    schemas: { params: liveNameSchema, response: liveRecordSchema },
+    handler: async ({ params, request }) => (await service(request)).scope.remote.get(params.name)
   });
   registerContractRoute(app, {
     method: "GET",

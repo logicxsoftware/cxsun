@@ -1,12 +1,3 @@
-export { ecommerceStorefrontModule } from "./storefront.module.js";
-export {
-  migrateStorefrontDatabase,
-  rollbackStorefrontDatabase,
-  storefrontMigrations
-} from "./storefront.migration.js";
-export { seedStorefront, seedStorefrontPermissions } from "./storefront.seed.js";
-export type {
-  StorefrontDatabase,
-  StorefrontPublicContext,
-  StorefrontAdminContext
-} from "./storefront.types.js";
+export { registerStorefrontRoutes } from "./storefront.routes.js";
+export { invalidateStorefrontReadCache } from "./storefront.cache.js";
+export type { StorefrontProduct, StorefrontProductDetail } from "./storefront.types.js";

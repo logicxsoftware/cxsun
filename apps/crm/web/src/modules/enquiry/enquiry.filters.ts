@@ -26,22 +26,28 @@ export function matchesEnquiryFilter(record: EnquiryRecord, filter: string) {
 }
 
 function matchesStatusFilter(status: string, filter: string) {
+  const code = status.trim().toLowerCase().replace(/\s+/g, "-");
   if (filter === "all") return true;
-  if (filter === "active") return !closedCodes.has(status);
-  if (filter === "hold") return holdCodes.has(status);
-  if (filter === "pending-group") return ["open", "reopen", "escalation"].includes(status);
+  if (code === "none") return filter === "none";
+  if (filter === "active") return !closedCodes.has(code);
+  if (filter === "hold") return holdCodes.has(code);
+  if (filter === "pending-group")
+    return ["open", "reopen", "re-open", "escalation", "pending"].includes(code);
   if (filter === "in-progress")
     return (
-      holdCodes.has(status) || status === "escalation" || status === "open" || status === "reopen"
+      holdCodes.has(code) ||
+      ["escalation", "open", "reopen", "re-open", "pending", "in-progress"].includes(code)
     );
-  if (filter === "closed-group") return closedCodes.has(status);
+  if (filter === "closed-group") return closedCodes.has(code);
   if (filter === "other")
     return (
-      !["new", "open", "reopen", "escalation"].includes(status) &&
-      !holdCodes.has(status) &&
-      !closedCodes.has(status)
+      !["new", "open", "reopen", "re-open", "escalation", "pending", "in-progress"].includes(
+        code
+      ) &&
+      !holdCodes.has(code) &&
+      !closedCodes.has(code)
     );
-  return status === filter;
+  return code === filter.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
 export function countEnquiryStatuses(

@@ -1,1 +1,1 @@
-export { TechmediaStorefront } from "./modules/shop";
+export { StorefrontPage } from "@cxsun/ecommerce-web/modules/storefront";

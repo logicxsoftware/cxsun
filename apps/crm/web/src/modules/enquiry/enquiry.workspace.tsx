@@ -79,8 +79,13 @@ export function EnquiryWorkspace(props: Parameters<typeof LocalEnquiryWorkspace>
     return (
       <FrappeLiveEnquiries
         scope={props.scope ?? "all"}
+        initialRecordName={props.initialLiveName}
+        onOpenEnquiry={props.onOpenLiveEnquiry}
+        onCloseEnquiry={props.onCloseLiveEnquiry}
         reportFilters={props.reportFilters}
         onBackToReports={props.onBackToReports}
+        mobileFilter={props.mobileFilter}
+        onClearMobileFilter={props.onClearMobileFilter}
       />
     );
   }
@@ -96,6 +101,9 @@ function LocalEnquiryWorkspace({
   onOpenEnquiry,
   onBackToReports,
   initialRecordId,
+  initialLiveName: _initialLiveName,
+  onOpenLiveEnquiry: _onOpenLiveEnquiry,
+  onCloseLiveEnquiry: _onCloseLiveEnquiry,
   initialCreate = false,
   onCloseCreate,
   onCancelCreate
@@ -108,6 +116,9 @@ function LocalEnquiryWorkspace({
   onOpenEnquiry?: ((id: number, mobile: string, contactId: number | null) => void) | undefined;
   onBackToReports?: () => void;
   initialRecordId?: number | undefined;
+  initialLiveName?: string | undefined;
+  onOpenLiveEnquiry?: ((name: string) => void) | undefined;
+  onCloseLiveEnquiry?: (() => void) | undefined;
   currentUserEmail?: string;
   initialCreate?: boolean;
   onCloseCreate?: () => void;

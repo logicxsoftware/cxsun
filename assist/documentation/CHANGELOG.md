@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.83
+Current version: 1.0.84
 
-Release tag: v-1.0.83
+Release tag: v-1.0.84
 
-Changelog label: v 1.0.83
+Changelog label: v 1.0.84
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,18 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.84
+
+### [v 1.0.84] 2026-10-11 7:59 pm - update to new version
+
+#### Database Changes
+
+- Database update: Yes (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.84.
 
 ## v-1.0.83
 
@@ -38,6 +50,11 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Core Contacts now has status and inline column filters, column visibility controls, and a white search strip like Enquiries.
 - CRM report breadcrumbs follow the selected view. Date fields use compact widths, form controls share one height, and assignees have searchable lookup.
 - Shared workspace dates use DD-MM-YYYY. A new formatter shows local date and time in list and detail views.
+- Frappe enquiry lists now use the CRM search strip, inline column filters, status counts, column controls, mobile filter, and local table styling. The Frappe adapter applies these filters to live rows under the existing employee access rules.
+- Frappe live enquiry Creator and Assigned to columns resolve employee codes to readable employee names. Missing employee records retain their codes.
+- Frappe live navigation shows the All Enquiries total for view-all users without an employee mapping; personal totals remain zero until that user is mapped.
+- Frappe Live enquiry rows now open a URL-backed detail page with the Local page layout, live record fields, employee names, and protected single-record reads. Browser back, forward, and direct reload keep the selected enquiry.
+- The development API watcher now reloads when any app API source changes, including CRM and Frappe modules.
 
 ## v-1.0.82
 

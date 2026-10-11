@@ -7,6 +7,15 @@ export type LiveEnquiryQuery = {
   page: number;
   pageSize: number;
   search: string;
+  mobile?: string | undefined;
+  searchCustomer?: string | undefined;
+  searchDetails?: string | undefined;
+  searchListIn?: string | undefined;
+  searchDueDate?: string | undefined;
+  searchPriority?: string | undefined;
+  searchCreator?: string | undefined;
+  searchAssignedTo?: string | undefined;
+  searchStatus?: string | undefined;
   status?: string | undefined;
   group?: string | undefined;
   creator?: string | undefined;
@@ -46,6 +55,7 @@ export type LiveEnquiryPage = {
 export type EnquiryRemoteSource = {
   provider(): Promise<"local" | "frappe">;
   list(query: LiveEnquiryQuery): Promise<LiveEnquiryPage>;
+  get(name: string): Promise<LiveEnquiryRecord>;
   report(query: {
     view: "list-in" | "creator" | "assignee" | "status";
     fromDate?: string | undefined;
@@ -101,15 +111,7 @@ export class EnquiryReadService {
         throw AppError.validation("Frappe report filters cannot filter Local enquiries.");
       return { source: "local" as const, ...(await this.local.listPage(query)) };
     }
-    if (
-      query.listInId ||
-      query.createdBy ||
-      query.assignedUserId ||
-      query.fromAt ||
-      query.toAt ||
-      query.mobile ||
-      query.contactId
-    ) {
+    if (query.listInId || query.createdBy || query.assignedUserId || query.fromAt || query.toAt) {
       throw AppError.validation("Local enquiry filters cannot filter Frappe enquiries.");
     }
     return this.remote.list({
@@ -117,6 +119,15 @@ export class EnquiryReadService {
       page: query.page,
       pageSize: query.pageSize,
       search: query.search,
+      ...(query.mobile ? { mobile: query.mobile } : {}),
+      ...(query.searchCustomer ? { searchCustomer: query.searchCustomer } : {}),
+      ...(query.searchDetails ? { searchDetails: query.searchDetails } : {}),
+      ...(query.searchListIn ? { searchListIn: query.searchListIn } : {}),
+      ...(query.searchDueDate ? { searchDueDate: query.searchDueDate } : {}),
+      ...(query.searchPriority ? { searchPriority: query.searchPriority } : {}),
+      ...(query.searchCreator ? { searchCreator: query.searchCreator } : {}),
+      ...(query.searchAssignedTo ? { searchAssignedTo: query.searchAssignedTo } : {}),
+      ...(query.searchStatus ? { searchStatus: query.searchStatus } : {}),
       ...(query.filter === "all" ? {} : { status: query.filter }),
       ...(query.group ? { group: query.group } : {}),
       ...(query.creatorEmployee ? { creator: query.creatorEmployee } : {}),

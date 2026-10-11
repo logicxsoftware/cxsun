@@ -101,8 +101,19 @@ const crmContact360Leaves = [
 ];
 const capabilityBackendRoles = new Map([
   ["auditor-api/client", ["module", "service", "repository", "routes", "migration", "types"]],
-  ["ecommerce-api/catalog", reducedBackendRoles],
-  ["ecommerce-api/storefront", reducedBackendRoles],
+  ["ecommerce-api/catalog-data-source", ["service", "repository", "routes", "migration", "types"]],
+  ["ecommerce-api/catalog-matching", [...reducedBackendRoles, "worker"]],
+  ["ecommerce-api/ecommerce-composition", ["module", "migration", "seed"]],
+  ["ecommerce-api/featured-card", reducedBackendRoles],
+  ["ecommerce-api/product-image", reducedBackendRoles],
+  ["ecommerce-api/product-information", reducedBackendRoles],
+  ["ecommerce-api/product-variant", reducedBackendRoles],
+  ["ecommerce-api/promotion-card", reducedBackendRoles],
+  ["ecommerce-api/season-strip", reducedBackendRoles.filter((role) => role !== "seed")],
+  ["ecommerce-api/storefront", ["service", "repository", "routes", "types"]],
+  ["ecommerce-api/storefront-announcement", reducedBackendRoles],
+  ["ecommerce-api/storefront-profile", reducedBackendRoles],
+  ["ecommerce-api/storefront-slider", reducedBackendRoles],
   ["ecommerce-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["logicx-erp-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["logicx-erp-api/scheme", reducedBackendRoles],
@@ -136,7 +147,10 @@ const capabilityBackendRoles = new Map([
 ]);
 
 const webModuleRoots = [
-  { app: "ecommerce-storefront", path: join(process.cwd(), "apps", "ecommerce", "storefront", "src", "modules") },
+  {
+    app: "ecommerce-storefront",
+    path: join(process.cwd(), "apps", "ecommerce", "storefront", "src", "modules")
+  },
   {
     app: "auditor-web",
     path: join(process.cwd(), "apps", "auditor", "web", "src", "modules")
@@ -193,6 +207,15 @@ const shellOnlyFrontendRoles = ["module", "workspace", "services", "hooks", "typ
 const capabilityFrontendRoles = new Map([
   ["auditor-web/overview", ["workspace"]],
   ["ecommerce-web/overview", ["workspace", "services", "hooks", "types"]],
+  ["ecommerce-web/storefront", ["page", "services", "types"]],
+  [
+    "ecommerce-web/storefront-profile",
+    ["workspace", "form", "services", "hooks", "types", "schema"]
+  ],
+  [
+    "ecommerce-web/season-strip",
+    ["workspace", "list", "form", "services", "hooks", "types", "schema"]
+  ],
   ["logicx-erp-web/overview", ["workspace", "services", "hooks", "types"]],
   ["zuno-web/diagnostics", ["workspace", "list", "form", "services", "hooks", "types", "schema"]],
   ["zuno-web/cases", ["workspace", "list", "form", "services", "hooks", "types", "schema"]],
@@ -300,7 +323,7 @@ for (const root of webModuleRoots) {
       continue;
 
     for (const role of moduleRoles) {
-      const extension = ["form", "list", "show", "workspace"].includes(role) ? "tsx" : "ts";
+      const extension = ["form", "list", "show", "workspace", "page"].includes(role) ? "tsx" : "ts";
       const filePath = join(modulePath, `${moduleDir.name}.${role}.${extension}`);
       if (!existsSync(filePath)) {
         missing.push(

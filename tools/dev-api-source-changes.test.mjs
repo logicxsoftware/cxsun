@@ -3,7 +3,11 @@ import { mkdtemp, mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { captureApiInputs, changedApiInputs } from "./dev-api-source-changes.mjs";
+import {
+  apiSourceDirectories,
+  captureApiInputs,
+  changedApiInputs
+} from "./dev-api-source-changes.mjs";
 
 test("API watcher restarts only for changed source or environment content", async () => {
   const root = await mkdtemp(join(tmpdir(), "cxsun-api-watch-"));
@@ -39,8 +43,20 @@ test("API watcher restarts only for changed source or environment content", asyn
     assert.deepEqual(changedApiInputs(changedEnv, ecommerceInputs), [
       "apps/ecommerce/api/src/modules/overview/overview.service.ts"
     ]);
+
+    const frappeDirectory = join(root, "apps/frappe/api/src/modules/connection");
+    await mkdir(frappeDirectory, { recursive: true });
+    await writeFile(
+      join(frappeDirectory, "connection.live-enquiries.ts"),
+      "export const live = true;\n"
+    );
+    const frappeInputs = await captureApiInputs(root);
+    assert.deepEqual(changedApiInputs(ecommerceInputs, frappeInputs), [
+      "apps/frappe/api/src/modules/connection/connection.live-enquiries.ts"
+    ]);
+    assert.ok(apiSourceDirectories(root).includes(join(root, "apps/frappe/api/src")));
     await rm(sourceFile);
-    assert.deepEqual(changedApiInputs(ecommerceInputs, await captureApiInputs(root)), [
+    assert.deepEqual(changedApiInputs(frappeInputs, await captureApiInputs(root)), [
       "apps/platform/api/src/server.ts"
     ]);
   } finally {

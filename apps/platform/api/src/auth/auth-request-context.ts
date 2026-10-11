@@ -129,7 +129,7 @@ export function registerAuthRequestContext(app: FastifyInstance) {
 }
 
 export function isPublicAuthenticationPath(path: string) {
-  return path.startsWith("/public/") || publicAuthPaths.has(path);
+  return path.startsWith("/public/") || path.startsWith("/storefront/") || publicAuthPaths.has(path);
 }
 
 export function requestHost(request: FastifyRequest) {

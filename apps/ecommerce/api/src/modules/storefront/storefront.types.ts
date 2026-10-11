@@ -1,93 +1,100 @@
-import type { Kysely } from "kysely";
-export const storefrontPermissions = [
-  "ecommerce.storefront.view",
-  "ecommerce.storefront.manage",
-  "ecommerce.storefront.quotes"
-] as const;
-export type StorefrontPermission = (typeof storefrontPermissions)[number];
-export type StorefrontConfigInput = {
-  brandName: string;
-  tagline: string;
-  location: string;
-  phone: string;
-  email: string;
-  logoUrl: string;
-  industryKey: string;
-  industryName: string;
-  enabled: boolean;
-};
-export type StorefrontConfig = StorefrontConfigInput & { uuid: string };
-// Minimal public lookup owned by this child. Core identities and audit fields never leave the public storefront.
-export type StorefrontCatalogLookup = {
-  uuid: string;
-  slug: string;
-  title: string;
+export type StorefrontProduct = {
+  brand: string | null;
+  category: string;
+  compareAtPrice: number | null;
   description: string;
-  sku: string;
-  price: number;
-  compareAtPrice: number | null;
-  currency: string;
-  imageUrl: string;
-  imageAlt: string;
   featured: boolean;
-  categoryName: string | null;
-  seoTitle: string;
-  seoDescription: string;
-};
-export type StorefrontOffer = {
-  uuid: string;
-  vendorUuid: string;
-  vendorName: string;
-  price: number | null;
-  compareAtPrice: number | null;
-  currency: string;
-  availability: "confirm_with_seller";
-};
-export type StorefrontProduct = Omit<
-  StorefrontCatalogLookup,
-  "price" | "compareAtPrice" | "currency"
-> & { industryKey: string; offers: StorefrontOffer[] };
-export type QuoteInput = {
-  requestKey: string;
+  featuredOrder: number | null;
+  imageAlt: string;
+  imageUrl: string;
   name: string;
-  email: string;
-  phone: string;
-  notes: string;
-  consent: true;
-  items: { catalogUuid: string; vendorUuid: string; quantity: number }[];
+  price: number;
+  shortDescription: string;
+  slug: string;
+  subtitle: string;
+  variantCount: number;
 };
-export type QuoteItem = {
-  catalogUuid: string;
-  vendorUuid: string;
+
+export type StorefrontSlider = {
+  actionLabel: string;
+  actionUrl: string;
+  description: string;
+  displayOrder: number;
+  eyebrow: string;
+  imageAlt: string;
+  imageUrl: string;
+  linkedItem: string | null;
+  sliderCode: string;
   title: string;
-  quantity: number;
-  price: number | null;
-  currency: string;
 };
-export type QuoteRecord = {
-  uuid: string;
-  name: string;
-  email: string;
-  phone: string;
-  notes: string;
-  status: "received" | "reviewing" | "closed";
-  createdAt: string;
-  items: QuoteItem[];
+export type StorefrontPromotion = {
+  actionLabel: string;
+  actionUrl: string;
+  badge: string;
+  badgePosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  badgeTint: string;
+  badgeTextColor: string;
+  description: string;
+  displayOrder: number;
+  eyebrow: string;
+  imageAlt: string;
+  imageUrl: string;
+  linkedItem: string | null;
+  offerPrice: number;
+  originalPrice: number | null;
+  promotionCode: string;
+  title: string;
 };
-export type StorefrontReceipt = { reference: string; status: "received"; itemCount: number };
-export type StorefrontDatabase = {
-  ecommerce_storefront_config: { id: number };
-  ecommerce_storefront_quotes: { id: number };
-  ecommerce_storefront_quote_items: { id: number };
-  ecommerce_storefront_activity: { id: number };
+export type StorefrontFeaturedCard = Omit<StorefrontPromotion, "promotionCode"> & {
+  featuredCode: string;
 };
-export type StorefrontPublicContext = {
-  database: Kysely<StorefrontDatabase>;
-  clientKey: string;
-  catalog: () => Promise<StorefrontCatalogLookup[]>;
+
+export type StorefrontProductDetail = StorefrontProduct & {
+  bulletPoints: string[];
+  returnPolicy: string;
+  variants: Array<{ id: number; sku: string; title: string; price: number }>;
+  warranty: string;
 };
-export type StorefrontAdminContext = {
-  database: Kysely<StorefrontDatabase>;
-  actorEmail: string;
-  authorize: (permission: StorefrontPermission) => Promise<void>;
+
+export type StorefrontCatalogFilters = {
+  brand?: string | undefined;
+  category?: string | undefined;
+  maxPrice?: number | undefined;
+  minPrice?: number | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  scope?: StorefrontSearchScope | undefined;
+  search?: string | undefined;
+  sort?: StorefrontSort | undefined;
+};
+
+export type StorefrontSearchScope = "all" | "products" | "brands" | "categories";
+export type StorefrontSort = "featured" | "name" | "price-asc" | "price-desc" | "discount";
+
+export type StorefrontDiscovery = {
+  brands: Array<{ logoAlt: string; logoUrl: string; name: string; productCount: number }>;
+  categories: Array<{ name: string; productCount: number }>;
+  priceRange: { maximum: number; minimum: number };
+};
+export type StorefrontSiteNavigation = {
+  about: string;
+  copyrightText: string;
+  groups: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
+  paymentMethods: Array<{ logoUrl: string; name: string }>;
+  socialLinks: Array<{ label: string; href: string }>;
+  poweredByText: string;
+  serviceBanner: {
+    actionLabel: string;
+    actionUrl: string;
+    description: string;
+    eyebrow: string;
+    title: string;
+  };
+  tagline: string;
+  trustedStrip: {
+    description: string;
+    eyebrow: string;
+    proofPoints: string[];
+    title: string;
+  };
 };

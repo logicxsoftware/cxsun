@@ -10,7 +10,8 @@ export async function aggregateFrappeEnquiries(
   fields: string[],
   filters: Filter[],
   employeeCode: string | null,
-  canViewAll: boolean
+  canViewAll: boolean,
+  orFilters?: Filter[]
 ): Promise<Array<Record<string, string | number | null> & { count: number }>> {
   const params = new URLSearchParams({
     fields: JSON.stringify([...fields, { COUNT: "name", as: "count" }]),
@@ -19,7 +20,8 @@ export async function aggregateFrappeEnquiries(
     order_by: fields.map((field) => `${field} asc`).join(", "),
     limit_page_length: "501"
   });
-  if (!canViewAll) {
+  if (orFilters?.length) params.set("or_filters", JSON.stringify(orFilters));
+  else if (!canViewAll) {
     if (!employeeCode)
       throw AppError.forbidden("Map this CRM user to a Frappe employee to view live enquiries.");
     params.set(

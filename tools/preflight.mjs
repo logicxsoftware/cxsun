@@ -12,7 +12,11 @@ import { loadDevEnv, requiredDevPort } from "./dev-runtime-env.mjs";
 import { requestProcessStop, startProcessControl } from "./dev-process-control.mjs";
 import { requestDevApiShutdown } from "./dev-shutdown-client.mjs";
 import { takeoverTarget } from "./dev-port-ownership.mjs";
-import { captureApiInputs, changedApiInputs } from "./dev-api-source-changes.mjs";
+import {
+  apiSourceDirectories,
+  captureApiInputs,
+  changedApiInputs
+} from "./dev-api-source-changes.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const app = process.argv[2];
@@ -144,8 +148,8 @@ function launchChild() {
       cwd: resolve(root, config.cwd),
       detached: process.platform !== "win32",
       env: {
-        ...process.env,
         ...(app !== "platform-api" ? env : {}),
+        ...process.env,
         ...(app === "platform-api"
           ? {
               CXSUN_DB_FRESH_SESSION_FILE: join(
@@ -189,8 +193,8 @@ function watchApiSources() {
     if (restartTimer) clearTimeout(restartTimer);
     restartTimer = setTimeout(() => void checkApiInputs(), 500);
   };
-  addWatcher(watch(resolve(root, "apps/platform/api/src"), { recursive: true }, schedule));
-  addWatcher(watch(resolve(root, "apps/ecommerce/api/src"), { recursive: true }, schedule));
+  for (const directory of apiSourceDirectories(root))
+    addWatcher(watch(directory, { recursive: true }, schedule));
   addWatcher(
     watch(root, (_event, filename) => {
       if (String(filename) === ".env") schedule();

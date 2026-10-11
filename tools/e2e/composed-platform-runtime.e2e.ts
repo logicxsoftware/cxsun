@@ -26,12 +26,12 @@ try {
   );
 
   assert.ok(
-    modules.includes("ecommerce.catalog"),
-    "Ecommerce catalog was not composed into Platform API."
+    modules.includes("ecommerce.catalog.product-information"),
+    "Ecommerce product information was not composed into Platform API."
   );
   const catalogResponse = await app.inject({
     method: "GET",
-    url: "/ecommerce/catalog",
+    url: "/ecommerce/catalog/product-information",
     headers: { "x-tenant-db": "cxsun_composed_runtime_probe", "x-tenant-id": "00000000" }
   });
   assert.equal(

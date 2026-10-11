@@ -1,4 +1,8 @@
-import { EcommerceStorefrontWorkspace, createStorefrontGateway } from "./modules/storefront";
+import {
+  EcommerceModuleWorkspace,
+  ecommerceModulePages,
+  type EcommerceModulePage
+} from "./modules/ecommerce-composition/ecommerce-composition.pages";
 declare const __CXSUN_STOREFRONT_WEB_PORT__: number;
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -8,7 +12,6 @@ import { MainLayout } from "@cxsun/ui/layouts/main-layouts";
 import { Button } from "@cxsun/ui/components/button";
 import { EcommerceOverviewWorkspace } from "./modules/overview";
 import { createEcommerceOverviewGateway } from "./modules/overview/overview.services";
-import { EcommerceCatalogWorkspace, createCatalogGateway } from "./modules/catalog";
 import "@cxsun/ui/styles.css";
 
 declare const __CXSUN_PLATFORM_WEB_PORT__: number;
@@ -37,7 +40,6 @@ async function request<T>(path: string, method = "GET", payload?: unknown): Prom
   return body.data as T;
 }
 const gateway = createEcommerceOverviewGateway(request);
-const storefrontGateway = createStorefrontGateway(request);
 function openPublicStore() {
   const url = new URL(window.location.href);
   url.port = String(__CXSUN_STOREFRONT_WEB_PORT__);
@@ -46,34 +48,36 @@ function openPublicStore() {
   url.hash = "";
   window.open(url.href, "_blank", "noopener,noreferrer");
 }
-const catalogGateway = createCatalogGateway(request);
+type DeskPage = EcommerceModulePage | "ecommerce.overview";
+const menu: Array<{ label: string; page: DeskPage }> = [
+  { label: "Overview", page: "ecommerce.overview" },
+  { label: "Catalog", page: "ecommerce.catalog" },
+  { label: "Items", page: "ecommerce.product-information" },
+  { label: "Variants", page: "ecommerce.product-variants" },
+  { label: "Images", page: "ecommerce.product-images" },
+  { label: "Data Sources", page: "ecommerce.catalog-data-source" },
+  { label: "Storefront", page: "ecommerce.storefront" },
+  { label: "Sliders", page: "ecommerce.storefront-sliders" },
+  { label: "Promotions", page: "ecommerce.promotions" },
+  { label: "Featured Cards", page: "ecommerce.featured-cards" },
+  { label: "Season Strips", page: "ecommerce.season-strips" },
+  { label: "Service Banner", page: "ecommerce.service-banner" },
+  { label: "Trusted Strip", page: "ecommerce.trusted-strip" }
+];
+function pageFromPath(): DeskPage {
+  const key = `ecommerce.${window.location.pathname.slice(1)}`;
+  return ecommerceModulePages.find((page) => page === key) ?? "ecommerce.overview";
+}
 function EcommerceDesk() {
   const [signedOut, setSignedOut] = useState(false);
-  const [page, setPage] = useState(
-    window.location.pathname === "/storefront"
-      ? "Storefront"
-      : window.location.pathname === "/catalog"
-        ? "Catalog"
-        : "Overview"
-  );
+  const [page, setPage] = useState<DeskPage>(pageFromPath);
   useEffect(() => {
-    const update = () =>
-      setPage(
-        window.location.pathname === "/storefront"
-          ? "Storefront"
-          : window.location.pathname === "/catalog"
-            ? "Catalog"
-            : "Overview"
-      );
+    const update = () => setPage(pageFromPath());
     window.addEventListener("popstate", update);
     return () => window.removeEventListener("popstate", update);
   }, []);
-  function navigate(value: string) {
-    history.pushState(
-      null,
-      "",
-      value === "Storefront" ? "/storefront" : value === "Catalog" ? "/catalog" : "/"
-    );
+  function navigate(value: DeskPage) {
+    history.pushState(null, "", value === "ecommerce.overview" ? "/" : `/${value.slice(10)}`);
     setPage(value);
   }
   const session = useQuery({
@@ -101,7 +105,7 @@ function EcommerceDesk() {
   return (
     <MainLayout
       applicationName="Ecommerce"
-      workspaceTitle={page}
+      workspaceTitle={menu.find((item) => item.page === page)?.label ?? "Ecommerce"}
       statusLabel="Connected to Platform"
       user={{
         email: session.data.email,
@@ -112,11 +116,11 @@ function EcommerceDesk() {
         {
           label: "Ecommerce",
           icon: Package,
-          items: [
-            { label: "Overview", icon: LayoutGrid, onSelect: () => navigate("Overview") },
-            { label: "Catalog", icon: Package, onSelect: () => navigate("Catalog") },
-            { label: "Storefront", icon: Package, onSelect: () => navigate("Storefront") }
-          ]
+          items: menu.map((item) => ({
+            label: item.label,
+            icon: item.page === "ecommerce.overview" ? LayoutGrid : Package,
+            onSelect: () => navigate(item.page)
+          }))
         }
       ]}
       appItems={[
@@ -134,12 +138,10 @@ function EcommerceDesk() {
         setSignedOut(true);
       }}
     >
-      {page === "Storefront" ? (
-        <EcommerceStorefrontWorkspace gateway={storefrontGateway} onOpenStore={openPublicStore} />
-      ) : page === "Catalog" ? (
-        <EcommerceCatalogWorkspace gateway={catalogGateway} />
-      ) : (
+      {page === "ecommerce.overview" ? (
         <EcommerceOverviewWorkspace gateway={gateway} />
+      ) : (
+        <EcommerceModuleWorkspace page={page} onOpenStore={openPublicStore} />
       )}
     </MainLayout>
   );

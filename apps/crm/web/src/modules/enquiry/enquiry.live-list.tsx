@@ -1,14 +1,31 @@
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
+import { BellRing } from "lucide-react";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
 import { WorkspaceRowActions } from "@cxsun/ui/workspace/row-actions";
 import { CrmStatusBadge, prioritySwatch } from "../../crm-colors";
+import { EnquiryInlineFilter } from "./enquiry.inline-filter";
 import { enquiryTableText } from "./enquiry.table-text";
 import { formatListDueDate } from "./enquiry.view-utils";
-import type { LiveEnquiryRecord } from "./enquiry.types";
+import type { EnquiryColumnFilters, LiveEnquiryRecord } from "./enquiry.types";
+
+const filterColumns: Record<string, { key: keyof EnquiryColumnFilters; label: string }> = {
+  customer: { key: "customer", label: "Customer" },
+  details: { key: "details", label: "Enquiry details" },
+  listIn: { key: "listIn", label: "List in" },
+  dueDate: { key: "dueDate", label: "Due date" },
+  priority: { key: "priority", label: "Priority" },
+  creator: { key: "creator", label: "Creator" },
+  assignedTo: { key: "assignedTo", label: "Assigned to" },
+  status: { key: "status", label: "Status" }
+};
 
 export function LiveEnquiryList({
   records,
   visibleColumns,
+  showInlineFilters,
+  columnFilters,
+  onColumnFilterChange,
+  onHideInlineFilters,
   userColumnMode,
   showActions,
   loading,
@@ -16,6 +33,10 @@ export function LiveEnquiryList({
 }: {
   records: LiveEnquiryRecord[];
   visibleColumns: Record<string, boolean>;
+  showInlineFilters: boolean;
+  columnFilters: EnquiryColumnFilters;
+  onColumnFilterChange: (column: keyof EnquiryColumnFilters, value: string) => void;
+  onHideInlineFilters: () => void;
   userColumnMode: "creator" | "allocatedTo" | "both";
   showActions: boolean;
   loading: boolean;
@@ -49,19 +70,24 @@ export function LiveEnquiryList({
       id: "details",
       accessorKey: "title",
       header: "Enquiry details",
-      cell: ({ row }) => (
-        <button
-          className="block max-w-80 cursor-pointer truncate text-left font-medium text-foreground hover:underline"
-          title={enquiryTableText(row.original.details || row.original.title)}
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onShow(row.original);
-          }}
-        >
-          {enquiryTableText(row.original.title) || "—"}
-        </button>
-      )
+      cell: ({ row }) =>
+        colorCode(row.original.status ?? "") === "new" ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+            <BellRing className="size-3.5" /> New call
+          </span>
+        ) : (
+          <button
+            className="block max-w-80 cursor-pointer truncate text-left font-medium text-foreground hover:underline"
+            title={enquiryTableText(row.original.details || row.original.title)}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onShow(row.original);
+            }}
+          >
+            {enquiryTableText(row.original.title) || "—"}
+          </button>
+        )
     },
     {
       id: "listIn",
@@ -140,6 +166,21 @@ export function LiveEnquiryList({
         return column.id === "enquiryNo" || visibleColumns[column.id ?? ""] !== false;
       })}
       data={records}
+      {...(showInlineFilters
+        ? {
+            filterRow: (columnId: string) => {
+              const filter = filterColumns[columnId];
+              return filter ? (
+                <EnquiryInlineFilter
+                  label={filter.label}
+                  value={columnFilters[filter.key] ?? ""}
+                  onChange={(value) => onColumnFilterChange(filter.key, value)}
+                  onHide={onHideInlineFilters}
+                />
+              ) : null;
+            }
+          }
+        : {})}
       emptyState="No enquiries found."
       isLoading={loading}
       minWidth="1020px"

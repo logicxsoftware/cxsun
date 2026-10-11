@@ -1,11 +1,21 @@
 import { createHash } from "node:crypto";
+import { existsSync, readdirSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
+export function apiSourceDirectories(root) {
+  const apps = join(root, "apps");
+  if (!existsSync(apps)) return [];
+  return readdirSync(apps, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => join(apps, entry.name, "api", "src"))
+    .filter((directory) => existsSync(directory));
+}
+
 export async function captureApiInputs(root) {
   const files = new Map();
-  await captureDirectory(root, join(root, "apps/platform/api/src"), files);
-  await captureDirectory(root, join(root, "apps/ecommerce/api/src"), files);
+  for (const directory of apiSourceDirectories(root))
+    await captureDirectory(root, directory, files);
   await captureFile(root, join(root, ".env"), files);
   return files;
 }
