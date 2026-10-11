@@ -1,4 +1,4 @@
-import { sql, type Kysely } from "kysely";
+import type { Kysely } from "kysely";
 import { runMigrationBatch, type MigrationBatch } from "@cxsun/framework/db";
 import type { EcommerceDatabase } from "../../database/ecommerce-database.js";
 import {
@@ -71,7 +71,7 @@ const steps = [
   ["storefront-section-visibility", upgradeStorefrontSectionVisibility],
   ["storefront-schema", standardizeStorefrontSchema],
   ["storefront-performance", upgradeStorefrontReadPerformance],
-  ["legacy-cleanup", dropLegacyEcommerceTables]
+  ["legacy-cleanup", preserveLegacyEcommerceTables]
 ] as const;
 
 const versionedSteps = steps.map(([name, up], index) => ({
@@ -94,7 +94,7 @@ const orderedSteps = [
 const batch: MigrationBatch<EcommerceDatabase> = {
   batch: 1,
   scope: "ecommerce.modules",
-  description: "Install the copied ecommerce modules and retire legacy catalog and quote data.",
+  description: "Install Ecommerce modules while preserving legacy catalog and quote data.",
   version: "1.0.83",
   steps: orderedSteps
 };
@@ -109,37 +109,12 @@ export async function migrateEcommerceTenantDatabase(database: Kysely<EcommerceD
 }
 
 export async function rollbackEcommerceTenantDatabase(database: Kysely<EcommerceDatabase>) {
-  for (const table of [
-    "ecommerce_catalog_match_outbox",
-    "ecommerce_catalog_match_requests",
-    "ecommerce_catalog_items",
-    "ecommerce_catalog_sync_runs",
-    "ecommerce_catalog_module_data_sources",
-    "ecommerce_storefront_announcements",
-    "ecommerce_storefront_profiles",
-    "ecommerce_storefront_season_strips",
-    "ecommerce_storefront_featured_cards",
-    "ecommerce_storefront_promotions",
-    "ecommerce_storefront_sliders",
-    "ecommerce_product_images",
-    "ecommerce_product_variants",
-    "ecommerce_ishop_catalogs",
-    "ecommerce_product_information"
-  ]) {
-    await sql.raw(`DROP TABLE IF EXISTS ${table}`).execute(database);
-  }
-  await sql`DELETE FROM migration_schema WHERE name LIKE 'ecommerce.modules.%'`.execute(database);
+  void database;
+  throw new Error("Ecommerce rollback requires a reviewed, data-preserving migration plan.");
 }
 
-async function dropLegacyEcommerceTables(database: Kysely<EcommerceDatabase>) {
-  for (const table of [
-    "ecommerce_storefront_quote_items",
-    "ecommerce_storefront_quotes",
-    "ecommerce_storefront_activity",
-    "ecommerce_storefront_config",
-    "ecommerce_catalog_activity",
-    "ecommerce_catalog"
-  ]) {
-    await sql.raw(`DROP TABLE IF EXISTS ${table}`).execute(database);
-  }
+async function preserveLegacyEcommerceTables(database: Kysely<EcommerceDatabase>) {
+  void database;
+  // The recorded step name remains stable for databases that already applied it.
+  // New upgrades retain legacy rows until an explicit archival migration exists.
 }

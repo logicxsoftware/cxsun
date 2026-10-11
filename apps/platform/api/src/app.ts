@@ -27,6 +27,7 @@ import {
   getActiveListInForDatabase,
   getActiveStatusForDatabase,
   getActivePriorityForDatabase,
+  lookupAssignedEnquirySummary,
   type EnquiryDatabase,
   type ListInDatabase,
   type StatusDatabase,
@@ -49,6 +50,7 @@ import {
 import {
   frappeConnectionModule,
   FrappeCrmEnquirySource,
+  FrappeConnectionRepository,
   frappeEnquirySyncModule,
   frappeEnquiryImportJobName,
   processFrappeEnquiryImportJob,
@@ -296,6 +298,43 @@ export async function createApp() {
         lookupBillingPeriod({ ...(await billingLookupScope()), period }),
       lookupLongOutstandingSales: async () =>
         lookupLongOutstandingSales(await billingLookupScope()),
+      lookupAssignedEnquiries: async () => {
+        const crmEnabled = await context.database
+          .selectFrom("app_module_settings")
+          .select("id")
+          .where("module_key", "=", "crm")
+          .where("enabled", "=", true)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        if (!crmEnabled) throw AppError.forbidden("CRM is not enabled for this tenant.");
+        await context.authorize("crm.enquiry.view");
+        const frappeEnabled = await context.database
+          .selectFrom("app_module_settings")
+          .select("id")
+          .where("module_key", "=", "frappe")
+          .where("enabled", "=", true)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        if (
+          frappeEnabled &&
+          (await new FrappeConnectionRepository(
+            context.database as unknown as import("kysely").Kysely<FrappeDatabase>
+          ).provider("crm.enquiries")) === "frappe"
+        )
+          return { source: "frappe" as const };
+        const actor = await context.database
+          .selectFrom("app_users")
+          .select("id")
+          .where("email", "=", context.actorEmail)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        const summary = await lookupAssignedEnquirySummary({
+          database: context.database as unknown as import("kysely").Kysely<EnquiryDatabase>,
+          actorEmail: context.actorEmail,
+          actorUserId: actor?.id ?? null
+        });
+        return { source: "local" as const, ...summary };
+      },
       audit: (action: string, conversation: import("@cxsun/zetro-api").ZetroConversation) =>
         recordTenantAccessAudit({
           action,
@@ -354,6 +393,9 @@ export async function createApp() {
     }
     const tenant = await new TenantRepository().findByIdOrCode(tenantId);
     if (!tenant) throw AppError.notFound("Tenant was not found.");
+    if (!tenant.enabledModuleKeys.includes("zetro")) {
+      throw AppError.forbidden("Zetro is not enabled for this tenant.");
+    }
     const actorEmail = request.authContext.payload.email ?? request.authContext.session.userEmail;
     await recordTenantAccessAudit({
       action: "zetro.admin.access",
@@ -425,9 +467,12 @@ export async function createApp() {
     const action =
       request.method === "GET" || /^\/crm\/enquiries\/alerts\/\d+\/read$/u.test(path)
         ? "view"
-        : request.method === "DELETE"
+        : request.method === "DELETE" && !/^\/crm\/enquiries\/live\//u.test(path)
           ? "delete"
-          : request.method === "POST" && request.url.split("?")[0] === collection
+          : request.method === "POST" &&
+              (path === collection ||
+                path === `${collection}/live` ||
+                /^\/crm\/enquiries\/options\/(list-in|status|priority)$/u.test(path))
             ? "create"
             : "update";
     if (action === "view" && ["list-in", "status", "priority"].includes(resource)) {
@@ -520,6 +565,12 @@ export async function createApp() {
       canViewAll,
       database: context.database as unknown as import("kysely").Kysely<EnquiryDatabase>,
       relations: enquiryRelations(context),
+      listUsers: () =>
+        context.database
+          .selectFrom("app_users")
+          .select(["id", "name", "email", "status"])
+          .where("status", "=", "active")
+          .execute(),
       remote: new FrappeCrmEnquirySource(
         context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
         {
@@ -914,25 +965,32 @@ export async function createApp() {
         const database = getTenantDatabase(tenant);
         const enabled = await database
           .selectFrom("app_module_settings")
-          .select("id")
-          .where("module_key", "=", "ecommerce")
+          .select("module_key")
+          .where("module_key", "in", ["ecommerce", "frappe", "crm"])
           .where("enabled", "=", true)
           .where("status", "=", "active")
-          .executeTakeFirst();
-        if (!enabled) throw AppError.notFound("Storefront is not available.");
-        return { database, databaseName: tenant.dbName, tenantKey: tenant.uuid };
+          .execute();
+        const modules = new Set(enabled.map((row) => row.module_key));
+        if (!modules.has("ecommerce")) throw AppError.notFound("Storefront is not available.");
+        return {
+          database,
+          databaseName: tenant.dbName,
+          tenantKey: tenant.uuid,
+          frappeEnabled: modules.has("frappe") && modules.has("crm")
+        };
       })().then(
-        ({ database, databaseName, tenantKey }) =>
+        ({ database, databaseName, tenantKey, frappeEnabled }) =>
           runWithEcommerceRequestScope(
             database as unknown as import("kysely").Kysely<EcommerceDatabase>,
             tenantKey,
             done,
-            databaseName
+            databaseName,
+            frappeEnabled
           ),
         done
       );
     });
-    await registerEcommercePublicModules(scoped, env.JWT_SECRET);
+    await registerEcommercePublicModules(scoped, env.JWT_SECRET, frappeSettings);
   });
   await app.register(async (scoped) => {
     scoped.addHook("onRequest", (request, _reply, done) => {
@@ -940,40 +998,35 @@ export async function createApp() {
         const context = tenantAccessContext(request);
         const enabled = await context.database
           .selectFrom("app_module_settings")
-          .select("id")
-          .where("module_key", "=", "ecommerce")
+          .select("module_key")
+          .where("module_key", "in", ["ecommerce", "frappe", "crm"])
           .where("enabled", "=", true)
           .where("status", "=", "active")
-          .executeTakeFirst();
-        if (!enabled) throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
+          .execute();
+        const modules = new Set(enabled.map((row) => row.module_key));
+        if (!modules.has("ecommerce"))
+          throw AppError.forbidden("Ecommerce is not enabled for this tenant.");
+        const frappeEnabled = modules.has("frappe") && modules.has("crm");
         const area = request.url.startsWith("/ecommerce/storefront/") ? "storefront" : "catalog";
         const action =
           request.method === "GET" ? "view" : area === "storefront" ? "manage" : "edit";
         await context.authorize(`ecommerce.${area}.${action}`);
         const frappeOperation =
-          request.method !== "GET" &&
-          (request.url.startsWith("/ecommerce/settings/data-source/frappe/") ||
-            request.url === "/ecommerce/settings/data-source/frappe" ||
-            (request.url.startsWith("/ecommerce/settings/data-source/sync/") &&
-              !request.url.startsWith("/ecommerce/settings/data-source/sync/seed-demo")));
+          request.url.startsWith("/ecommerce/settings/data-source/frappe-items") ||
+          request.url.startsWith("/ecommerce/settings/data-source/sync/");
         if (frappeOperation) {
-          const frappeEnabled = await context.database
-            .selectFrom("app_module_settings")
-            .select("id")
-            .where("module_key", "=", "frappe")
-            .where("enabled", "=", true)
-            .where("status", "=", "active")
-            .executeTakeFirst();
           if (!frappeEnabled) throw AppError.forbidden("Frappe is not enabled for this tenant.");
           await context.authorize("frappe.connection.manage");
         }
-        return context;
+        return { context, frappeEnabled };
       })().then(
-        (context) =>
+        ({ context, frappeEnabled }) =>
           runWithEcommerceRequestScope(
             context.database as unknown as import("kysely").Kysely<EcommerceDatabase>,
             context.tenantId,
-            done
+            done,
+            undefined,
+            frappeEnabled
           ),
         done
       );
@@ -981,6 +1034,7 @@ export async function createApp() {
     await registerEcommerceStaffModules(
       scoped,
       env.JWT_SECRET,
+      frappeSettings,
       (request) => tenantAccessContext(request).actorEmail
     );
   });

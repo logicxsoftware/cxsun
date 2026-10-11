@@ -5,7 +5,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@codexsun/ui/components/ui/sheet';
+} from '@cxsun/ui/components/sheet';
 import { money } from '../api';
 import { Pos1PaymentCollector } from './Pos1PaymentCollector';
 import type { PaymentRecord } from './types';

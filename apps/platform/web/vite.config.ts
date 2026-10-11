@@ -28,7 +28,6 @@ export default defineConfig(({ command, mode }) => {
     cacheDir: "../../../node_modules/.vite/platform-web",
     envDir: "../../..",
     define: {
-      __CXSUN_STOREFRONT_WEB_PORT__: JSON.stringify(Number(runtimeEnv.CXSUN_STOREFRONT_WEB_PORT)),
       __APP_VERSION__: JSON.stringify(rootPackage.version),
       __CXSUN_ECOMMERCE_WEB_PORT__: JSON.stringify(Number(runtimeEnv.CXSUN_ECOMMERCE_WEB_PORT))
     },
@@ -100,6 +99,22 @@ export default defineConfig(({ command, mode }) => {
           configDir,
           "../../crm/web/src/modules/enquiry/index.ts"
         ),
+        "@cxsun/crm-web/modules/data-source": resolve(
+          configDir,
+          "../../crm/web/src/modules/data-source/index.ts"
+        ),
+        "@cxsun/ecommerce-web/modules/pages": resolve(
+          configDir,
+          "../../ecommerce/web/src/modules/ecommerce-composition/ecommerce-composition.pages.tsx"
+        ),
+        "@cxsun/ecommerce-web/modules/overview/gateway": resolve(
+          configDir,
+          "../../ecommerce/web/src/modules/overview/overview.services.ts"
+        ),
+        "@cxsun/ecommerce-web/modules/overview": resolve(
+          configDir,
+          "../../ecommerce/web/src/modules/overview/index.ts"
+        ),
         "@cxsun/crm-web/modules/reports": resolve(
           configDir,
           "../../crm/web/src/modules/reports/index.ts"
@@ -148,6 +163,14 @@ function platformDevelopmentServer(runtimeEnv: Record<string, string | undefined
     port: requireEnvNumber(runtimeEnv.PLATFORM_WEB_PORT, "PLATFORM_WEB_PORT"),
     proxy: {
       "/api/app": proxy,
+      "/api/v1/q-cafe": {
+        changeOrigin: false,
+        target: `http://127.0.0.1:${requireEnvNumber(runtimeEnv.CXSUN_Q_CAFE_API_PORT, "CXSUN_Q_CAFE_API_PORT")}`
+      },
+      "/q-cafe": {
+        changeOrigin: false,
+        target: `http://127.0.0.1:${requireEnvNumber(runtimeEnv.CXSUN_Q_CAFE_WEB_PORT, "CXSUN_Q_CAFE_WEB_PORT")}`
+      },
       "/api/billing": {
         ...proxy,
         rewrite: (path: string) => path.replace(/^\/api\/billing/u, "") || "/"

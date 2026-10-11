@@ -1,22 +1,43 @@
 import { sql, type Kysely } from "kysely";
+import {
+  ensureStandardTableColumns,
+  runMigrationBatch,
+  type MigrationBatch
+} from "@cxsun/framework/db";
 import type { FrappeDatabase } from "./connection.types.js";
 
-export const frappeTenantMigrations = [
-  {
-    name: "frappe.enquiry-sync.v1",
-    description: "Store outbound Frappe document identities for local CRM enquiries."
-  },
-  {
-    name: "frappe.connection-settings.v1",
-    description: "Store tenant Frappe connection settings with encrypted credentials."
-  },
-  {
-    name: "frappe.data-sources.v1",
-    description: "Select a tenant data provider for supported app modules."
-  }
-];
+export const frappeTenantMigrationBatch: MigrationBatch<FrappeDatabase> = {
+  batch: 1,
+  scope: "frappe.connection",
+  version: "1.0.84",
+  description: "Adopt Frappe integration tables and standardize their audit columns.",
+  steps: [
+    {
+      name: "frappe.connection.baseline-v1",
+      checksum: "frappe.connection.baseline-v1",
+      description: "Adopt existing Frappe connection and enquiry sync tables.",
+      version: 1,
+      up: applyFrappeTenantSchema
+    },
+    {
+      name: "frappe.connection.standard-columns-v2",
+      checksum: "frappe.connection.standard-columns-v2",
+      description: "Add standard identity and audit columns without replacing integration keys.",
+      version: 2,
+      up: standardizeFrappeTenantSchema
+    }
+  ]
+};
+
+export const frappeTenantMigrations = frappeTenantMigrationBatch.steps.map(
+  ({ name, description }) => ({ name, description })
+);
 
 export async function migrateFrappeTenantDatabase(database: Kysely<FrappeDatabase>) {
+  return runMigrationBatch(database, frappeTenantMigrationBatch);
+}
+
+async function applyFrappeTenantSchema(database: Kysely<FrappeDatabase>) {
   await sql
     .raw(
       `CREATE TABLE IF NOT EXISTS frappe_data_sources (
@@ -58,7 +79,36 @@ export async function migrateFrappeTenantDatabase(database: Kysely<FrappeDatabas
 }
 
 export async function rollbackFrappeTenantDatabase(database: Kysely<FrappeDatabase>) {
-  await sql.raw("DROP TABLE IF EXISTS frappe_data_sources").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS frappe_enquiry_sync").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS frappe_connection_settings").execute(database);
+  void database;
+  throw new Error("Frappe rollback requires a reviewed, data-preserving migration plan.");
+}
+
+async function standardizeFrappeTenantSchema(database: Kysely<FrappeDatabase>) {
+  await convertNaturalPrimaryKey(database, "frappe_data_sources", "module_key");
+  await convertNaturalPrimaryKey(database, "frappe_enquiry_sync", "enquiry_id");
+  await sql
+    .raw("ALTER TABLE frappe_connection_settings MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT")
+    .execute(database);
+  await ensureStandardTableColumns(database, [
+    "frappe_data_sources",
+    "frappe_connection_settings",
+    "frappe_enquiry_sync"
+  ]);
+}
+
+export async function convertNaturalPrimaryKey(
+  database: Kysely<FrappeDatabase>,
+  table: "frappe_data_sources" | "frappe_enquiry_sync" | "frappe_user_mappings",
+  column: "module_key" | "enquiry_id" | "local_user_id"
+) {
+  const result = await sql<{
+    count: number;
+  }>`SELECT COUNT(*) AS count FROM information_schema.columns
+    WHERE table_schema=DATABASE() AND table_name=${table} AND column_name='id'`.execute(database);
+  if (Number(result.rows[0]?.count ?? 0) > 0) return;
+  await sql
+    .raw(
+      `ALTER TABLE ${table} DROP PRIMARY KEY, ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST, ADD UNIQUE KEY ${table}_${column}_unique (${column})`
+    )
+    .execute(database);
 }

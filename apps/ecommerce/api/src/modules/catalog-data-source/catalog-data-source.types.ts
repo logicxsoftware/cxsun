@@ -37,17 +37,11 @@ export type CatalogModuleDataSource = {
 };
 
 export type CatalogDataSourceSettings = {
-  appKeyConfigured: boolean;
-  appSecretConfigured: boolean;
-  connectionName: string;
   frappeConfigured: boolean;
   frappeEnabled: boolean;
   frappeUrl: string | null;
-  lastVerifiedAt: string | null;
   modules: CatalogModuleDataSource[];
-  saveToEnvironment: boolean;
   verificationStatus: "live" | "offline" | "unverified";
-  verifiedUser: string | null;
 };
 
 export type CatalogDataSourceConnectionSettings = Omit<CatalogDataSourceSettings, "modules">;
@@ -61,20 +55,6 @@ export type CatalogDataSourceConnectionResult = {
 };
 
 export type FrappeCatalogCredentials = { apiKey: string; apiSecret: string; url: string };
-
-export type FrappeConnectionPayload = {
-  apiKey?: string;
-  apiSecret?: string;
-  connectionName: string;
-  enabled: boolean;
-  saveToEnvironment: boolean;
-  url: string;
-};
-
-export type FrappeVerificationPayload = Pick<
-  FrappeConnectionPayload,
-  "apiKey" | "apiSecret" | "url"
->;
 
 export type FrappeErpItem = {
   brand?: string | null;
@@ -212,13 +192,8 @@ export type CatalogSyncResult = {
 
 export type CatalogDataSourceControl = {
   credentials(): Promise<FrappeCatalogCredentials>;
-  save(
-    input: FrappeConnectionPayload,
-    actorEmail: string
-  ): Promise<CatalogDataSourceConnectionSettings>;
   settings(): Promise<CatalogDataSourceConnectionSettings>;
   test(provider: CatalogDataSourceProvider): Promise<CatalogDataSourceConnectionResult>;
-  verify(input: FrappeVerificationPayload): Promise<CatalogDataSourceConnectionResult>;
 };
 
 export interface StorefrontCatalogSource {

@@ -15,6 +15,9 @@ import type { BrandsRecord, BrandsSavePayload } from "./brands.types";
 const emptyBrands: BrandsSavePayload = {
   name: "",
   isActive: true,
+  logoAlt: "",
+  logoUrl: "",
+  showOnStorefront: true,
   sortOrder: 1000
 };
 
@@ -85,13 +88,33 @@ function BrandsFormBody({
       {shownError ? (
         <WorkspaceFormBanner title="Unable to save">{shownError}</WorkspaceFormBanner>
       ) : null}
-      <WorkspaceFormGrid columns={1}>
-        <WorkspaceFormField label="Name">
+      <WorkspaceFormGrid columns={2}>
+        <WorkspaceFormField label="Name" required>
           <Input
             autoFocus
             type="text"
             value={value.name}
             onChange={(event) => setValue((current) => ({ ...current, name: event.target.value }))}
+          />
+        </WorkspaceFormField>
+        <WorkspaceFormField label="Logo URL">
+          <Input
+            placeholder="https://example.com/brand-logo.svg"
+            type="url"
+            value={value.logoUrl}
+            onChange={(event) =>
+              setValue((current) => ({ ...current, logoUrl: event.target.value }))
+            }
+          />
+        </WorkspaceFormField>
+        <WorkspaceFormField label="Logo alt text">
+          <Input
+            placeholder={`${value.name || "Brand"} logo`}
+            type="text"
+            value={value.logoAlt}
+            onChange={(event) =>
+              setValue((current) => ({ ...current, logoAlt: event.target.value }))
+            }
           />
         </WorkspaceFormField>
         <WorkspaceFormField label="Sort order">
@@ -109,6 +132,16 @@ function BrandsFormBody({
           ariaLabel="Brand active status"
           checked={value.isActive}
           onCheckedChange={(checked) => setValue((current) => ({ ...current, isActive: checked }))}
+        />
+        <WorkspaceSwitchCard
+          fieldLabel="Storefront"
+          ariaLabel="Show brand on storefront"
+          checked={value.showOnStorefront}
+          activeLabel="Visible"
+          inactiveLabel="Hidden"
+          onCheckedChange={(checked) =>
+            setValue((current) => ({ ...current, showOnStorefront: checked }))
+          }
         />
       </WorkspaceFormGrid>
       <WorkspaceFormFooter
@@ -129,5 +162,12 @@ function BrandsFormBody({
   );
 }
 function toPayload(record: BrandsRecord): BrandsSavePayload {
-  return { name: record.name, isActive: record.isActive, sortOrder: record.sortOrder };
+  return {
+    isActive: record.isActive,
+    logoAlt: record.logoAlt,
+    logoUrl: record.logoUrl,
+    name: record.name,
+    showOnStorefront: record.showOnStorefront,
+    sortOrder: record.sortOrder
+  };
 }

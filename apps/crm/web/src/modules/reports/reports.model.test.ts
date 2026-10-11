@@ -5,19 +5,19 @@ import type { EnquiryReportRow } from "../enquiry/index";
 
 const rows: EnquiryReportRow[] = [
   {
-    listInId: 2,
+    listInId: "2",
     listIn: "Service",
     createdBy: "a@example.com",
-    assignedUserId: 3,
+    assignedUserId: "3",
     status: "new",
     statusName: "New",
     count: 4
   },
   {
-    listInId: 2,
+    listInId: "2",
     listIn: "Service",
     createdBy: "a@example.com",
-    assignedUserId: 3,
+    assignedUserId: "3",
     status: "open",
     statusName: "Open",
     count: 2

@@ -2,12 +2,29 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Kysely } from "kysely";
 import { z } from "zod";
 import { registerContractRoute } from "@cxsun/framework/http";
+import { AppError } from "@cxsun/framework/errors";
 import type {} from "@cxsun/framework/api";
 import { EnquiryRepository } from "./enquiry.repository.js";
 import { EnquiryService, type EnquiryRelations } from "./enquiry.service.js";
 import { EnquiryReadService, type EnquiryRemoteSource } from "./enquiry.read-source.js";
 import type { EnquiryDatabase } from "./enquiry.types.js";
 import { registerEnquiryWorkRoutes } from "./enquiry.work.routes.js";
+import { ListInService } from "../list-in/list-in.service.js";
+import { ListInRepository } from "../list-in/list-in.repository.js";
+import { StatusService } from "../status/status.service.js";
+import { StatusRepository } from "../status/status.repository.js";
+import { PriorityService } from "../priority/priority.service.js";
+import { PriorityRepository } from "../priority/priority.repository.js";
+import {
+  localViewRecord,
+  indiaDate,
+  localViewComment,
+  remoteInput,
+  remoteViewComments,
+  remoteViewScopeSummary,
+  remoteViewRecord,
+  type EnquiryViewInput
+} from "./enquiry.view-model.js";
 
 const nullableText = z.string().trim().nullable();
 const inputSchema = z.object({
@@ -42,7 +59,47 @@ const recordSchema = inputSchema.extend({
   createdAt: z.string(),
   updatedAt: z.string()
 });
-const idSchema = z.object({ id: z.coerce.number().int().positive() });
+const referenceSchema = z.string().trim().min(1).max(191);
+const viewInputSchema = inputSchema.omit({
+  listInId: true,
+  statusId: true,
+  priorityId: true,
+  assignedUserId: true
+}).extend({
+  listInId: referenceSchema.nullable(),
+  statusId: referenceSchema,
+  priorityId: referenceSchema,
+  assignedUserId: referenceSchema.nullable()
+});
+const viewRecordSchema = recordSchema.omit({
+  id: true,
+  enquiryNo: true,
+  listInId: true,
+  statusId: true,
+  priorityId: true,
+  assignedUserId: true
+}).extend({
+  id: referenceSchema,
+  enquiryNo: referenceSchema,
+  listInId: referenceSchema.nullable(),
+  statusId: referenceSchema,
+  priorityId: referenceSchema,
+  assignedUserId: referenceSchema.nullable(),
+  assignedToName: nullableText
+});
+const viewIdSchema = z.object({ id: referenceSchema });
+const localId = (value: string) => {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 1) throw AppError.validation("Invalid Local enquiry ID.");
+  return id;
+};
+const localInput = (input: EnquiryViewInput) => ({
+  ...input,
+  listInId: input.listInId === null ? null : localId(input.listInId),
+  statusId: localId(input.statusId),
+  priorityId: localId(input.priorityId),
+  assignedUserId: input.assignedUserId === null ? null : localId(input.assignedUserId)
+});
 const alertIdSchema = z.object({ alertId: z.coerce.number().int().positive() });
 const listQuerySchema = z.object({
   scope: z.enum(["all", "assigned", "created"]).default("all"),
@@ -65,15 +122,9 @@ const listQuerySchema = z.object({
   filter: z.string().trim().max(80).default("all"),
   fromAt: z.iso.datetime({ offset: true }).optional(),
   toAt: z.iso.datetime({ offset: true }).optional(),
-  listInId: z
-    .string()
-    .regex(/^(none|[1-9]\d*)$/)
-    .optional(),
+  listInId: z.string().trim().min(1).max(191).optional(),
   createdBy: z.string().trim().min(1).max(191).optional(),
-  assignedUserId: z
-    .string()
-    .regex(/^(none|[1-9]\d*)$/)
-    .optional(),
+  assignedUserId: z.string().trim().min(1).max(191).optional(),
   group: z.string().trim().min(1).max(191).optional(),
   creatorEmployee: z.string().trim().min(1).max(191).optional(),
   assigneeEmployee: z.string().trim().min(1).max(191).optional(),
@@ -85,6 +136,10 @@ const liveQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
   search: z.string().trim().max(191).default(""),
+  mobile: z
+    .string()
+    .regex(/^\d{10}$/)
+    .optional(),
   status: z.string().trim().max(80).optional(),
   fromDate: z.iso.date().optional(),
   toDate: z.iso.date().optional()
@@ -104,8 +159,83 @@ const liveRecordSchema = z.object({
   status: nullableText,
   statusDetails: nullableText,
   createdAt: nullableText,
-  modifiedAt: nullableText
+  modifiedAt: nullableText,
+  creatorCode: nullableText.optional(),
+  assigneeCode: nullableText.optional(),
+  messages: z
+    .array(
+      z.object({
+        name: z.string(),
+        body: z.string(),
+        parentName: nullableText,
+        createdBy: nullableText,
+        createdAt: nullableText
+      })
+    )
+    .optional(),
+  activity: z
+    .array(
+      z.object({
+        name: z.string(),
+        action: z.string(),
+        details: z.string(),
+        createdBy: z.string(),
+        createdAt: z.string()
+      })
+    )
+    .optional(),
+  canDelete: z.boolean().optional()
 });
+const liveInputSchema = z.object({
+  title: z.string().trim().max(255),
+  details: z.string().trim().min(1).max(10000),
+  customer: nullableText,
+  mobile: z.string().regex(/^\d{10}$/, "Enter a 10-digit mobile number."),
+  date: z.iso.date(),
+  dueDate: z.iso.date().nullable(),
+  group: nullableText,
+  assigneeCode: nullableText,
+  priority: z.string().trim().min(1).max(80),
+  status: z.string().trim().min(1).max(80),
+  statusDetails: nullableText
+});
+const liveOptionsSchema = z.object({
+  groups: z.array(z.string()),
+  statuses: z.array(z.string()),
+  employees: z.array(z.object({ code: z.string(), name: z.string() })),
+  customers: z.array(z.object({ code: z.string(), name: z.string() })),
+  suppliers: z.array(z.object({ code: z.string(), name: z.string() }))
+});
+const liveEstimateInputSchema = z.object({
+  date: z.iso.date(),
+  itemName: z.string().trim().min(1).max(255),
+  supplier: z.string().trim().min(1).max(191),
+  price: z.number().positive()
+});
+const liveEstimateSchema = liveEstimateInputSchema.extend({ name: z.string() });
+const liveJobSchema = z.object({
+  name: z.string(),
+  employee: z.string(),
+  startTime: z.string(),
+  stopTime: nullableText,
+  status: z.string(),
+  hours: z.number(),
+  totalCost: z.number(),
+  ratePerHour: z.number()
+});
+const jobTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/);
+const liveJobInputSchema = z
+  .object({
+    employee: z.string().trim().min(1).max(191),
+    startTime: jobTime,
+    stopTime: jobTime.nullable(),
+    ratePerHour: z.number().nonnegative(),
+    status: z.enum(["Running", "Completed", "Cancelled"])
+  })
+  .refine(
+    (job) => job.status === "Running" || Boolean(job.stopTime),
+    "Stop time is required for a completed job."
+  );
 const livePageSchema = z.object({
   source: z.literal("frappe"),
   page: z.number().int().positive(),
@@ -120,12 +250,12 @@ const reportQuerySchema = listQuerySchema.pick({
   fromAt: true,
   toAt: true,
   assignedUserId: true
-});
+}).extend({ view: z.enum(["list-in", "creator", "assignee", "status"]).default("list-in") });
 const reportRowSchema = z.object({
-  listInId: z.number().int().positive().nullable(),
+  listInId: referenceSchema.nullable(),
   listIn: nullableText,
   createdBy: z.string(),
-  assignedUserId: z.number().int().positive().nullable(),
+  assignedUserId: referenceSchema.nullable(),
   status: z.string(),
   statusName: z.string(),
   count: z.number().int().nonnegative()
@@ -135,6 +265,7 @@ const pageSchema = z.object({
   total: z.number().int().nonnegative(),
   statusCounts: z.array(z.object({ code: z.string(), count: z.number().int().nonnegative() }))
 });
+const viewPageSchema = pageSchema.extend({ items: z.array(viewRecordSchema) });
 const scopeSummarySchema = z.object({
   total: z.number().int().nonnegative(),
   active: z.number().int().nonnegative(),
@@ -163,17 +294,14 @@ const commentInputSchema = z.object({
   bodyFormat: z.enum(["plain", "html"]).default("plain"),
   parentId: z.number().int().positive().nullable().default(null)
 });
-const propertySchema = inputSchema
-  .pick({
-    listInId: true,
-    priorityId: true,
-    assignedUserId: true,
-    dueDate: true,
-    statusId: true,
-    closedReason: true
-  })
-  .partial()
-  .refine((value) => Object.keys(value).length > 0, "Choose a property to update.");
+const viewCommentSchema = commentSchema.omit({ id: true, enquiryId: true, parentId: true }).extend({
+  id: referenceSchema,
+  enquiryId: referenceSchema,
+  parentId: referenceSchema.nullable()
+});
+const viewCommentInputSchema = commentInputSchema.omit({ parentId: true }).extend({
+  parentId: referenceSchema.nullable().default(null)
+});
 
 export type EnquiryRequestContext = {
   database: Kysely<EnquiryDatabase>;
@@ -182,6 +310,7 @@ export type EnquiryRequestContext = {
   canViewAll: boolean;
   relations: EnquiryRelations;
   remote: EnquiryRemoteSource;
+  listUsers: () => Promise<Array<{ id: number; name: string; email: string; status: string }>>;
 };
 
 export function registerEnquiryRoutes(
@@ -202,6 +331,85 @@ export function registerEnquiryRoutes(
     await current.read.assertLocal();
     return current;
   };
+  const remotePayload = async (
+    scope: EnquiryRequestContext,
+    input: EnquiryViewInput,
+    current?: Awaited<ReturnType<EnquiryRemoteSource["get"]>>
+  ) => {
+    const contactName = input.contactId
+      ? (await scope.relations.contact(input.contactId))?.name ?? null
+      : input.capturedName;
+    const options = await scope.remote.options();
+    const customer = contactName
+      ? options.customers.find((item) => item.name === contactName || item.code === contactName)
+      : null;
+    return remoteInput(
+      { ...input, capturedName: customer?.code ?? null },
+      current
+    );
+  };
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/options/:kind",
+    schemas: {
+      params: z.object({ kind: z.enum(["list-in", "status", "priority"]) }),
+      body: z.object({ name: z.string().trim().min(1).max(80) }),
+      response: z.object({ id: referenceSchema, name: z.string(), code: z.string() })
+    },
+    handler: async ({ params, body, request }) => {
+      const { scope, read } = await service(request);
+      if ((await read.source()) === "frappe") {
+        if (!scope.remote.createOption) throw new Error("The selected enquiry source cannot create options.");
+        return scope.remote.createOption(params.kind, body.name);
+      }
+      const input = { name: body.name, sortOrder: 1000 };
+      const record = params.kind === "list-in"
+        ? await new ListInService(new ListInRepository(scope.database)).create(input, scope.actorEmail)
+        : params.kind === "status"
+          ? await new StatusService(new StatusRepository(scope.database)).create(input, scope.actorEmail)
+          : await new PriorityService(new PriorityRepository(scope.database)).create(input, scope.actorEmail);
+      return { id: String(record.id), name: record.name, code: "code" in record && typeof record.code === "string" ? record.code : record.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") };
+    }
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/options",
+    schemas: {
+      response: z.object({
+        lists: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string(), code: z.string().optional() })),
+        statuses: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string(), code: z.string().optional() })),
+        priorities: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string(), code: z.string().optional() })),
+        users: z.array(z.object({ id: referenceSchema, name: z.string(), email: z.string().optional(), status: z.string() })),
+        suppliers: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string() }))
+      })
+    },
+    handler: async ({ request }) => {
+      const { scope, read } = await service(request);
+      if ((await read.source()) === "frappe") {
+        const options = await scope.remote.options();
+        return {
+          lists: options.groups.map((name) => ({ id: name, name, status: "active" })),
+          statuses: options.statuses.map((name) => ({ id: name, name, code: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), status: "active" })),
+          priorities: ["Normal", "Urgent"].map((name) => ({ id: name, name, code: name.toLowerCase(), status: "active" })),
+          users: options.employees.map((employee) => ({ id: employee.code, name: employee.name, status: "active" })),
+          suppliers: options.suppliers.map((supplier) => ({ id: supplier.code, name: supplier.name, status: "active" }))
+        };
+      }
+      const [lists, statuses, priorities, users] = await Promise.all([
+        scope.database.selectFrom("crm_enquiry_lists").select(["id", "name", "status"]).execute(),
+        scope.database.selectFrom("crm_enquiry_statuses").select(["id", "name", "code", "status"]).execute(),
+        scope.database.selectFrom("crm_enquiry_priorities").select(["id", "name", "code", "status"]).execute(),
+        scope.listUsers()
+      ]);
+      return {
+        lists: lists.map((item) => ({ ...item, id: String(item.id) })),
+        statuses: statuses.map((item) => ({ ...item, id: String(item.id) })),
+        priorities: priorities.map((item) => ({ ...item, id: String(item.id) })),
+        users: users.map((item) => ({ ...item, id: String(item.id) })),
+        suppliers: []
+      };
+    }
+  });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/source",
@@ -219,16 +427,144 @@ export function registerEnquiryRoutes(
   });
   registerContractRoute(app, {
     method: "GET",
+    url: "/crm/enquiries/live/options",
+    schemas: { response: liveOptionsSchema },
+    handler: async ({ request }) => (await service(request)).scope.remote.options()
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live",
+    schemas: { body: liveInputSchema, response: liveRecordSchema },
+    handler: async ({ body, request }) => (await service(request)).scope.remote.create(body)
+  });
+  registerContractRoute(app, {
+    method: "GET",
     url: "/crm/enquiries/live/:name",
     schemas: { params: liveNameSchema, response: liveRecordSchema },
     handler: async ({ params, request }) => (await service(request)).scope.remote.get(params.name)
+  });
+  registerContractRoute(app, {
+    method: "PATCH",
+    url: "/crm/enquiries/live/:name",
+    schemas: {
+      params: liveNameSchema,
+      body: liveInputSchema.partial().refine((value) => Object.keys(value).length > 0),
+      response: liveRecordSchema
+    },
+    handler: async ({ params, body, request }) =>
+      (await service(request)).scope.remote.update(params.name, body)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live/:name/messages",
+    schemas: {
+      params: liveNameSchema,
+      body: z.object({ body: z.string().trim().min(1).max(10000), parentName: nullableText }),
+      response: liveRecordSchema
+    },
+    handler: async ({ params, body, request }) =>
+      (await service(request)).scope.remote.addMessage(params.name, body.body, body.parentName)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live/:name/messages/:messageName/suspend",
+    schemas: {
+      params: liveNameSchema.extend({ messageName: z.string().trim().min(1).max(191) }),
+      response: liveRecordSchema
+    },
+    handler: async ({ params, request }) =>
+      (await service(request)).scope.remote.suspendMessage(params.name, params.messageName)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live/:name/open-new-call",
+    schemas: { params: liveNameSchema, response: liveRecordSchema },
+    handler: async ({ params, request }) =>
+      (await service(request)).scope.remote.openNewCall(params.name)
+  });
+  registerContractRoute(app, {
+    method: "DELETE",
+    url: "/crm/enquiries/live/:name",
+    schemas: { params: liveNameSchema, response: z.object({ deleted: z.literal(true) }) },
+    handler: async ({ params, request }) =>
+      (await service(request)).scope.remote.delete(params.name)
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/live/:name/jobs",
+    schemas: { params: liveNameSchema, response: z.array(liveJobSchema) },
+    handler: async ({ params, request }) => (await service(request)).scope.remote.jobs(params.name)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live/:name/jobs/start",
+    schemas: { params: liveNameSchema, response: liveJobSchema },
+    handler: async ({ params, request }) =>
+      (await service(request)).scope.remote.startJob(params.name)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live/:name/jobs/:jobName/stop",
+    schemas: {
+      params: liveNameSchema.extend({ jobName: z.string().trim().min(1).max(191) }),
+      response: liveJobSchema
+    },
+    handler: async ({ params, request }) =>
+      (await service(request)).scope.remote.stopJob(params.name, params.jobName)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live/:name/jobs",
+    schemas: { params: liveNameSchema, body: liveJobInputSchema, response: liveJobSchema },
+    handler: async ({ params, body, request }) =>
+      (await service(request)).scope.remote.saveJob(params.name, body)
+  });
+  registerContractRoute(app, {
+    method: "PUT",
+    url: "/crm/enquiries/live/:name/jobs/:jobName",
+    schemas: {
+      params: liveNameSchema.extend({ jobName: z.string().trim().min(1).max(191) }),
+      body: liveJobInputSchema,
+      response: liveJobSchema
+    },
+    handler: async ({ params, body, request }) =>
+      (await service(request)).scope.remote.saveJob(params.name, body, params.jobName)
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/crm/enquiries/live/:name/estimates",
+    schemas: { params: liveNameSchema, response: z.array(liveEstimateSchema) },
+    handler: async ({ params, request }) =>
+      (await service(request)).scope.remote.estimates(params.name)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/crm/enquiries/live/:name/estimates",
+    schemas: {
+      params: liveNameSchema,
+      body: liveEstimateInputSchema,
+      response: liveEstimateSchema
+    },
+    handler: async ({ params, body, request }) =>
+      (await service(request)).scope.remote.saveEstimate(params.name, body)
+  });
+  registerContractRoute(app, {
+    method: "PUT",
+    url: "/crm/enquiries/live/:name/estimates/:estimateName",
+    schemas: {
+      params: liveNameSchema.extend({ estimateName: z.string().trim().min(1).max(191) }),
+      body: liveEstimateInputSchema,
+      response: liveEstimateSchema
+    },
+    handler: async ({ params, body, request }) =>
+      (await service(request)).scope.remote.saveEstimate(params.name, body, params.estimateName)
   });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries",
     schemas: {
       querystring: listQuerySchema,
-      response: z.union([pageSchema.extend({ source: z.literal("local") }), livePageSchema])
+      response: viewPageSchema
     },
     handler: async ({ query, request }) => (await service(request)).read.list(query)
   });
@@ -236,7 +572,35 @@ export function registerEnquiryRoutes(
     method: "GET",
     url: "/crm/enquiries/reports",
     schemas: { querystring: reportQuerySchema, response: z.array(reportRowSchema) },
-    handler: async ({ query, request }) => (await localService(request)).enquiry.report(query)
+    handler: async ({ query, request }) => {
+      const current = await service(request);
+      if ((await current.read.source()) === "local") {
+        const rows = await current.enquiry.report(query);
+        return rows.map((row) => ({
+          ...row,
+          listInId: row.listInId === null ? null : String(row.listInId),
+          assignedUserId: row.assignedUserId === null ? null : String(row.assignedUserId)
+        }));
+      }
+      const rows = await current.scope.remote.report({
+        view: query.view,
+        ...(query.fromAt ? { fromDate: indiaDate(query.fromAt) } : {}),
+        ...(query.toAt ? { toDate: indiaDate(new Date(new Date(query.toAt).getTime() - 1).toISOString()) } : {}),
+        ...(query.assignedUserId && query.assignedUserId !== "none" ? { assignee: query.assignedUserId } : {})
+      });
+      return rows.map((row) => {
+        const status = row.status?.toLowerCase().replace(/[^a-z0-9]+/g, "-") ?? "none";
+        return {
+          listInId: query.view === "list-in" ? row.group : null,
+          listIn: query.view === "list-in" ? row.group : null,
+          createdBy: query.view === "creator" ? row.group ?? "—" : "—",
+          assignedUserId: query.view === "assignee" ? row.group : null,
+          status,
+          statusName: row.status ?? "Unspecified",
+          count: row.count
+        };
+      });
+    }
   });
   registerContractRoute(app, {
     method: "GET",
@@ -285,8 +649,10 @@ export function registerEnquiryRoutes(
     url: "/crm/enquiries/overview-activity",
     schemas: { response: z.object({ commentsByYou30Days: z.number().int().nonnegative() }) },
     handler: async ({ request }) => {
-      const { enquiry, scope } = await localService(request);
-      return enquiry.overviewActivity(scope.actorEmail);
+      const current = await service(request);
+      return (await current.read.source()) === "local"
+        ? current.enquiry.overviewActivity(current.scope.actorEmail)
+        : { commentsByYou30Days: 0 };
     }
   });
   registerContractRoute(app, {
@@ -307,8 +673,11 @@ export function registerEnquiryRoutes(
         due: z.array(recordSchema)
       })
     },
-    handler: async ({ query, request }) =>
-      (await localService(request)).enquiry.attention(query.today)
+    handler: async ({ query, request }) => {
+      const current = await service(request);
+      if ((await current.read.source()) === "local") return current.enquiry.attention(query.today);
+      return { assignments: [], due: [] };
+    }
   });
   registerContractRoute(app, {
     method: "GET",
@@ -321,8 +690,16 @@ export function registerEnquiryRoutes(
         created: scopeSummarySchema
       })
     },
-    handler: async ({ query, request }) =>
-      (await localService(request)).enquiry.summary(query.today)
+    handler: async ({ query, request }) => {
+      const current = await service(request);
+      if ((await current.read.source()) === "local") return current.enquiry.summary(query.today);
+      const summary = await current.scope.remote.summary(query.today);
+      return {
+        allCount: summary.allCount,
+        assigned: remoteViewScopeSummary(summary.assigned),
+        created: remoteViewScopeSummary(summary.created)
+      };
+    }
   });
   registerContractRoute(app, {
     method: "POST",
@@ -337,69 +714,135 @@ export function registerEnquiryRoutes(
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/:id",
-    schemas: { params: idSchema, response: recordSchema },
-    handler: async ({ params, request }) => (await localService(request)).enquiry.get(params.id)
+    schemas: { params: viewIdSchema, response: viewRecordSchema },
+    handler: async ({ params, request }) => {
+      const current = await service(request);
+      return (await current.read.source()) === "local"
+        ? localViewRecord(await current.enquiry.get(localId(params.id)))
+        : remoteViewRecord(await current.scope.remote.get(params.id));
+    }
   });
   registerContractRoute(app, {
     method: "POST",
     url: "/crm/enquiries",
-    schemas: { body: inputSchema, response: recordSchema },
+    schemas: { body: viewInputSchema, response: viewRecordSchema },
     handler: async ({ body, request }) => {
-      const { enquiry, scope } = await localService(request);
-      return enquiry.create(body, scope.actorEmail);
+      const current = await service(request);
+      return (await current.read.source()) === "local"
+        ? localViewRecord(await current.enquiry.create(localInput(body), current.scope.actorEmail))
+        : remoteViewRecord(await current.scope.remote.create(await remotePayload(current.scope, body)));
     }
   });
   registerContractRoute(app, {
     method: "PUT",
     url: "/crm/enquiries/:id",
-    schemas: { body: inputSchema, params: idSchema, response: recordSchema },
+    schemas: { body: viewInputSchema, params: viewIdSchema, response: viewRecordSchema },
     handler: async ({ body, params, request }) => {
-      const { enquiry, scope } = await localService(request);
-      return enquiry.update(params.id, body, scope.actorEmail);
+      const current = await service(request);
+      return (await current.read.source()) === "local"
+        ? localViewRecord(
+            await current.enquiry.update(localId(params.id), localInput(body), current.scope.actorEmail)
+          )
+        : remoteViewRecord(
+            await current.scope.remote.update(
+              params.id,
+              await remotePayload(current.scope, body, await current.scope.remote.get(params.id))
+            )
+          );
     }
   });
   registerContractRoute(app, {
     method: "PATCH",
     url: "/crm/enquiries/:id/properties",
-    schemas: { body: propertySchema, params: idSchema, response: recordSchema },
+    schemas: {
+      body: viewInputSchema.pick({
+        listInId: true,
+        priorityId: true,
+        assignedUserId: true,
+        dueDate: true,
+        statusId: true,
+        closedReason: true
+      }).partial().refine((value) => Object.keys(value).length > 0),
+      params: viewIdSchema,
+      response: viewRecordSchema
+    },
     handler: async ({ body, params, request }) => {
-      const { enquiry, scope } = await localService(request);
-      return enquiry.updateProperties(params.id, body, scope.actorEmail);
+      const current = await service(request);
+      if ((await current.read.source()) === "local") {
+        const patch = {
+          ...(body.listInId !== undefined
+            ? { listInId: body.listInId === null ? null : localId(body.listInId) }
+            : {}),
+          ...(body.priorityId !== undefined ? { priorityId: localId(body.priorityId) } : {}),
+          ...(body.assignedUserId !== undefined
+            ? { assignedUserId: body.assignedUserId === null ? null : localId(body.assignedUserId) }
+            : {}),
+          ...(body.statusId !== undefined ? { statusId: localId(body.statusId) } : {}),
+          ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
+          ...(body.closedReason !== undefined ? { closedReason: body.closedReason } : {})
+        };
+        return localViewRecord(
+          await current.enquiry.updateProperties(localId(params.id), patch, current.scope.actorEmail)
+        );
+      }
+      return remoteViewRecord(
+        await current.scope.remote.update(params.id, {
+          ...(body.listInId !== undefined ? { group: body.listInId } : {}),
+          ...(body.priorityId !== undefined ? { priority: body.priorityId } : {}),
+          ...(body.assignedUserId !== undefined ? { assigneeCode: body.assignedUserId } : {}),
+          ...(body.statusId !== undefined ? { status: body.statusId } : {}),
+          ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
+          ...(body.closedReason !== undefined ? { statusDetails: body.closedReason } : {})
+        })
+      );
     }
   });
   registerContractRoute(app, {
     method: "POST",
     url: "/crm/enquiries/:id/open-new-call",
-    schemas: { params: idSchema, response: recordSchema },
+    schemas: { params: viewIdSchema, response: viewRecordSchema },
     handler: async ({ params, request }) => {
-      const { enquiry, scope } = await localService(request);
-      return enquiry.openNewCall(params.id, scope.actorEmail);
+      const current = await service(request);
+      return (await current.read.source()) === "local"
+        ? localViewRecord(
+            await current.enquiry.openNewCall(localId(params.id), current.scope.actorEmail)
+          )
+        : remoteViewRecord(await current.scope.remote.openNewCall(params.id));
     }
   });
   registerContractRoute(app, {
     method: "GET",
     url: "/crm/enquiries/:id/comments",
-    schemas: { params: idSchema, response: z.array(commentSchema) },
-    handler: async ({ params, request }) =>
-      (await localService(request)).enquiry.listComments(params.id)
+    schemas: { params: viewIdSchema, response: z.array(viewCommentSchema) },
+    handler: async ({ params, request }) => {
+      const current = await service(request);
+      return (await current.read.source()) === "local"
+        ? (await current.enquiry.listComments(localId(params.id))).map(localViewComment)
+        : remoteViewComments(await current.scope.remote.get(params.id));
+    }
   });
   registerContractRoute(app, {
     method: "POST",
     url: "/crm/enquiries/:id/comments",
-    schemas: { params: idSchema, body: commentInputSchema, response: commentSchema },
+    schemas: { params: viewIdSchema, body: viewCommentInputSchema, response: viewCommentSchema },
     handler: async ({ params, body, request }) => {
-      const { enquiry, scope } = await localService(request);
-      return enquiry.addComment(
-        params.id,
-        body.body,
-        body.parentId,
-        scope.actorEmail,
-        body.bodyFormat
-      );
+      const current = await service(request);
+      if ((await current.read.source()) === "local") {
+        return localViewComment(await current.enquiry.addComment(
+          localId(params.id),
+          body.body,
+          body.parentId === null ? null : localId(body.parentId),
+          current.scope.actorEmail,
+          body.bodyFormat
+        ));
+      }
+      const updated = await current.scope.remote.addMessage(params.id, body.body, body.parentId);
+      const comments = remoteViewComments(updated);
+      return comments.at(-1)!;
     }
   });
   registerEnquiryWorkRoutes(app, async (request) => {
-    const current = await localService(request);
+    const current = await service(request);
     return current.scope;
   });
 }

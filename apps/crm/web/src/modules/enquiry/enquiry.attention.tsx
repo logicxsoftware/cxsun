@@ -6,7 +6,7 @@ import { Button } from "@cxsun/ui/components/button";
 import { enquiryAttentionQueryKey, useEnquiryAttention } from "./enquiry.hooks";
 import { readEnquiryAlert } from "./enquiry.services";
 
-export function EnquiryAttention({ onOpen }: { onOpen: (id: number) => void }) {
+export function EnquiryAttention({ onOpen }: { onOpen: (id: string) => void }) {
   const client = useQueryClient();
   const attention = useEnquiryAttention();
   const read = useMutation({
@@ -31,7 +31,7 @@ export function EnquiryAttention({ onOpen }: { onOpen: (id: number) => void }) {
           <button
             className="font-medium hover:underline"
             type="button"
-            onClick={() => onOpen(alert.enquiryId)}
+            onClick={() => onOpen(String(alert.enquiryId))}
           >
             #{alert.enquiryNo} · {alert.title}
           </button>

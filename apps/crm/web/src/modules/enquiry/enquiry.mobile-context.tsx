@@ -25,7 +25,7 @@ export function EnquiryMobileContext({
   users: EnquiryLookup[];
   onSelectMobile: (mobile: string) => void;
   onSeeMoreEnquiries?: ((mobile: string, contactId: number | null) => void) | undefined;
-  onOpenEnquiry?: ((id: number, mobile: string, contactId: number | null) => void) | undefined;
+  onOpenEnquiry?: ((id: string, mobile: string, contactId: number | null) => void) | undefined;
 }) {
   const [recent, setRecent] = useState<string[]>(readRecentMobiles);
   const [search, setSearch] = useState("");

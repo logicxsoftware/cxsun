@@ -41,14 +41,16 @@ export const zetroCapabilities = [
   "billing.customer-outstanding.read",
   "billing.daily-summary.read",
   "billing.monthly-summary.read",
-  "billing.aged-sales.read"
+  "billing.aged-sales.read",
+  "crm.assigned-enquiries.read"
 ] as const;
 
 export const zetroCapabilityLabels: Record<(typeof zetroCapabilities)[number], string> = {
   "billing.customer-outstanding.read": "Customer balance",
   "billing.daily-summary.read": "Today's report",
   "billing.monthly-summary.read": "This month's totals",
-  "billing.aged-sales.read": "Long outstanding sales"
+  "billing.aged-sales.read": "Long outstanding sales",
+  "crm.assigned-enquiries.read": "My assigned CRM enquiries"
 };
 
 export type ZetroGrantChange = {
@@ -67,3 +69,47 @@ export type ZetroGrant = {
 };
 
 export type ZetroRole = { role_key: string; label: string };
+
+export type ZetroReviewConversation = {
+  id: number;
+  owner_email: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ZetroReviewDetail = {
+  conversation: ZetroReviewConversation;
+  messages: Array<{ id: number; role: string; content: string; created_at: string }>;
+  notes: Array<{ id: number; reviewer_email: string; note: string; created_at: string }>;
+  events: Array<{
+    id: number;
+    capability_key: string;
+    decision: string;
+    request_json: string;
+    result_json: string | null;
+    created_at: string;
+  }>;
+  interactions: ZetroInteractionLog[];
+};
+
+export type ZetroApproval = {
+  id: number;
+  actor_email: string;
+  conversation_id: number | null;
+  capability_key: string;
+  status: "pending" | "approved" | "rejected";
+  request_json: string;
+  decision_note: string | null;
+  created_at: string;
+};
+
+export type ZetroGrantEvent = {
+  id: number;
+  role_key: string;
+  capability_key: string;
+  status: string;
+  decided_by: string;
+  reason: string;
+  created_at: string;
+};

@@ -1,3 +1,7 @@
+.tenant-main-menu > header > div:first-child > button:first-child {
+  width: calc(var(--sidebar-width-icon) + 1rem);
+}
+
 .simple-page {
   align-items: center;
   display: grid;

@@ -17,7 +17,7 @@ import { migrateTenantRuntimeModule, rollbackTenantRuntimeModule } from "./tenan
 import { TenantRepository } from "./tenant.repository.js";
 import { normalizeTenantDomain } from "../tenant-domain/tenant-domain.repository.js";
 import { EntitlementAccessService } from "../entitlement/entitlement.access.js";
-import { defaultTenantModuleKeys } from "../app-registry/index.js";
+import { defaultTenantModuleKeys, platformAppRegistry } from "../app-registry/index.js";
 import {
   ensureTenantStorage,
   tenantPrivateStorageRoot,
@@ -93,9 +93,9 @@ export async function provisionTenantStorage(tenant: Tenant) {
   await getPlatformDatabase()
     .updateTable("tenants")
     .set({
-      storage_private_root: roots.privateRoot,
-      storage_public_root: roots.publicRoot,
-      storage_root: roots.root
+      storage_private_root: sql`CASE WHEN storage_private_root = '' THEN ${roots.privateRoot} ELSE storage_private_root END`,
+      storage_public_root: sql`CASE WHEN storage_public_root = '' THEN ${roots.publicRoot} ELSE storage_public_root END`,
+      storage_root: sql`CASE WHEN storage_root = '' THEN ${roots.root} ELSE storage_root END`
     })
     .where("id", "=", tenant.id)
     .execute();
@@ -142,9 +142,18 @@ export async function seedDefaultTenant() {
 
 export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, tenant: Tenant) {
   const enabledKeys = new Set(
-    ["platform.application", ...tenant.enabledModuleKeys].filter((key) => key !== "devkit" && key !== "project-manager")
+    ["platform.application", ...tenant.enabledModuleKeys]
+      .map((key) => (key === "accounts.accounting" ? "accounts.overview" : key))
+      .filter(
+        (key) =>
+          key !== "devkit" &&
+          key !== "project-manager" &&
+          (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
+      )
   );
-  const moduleKeys = Array.from(enabledKeys);
+  const moduleKeys = Array.from(
+    new Set([...platformAppRegistry.map(({ moduleKey }) => moduleKey), ...enabledKeys])
+  ).filter((key) => key !== "devkit" && key !== "project-manager");
   console.info(
     `[seeder] seeding tenant "${tenant.tenantCode}" app modules (${moduleKeys.length} modules)`
   );
@@ -159,8 +168,14 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
     .set({ enabled: false, status: "inactive", updated_at: sql`CURRENT_TIMESTAMP` })
     .where("module_key", "=", "project-manager")
     .execute();
+  await database
+    .updateTable("app_module_settings")
+    .set({ enabled: false, status: "inactive", updated_at: sql`CURRENT_TIMESTAMP` })
+    .where("module_key", "=", "accounts.accounting")
+    .execute();
 
   for (const moduleKey of moduleKeys) {
+    const enabled = enabledKeys.has(moduleKey);
     const settingsJson = JSON.stringify({
       defaultLandingApp: tenant.defaultLandingApp,
       tenantCode: tenant.tenantCode
@@ -169,14 +184,15 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
     await database
       .insertInto("app_module_settings")
       .values({
-        enabled: enabledKeys.has(moduleKey),
+        enabled,
         module_key: moduleKey,
         settings_json: settingsJson,
-        status: "active",
+        status: enabled ? "active" : "inactive",
         uuid: stableUuid(`${tenant.uuid}:${moduleKey}`)
       })
       .onDuplicateKeyUpdate({
-        enabled: enabledKeys.has(moduleKey),
+        enabled,
+        status: enabled ? "active" : "inactive",
         updated_at: sql`CURRENT_TIMESTAMP`
       })
       .execute();
@@ -194,6 +210,7 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
 function defaultTenant(): TenantSavePayload {
   const tenantCode = requiredSeedValue("DEFAULT_TENANT_CORPORATE_ID").toUpperCase();
   const slug = normalizeSlug(requiredSeedValue("DEFAULT_TENANT_SLUG"));
+  const moduleKeys = defaultSeedModuleKeys();
   return {
     corporateId: tenantCode,
     dbHost: env.DB_HOST,
@@ -203,11 +220,11 @@ function defaultTenant(): TenantSavePayload {
     dbType: env.DB_DRIVER,
     dbUser: env.DB_USER,
     defaultLandingApp: "application",
-    enabledModuleKeys: [...defaultTenantModuleKeys],
+    enabledModuleKeys: moduleKeys,
     mobile: null,
     payloadSettings: {
       apps: {
-        enabled: [...defaultTenantModuleKeys]
+        enabled: moduleKeys
       },
       landing: {
         app: "application",
@@ -236,9 +253,12 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
 
   const apps = isRecord(tenant.payloadSettings.apps) ? tenant.payloadSettings.apps : {};
   const configuredApps = stringArray(apps.enabled);
+  const moduleKeys = defaultSeedModuleKeys();
   if (
-    defaultTenantModuleKeys.every((key) => tenant.enabledModuleKeys.includes(key)) &&
-    defaultTenantModuleKeys.every((key) => configuredApps.includes(key)) &&
+    moduleKeys.every((key) => tenant.enabledModuleKeys.includes(key)) &&
+    moduleKeys.every((key) => configuredApps.includes(key)) &&
+    (env.CXSUN_TENANCY_MODE === "single" || !tenant.enabledModuleKeys.includes("q-cafe")) &&
+    (env.CXSUN_TENANCY_MODE === "single" || !configuredApps.includes("q-cafe")) &&
     !tenant.enabledModuleKeys.includes("devkit") &&
     !configuredApps.includes("devkit") &&
     !tenant.enabledModuleKeys.includes("project-manager") &&
@@ -252,8 +272,11 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
       ...tenant,
       enabledModuleKeys: Array.from(
         new Set(
-          [...defaultTenantModuleKeys, ...tenant.enabledModuleKeys].filter(
-            (key) => key !== "devkit" && key !== "project-manager"
+          [...moduleKeys, ...tenant.enabledModuleKeys].filter(
+            (key) =>
+              key !== "devkit" &&
+              key !== "project-manager" &&
+              (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
           )
         )
       ).sort(),
@@ -263,12 +286,23 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
           ...apps,
           enabled: Array.from(
             new Set(
-              [...defaultTenantModuleKeys, ...configuredApps].filter((key) => key !== "devkit" && key !== "project-manager")
+              [...moduleKeys, ...configuredApps].filter(
+                (key) =>
+                  key !== "devkit" &&
+                  key !== "project-manager" &&
+                  (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
+              )
             )
           ).sort()
         }
       }
     })) ?? tenant
+  );
+}
+
+function defaultSeedModuleKeys() {
+  return defaultTenantModuleKeys.filter(
+    (key) => env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe"
   );
 }
 

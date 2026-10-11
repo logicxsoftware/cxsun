@@ -35,14 +35,14 @@ test("Frappe source reads only the live adapter and forwards report filters", as
       assert.equal(input.mobile, "9876543210");
       assert.equal(input.searchCustomer, "Acme");
       assert.equal(input.searchAssignedTo, "EMP-2");
-      return { source: "frappe" as const, page: 1, pageSize: 50, hasMore: false, items: [] };
+      return { source: "frappe" as const, page: 1, pageSize: 50, hasMore: false, total: 0, statusCounts: [], items: [] };
     }
   } as unknown as EnquiryRemoteSource;
   const page = await new EnquiryReadService(local, remote).list({
     ...query,
     filter: "New",
-    group: "Service",
-    fromDate: "2026-10-01",
+    listInId: "Service",
+    fromAt: "2026-09-30T18:30:00.000Z",
     mobile: "9876543210",
     contactId: 12,
     searchCustomer: "Acme",

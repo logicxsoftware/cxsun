@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => {
     envDir: root,
     cacheDir: resolve(root, "node_modules/.vite/ecommerce-web"),
     define: {
-      __CXSUN_STOREFRONT_WEB_PORT__: JSON.stringify(Number(env.CXSUN_STOREFRONT_WEB_PORT)),
       __CXSUN_PLATFORM_WEB_PORT__: JSON.stringify(Number(env.PLATFORM_WEB_PORT))
     },
     build: { outDir: resolve(root, "dist/apps/ecommerce/web"), emptyOutDir: true },

@@ -34,6 +34,9 @@ export class ZetroPatternRepository {
   }
 
   async createDraft(input: ZetroPatternDraft, actorEmail: string) {
+    if (input.serialNo < 36) {
+      throw AppError.validation("Zetro serial numbers 1–35 are reserved for built-in patterns.");
+    }
     const exists = await this.database
       .selectFrom("zetro_query_patterns")
       .select("id")

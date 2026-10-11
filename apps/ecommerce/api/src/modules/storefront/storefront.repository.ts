@@ -169,14 +169,16 @@ export class StorefrontRepository {
     const [categories, brands, prices] = await Promise.all([
       this.categories(),
       sql<{
+        logo_alt: string;
+        logo_url: string;
         name: string;
         product_count: number | string;
-      }>`SELECT brand.name,
+      }>`SELECT brand.name,brand.logo_url,brand.logo_alt,
         COUNT(info.id) AS product_count FROM core_brands brand
         INNER JOIN ecommerce_product_information info ON info.brand_id=brand.id AND info.publication_status='published' AND info.status='active'
         INNER JOIN core_products product ON product.id=info.core_product_id AND product.status='active' AND product.deleted_at IS NULL
-        WHERE brand.status='active' AND ${this.sourceCondition("info")}
-        GROUP BY brand.id,brand.name,brand.sort_order
+        WHERE brand.status='active' AND brand.show_on_storefront=1 AND ${this.sourceCondition("info")}
+        GROUP BY brand.id,brand.name,brand.logo_url,brand.logo_alt,brand.sort_order
         ORDER BY brand.sort_order,brand.name`.execute(getEcommerceDatabase()),
       sql<{ maximum: number | string; minimum: number | string }>`SELECT
         COALESCE(MAX(product.opening_price),0) AS maximum,COALESCE(MIN(product.opening_price),0) AS minimum
@@ -188,8 +190,8 @@ export class StorefrontRepository {
     ]);
     return {
       brands: brands.rows.map((row) => ({
-        logoAlt: `${row.name} logo`,
-        logoUrl: "",
+        logoAlt: row.logo_alt || `${row.name} logo`,
+        logoUrl: row.logo_url,
         name: row.name,
         productCount: Number(row.product_count)
       })),

@@ -12,9 +12,11 @@ import {
   getZetroCodexStatus,
   getZetroLocalCodexStatus,
   getZetroProviderSettings,
+  listZetroProviderModels,
   saveZetroProviderSettings,
   startZetroCodexLogin
 } from "./provider.services";
+import type { ZetroProviderSave } from "./provider.types";
 
 const providerQueryKey = ["zetro", "provider"] as const;
 const codexQueryKey = ["zetro", "codex", "status"] as const;
@@ -23,7 +25,11 @@ const localCodexQueryKey = ["zetro", "codex", "local-status"] as const;
 export function ZetroProviderSettingsWorkspace() {
   const client = useQueryClient();
   const savedAfterLogin = useRef(false);
-  const [selectedTab, setSelectedTab] = useState<"device-code" | "local" | null>(null);
+  const [selectedTab, setSelectedTab] = useState<"device-code" | "local" | "api" | null>(null);
+  const [apiProvider, setApiProvider] = useState<"openai" | "local">("openai");
+  const [apiUrl, setApiUrl] = useState("https://api.openai.com/v1");
+  const [apiKey, setApiKey] = useState("");
+  const [apiModel, setApiModel] = useState("");
   const settings = useQuery({ queryKey: providerQueryKey, queryFn: getZetroProviderSettings });
   const codex = useQuery({
     queryKey: codexQueryKey,
@@ -51,6 +57,21 @@ export function ZetroProviderSettingsWorkspace() {
       savedAfterLogin.current = false;
       toast.error("Could not save Zetro connection", { description: error.message });
     }
+  });
+  const saveApi = useMutation({
+    mutationFn: (input: ZetroProviderSave) => saveZetroProviderSettings(input),
+    onSuccess: async (result) => {
+      client.setQueryData(providerQueryKey, result);
+      setApiKey("");
+      toast.success(
+        result.model ? "Zetro API connection saved" : "Credentials saved. Load and select a model."
+      );
+    },
+    onError: (error) => toast.error("Could not save connection", { description: error.message })
+  });
+  const models = useMutation({
+    mutationFn: listZetroProviderModels,
+    onError: (error) => toast.error("Could not load models", { description: error.message })
   });
   const login = useMutation({
     mutationFn: startZetroCodexLogin,
@@ -80,53 +101,69 @@ export function ZetroProviderSettingsWorkspace() {
       !codex.data?.signedIn ||
       !settings.data ||
       (settings.data.source === "tenant" && settings.data.provider === "codex_cli") ||
+      (settings.data.source === "tenant" &&
+        selectedTab !== "device-code" &&
+        selectedTab !== "local") ||
       savedAfterLogin.current
     )
       return;
     savedAfterLogin.current = true;
     save.mutate();
-  }, [codex.data?.signedIn, settings.data, save]);
+  }, [codex.data?.signedIn, settings.data, save, selectedTab]);
+
+  useEffect(() => {
+    if (!settings.data || settings.data.provider === "codex_cli") return;
+    setApiProvider(settings.data.provider);
+    setApiUrl(settings.data.baseUrl);
+    setApiModel(settings.data.model);
+  }, [settings.data]);
 
   const connected =
     codex.data?.signedIn &&
     settings.data?.source === "tenant" &&
     settings.data.provider === "codex_cli";
-  const activeTab = selectedTab ?? codex.data?.connectionMethod ?? "device-code";
+  const apiSaved = settings.data?.source === "tenant" && settings.data.provider !== "codex_cli";
+  const apiConnected = Boolean(apiSaved && settings.data?.model);
+  const activeTab =
+    selectedTab ?? (apiSaved ? "api" : (codex.data?.connectionMethod ?? "device-code"));
 
   return (
     <div
       className={`rounded-md border bg-card p-5 ${
-        connected ? "border-emerald-400 dark:border-emerald-700" : "border-border"
+        connected || apiConnected ? "border-emerald-400 dark:border-emerald-700" : "border-border"
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-5">
         <div>
           <h2 className="text-lg font-semibold">Zetro connection</h2>
           <p className="text-sm text-muted-foreground">
-            Connect this tenant to Codex CLI on the Platform API computer.
+            Choose a connection for this tenant’s business assistant.
           </p>
         </div>
         <Badge
           variant="outline"
           className={
-            connected
+            connected || apiConnected
               ? "gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
               : "gap-1.5 text-muted-foreground"
           }
           aria-live="polite"
         >
-          {connected ? <CheckCircle2Icon aria-hidden="true" className="size-3.5" /> : null}
-          {connected ? "Connected" : "Not connected"}
+          {connected || apiConnected ? (
+            <CheckCircle2Icon aria-hidden="true" className="size-3.5" />
+          ) : null}
+          {connected || apiConnected ? "Connected" : "Not connected"}
         </Badge>
       </div>
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setSelectedTab(value as "device-code" | "local")}
+        onValueChange={(value) => setSelectedTab(value as "device-code" | "local" | "api")}
         className="pt-5"
       >
         <TabsList aria-label="Zetro connection methods">
           <TabsTrigger value="device-code">Device code</TabsTrigger>
           <TabsTrigger value="local">Local Codex</TabsTrigger>
+          <TabsTrigger value="api">API connection</TabsTrigger>
         </TabsList>
         <TabsContent value="device-code" className="space-y-5 pt-3">
           <div className="flex items-start gap-3 rounded-md bg-muted/50 p-4">
@@ -198,6 +235,97 @@ export function ZetroProviderSettingsWorkspace() {
               {login.isPending ? "Generating code…" : "Generate device code"}
             </Button>
           )}
+        </TabsContent>
+        <TabsContent value="api" className="space-y-4 pt-3">
+          <p className="text-sm text-muted-foreground">
+            Configure an OpenAI API project or an OpenAI-compatible service running on the Platform
+            API computer. Credentials stay on the backend.
+          </p>
+          <label className="block text-sm font-medium">
+            Provider
+            <select
+              className="mt-1 h-10 w-full rounded-md border bg-background px-3"
+              value={apiProvider}
+              onChange={(event) => {
+                const provider = event.target.value as "openai" | "local";
+                setApiProvider(provider);
+                setApiUrl(
+                  provider === "openai" ? "https://api.openai.com/v1" : "http://127.0.0.1:11434/v1"
+                );
+                setApiModel("");
+              }}
+            >
+              <option value="openai">OpenAI API</option>
+              <option value="local">Local compatible API</option>
+            </select>
+          </label>
+          <label className="block text-sm font-medium">
+            API URL
+            <input
+              className="mt-1 h-10 w-full rounded-md border bg-background px-3"
+              value={apiUrl}
+              onChange={(event) => setApiUrl(event.target.value)}
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            API key{" "}
+            {settings.data?.apiKeyConfigured && settings.data.provider === apiProvider
+              ? "(saved; leave blank to keep)"
+              : ""}
+            <input
+              type="password"
+              autoComplete="new-password"
+              className="mt-1 h-10 w-full rounded-md border bg-background px-3"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              placeholder={apiProvider === "local" ? "Optional" : "Enter API key"}
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            Model
+            <input
+              className="mt-1 h-10 w-full rounded-md border bg-background px-3"
+              value={apiModel}
+              onChange={(event) => setApiModel(event.target.value)}
+              list="zetro-api-models"
+              placeholder="Enter model ID"
+            />
+            <datalist id="zetro-api-models">
+              {models.data?.map((model) => (
+                <option key={model} value={model} />
+              ))}
+            </datalist>
+          </label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              disabled={saveApi.isPending}
+              onClick={() =>
+                saveApi.mutate({
+                  provider: apiProvider,
+                  baseUrl: apiUrl.trim(),
+                  model: apiModel.trim(),
+                  apiKey: apiKey.trim()
+                })
+              }
+            >
+              {saveApi.isPending ? "Saving…" : "Save API connection"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={models.isPending || !apiSaved || settings.data?.provider !== apiProvider}
+              onClick={() => models.mutate()}
+            >
+              {models.isPending ? "Loading…" : "Load available models"}
+            </Button>
+          </div>
+          {apiConnected && settings.data ? (
+            <p className="text-sm text-emerald-700">
+              Connected to {settings.data.provider === "openai" ? "OpenAI API" : "local API"} ·{" "}
+              {settings.data.model}
+            </p>
+          ) : null}
         </TabsContent>
         <TabsContent value="local" className="space-y-5 pt-3">
           <div className="flex items-start gap-3 rounded-md bg-muted/50 p-4">

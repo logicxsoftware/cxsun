@@ -6,8 +6,7 @@ import {
 import { EcommerceOverviewWorkspace } from "@cxsun/ecommerce-web/modules/overview";
 import {
   ecommerceOverviewGateway,
-  openPublicStorefront,
-  openEcommerceDesk
+  openPublicStorefront
 } from "../../modules/ecommerce/ecommerce-host";
 import {
   lazy,
@@ -24,6 +23,7 @@ import {
   Building2Icon,
   CreditCardIcon,
   ContactRoundIcon,
+  CoffeeIcon,
   LayersIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
@@ -124,6 +124,9 @@ const LogicxErpSchemeWorkspace = lazyWorkspace(() =>
 );
 const CrmOverviewWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/overview").then((module) => module.CrmOverviewWorkspace)
+);
+const CrmDataSourceWorkspace = lazyWorkspace(() =>
+  import("@cxsun/crm-web/modules/data-source").then((module) => module.CrmDataSourceWorkspace)
 );
 const FrappeOverviewWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/overview").then((module) => module.FrappeOverviewWorkspace)
@@ -477,9 +480,11 @@ type AppPage =
   | "ecommerce.season-strips"
   | "ecommerce.service-banner"
   | "ecommerce.trusted-strip"
+  | "q-cafe.overview"
   | "logicx-erp.overview"
   | "logicx-erp.schemes"
   | "crm.overview"
+  | "crm.data-source"
   | "crm.reports"
   | "crm.enquiries"
   | "crm.enquiries.new"
@@ -630,6 +635,8 @@ export function AppDesk() {
   const appSafePage =
     page.startsWith("devkit") || page.startsWith("project-manager")
       ? pageForApp(landingApp)
+      : page.startsWith("q-cafe") && !switchableApps.includes("q-cafe")
+        ? pageForApp(landingApp)
       : page.startsWith("ecommerce") && !switchableApps.includes("ecommerce")
         ? pageForApp(landingApp)
         : page.startsWith("auditor") && !switchableApps.includes("auditor")
@@ -743,7 +750,7 @@ export function AppDesk() {
       corporateId: tenant.corporateId,
       financialYearId: activeDefaultCompany?.financialYearId ?? null,
       financialYearName: activeDefaultCompany?.financialYearName ?? null,
-      landingPage: `/app/${pageForApp(landingApp).replaceAll(".", "/")}`,
+      landingPage: appRootUrl(landingApp),
       tenantCode: tenant.tenantCode,
       tenantName: tenant.tenantName,
       tenantUuid: tenant.uuid
@@ -768,7 +775,9 @@ export function AppDesk() {
 
   function navigatePage(nextPage: AppPage, replace = false, search: Record<string, string> = {}) {
     void navigate({
-      params: { _splat: nextPage.replaceAll(".", "/") },
+      params: {
+        _splat: nextPage === "ecommerce.overview" ? "ecommerce" : nextPage === "q-cafe.overview" ? "q-cafe" : nextPage.replaceAll(".", "/")
+      },
       replace,
       search,
       to: "/app/$"
@@ -803,7 +812,7 @@ export function AppDesk() {
     });
   }
 
-  function openMobileEnquiry(id: number, mobile: string, contactId: number | null) {
+  function openMobileEnquiry(id: string, mobile: string, contactId: number | null) {
     requestListNavigation("crm.enquiries", {
       record: String(id),
       mobile,
@@ -811,9 +820,9 @@ export function AppDesk() {
     });
   }
 
-  function openLiveEnquiry(name: string) {
+  function openEnquiryRecord(key: string) {
     void navigate({
-      params: { _splat: `crm/enquiries/${encodeURIComponent(name)}` },
+      params: { _splat: `crm/enquiries/${encodeURIComponent(key)}` },
       to: "/app/$"
     });
   }
@@ -927,7 +936,7 @@ export function AppDesk() {
     ...item,
     onSelect: () =>
       item.appId === "ecommerce"
-        ? openEcommerceDesk()
+        ? void navigate({ params: { _splat: "ecommerce" }, to: "/app/$" })
         : requestListNavigation(pageForApp(item.appId))
   }));
 
@@ -968,6 +977,26 @@ export function AppDesk() {
     return (
       <AuthGate desk="tenant">
         <GlobalLoader />
+      </AuthGate>
+    );
+  }
+
+  if (safePage === "q-cafe.overview") {
+    return (
+      <AuthGate desk="tenant">
+        <div className="relative h-dvh bg-background">
+          <iframe
+            className="h-full w-full border-0"
+            src="/q-cafe/"
+            title="Q Cafe restaurant workspace"
+          />
+          <a
+            className="absolute right-4 bottom-4 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium shadow-lg"
+            href="/app/application/overview"
+          >
+            Back to apps
+          </a>
+        </div>
       </AuthGate>
     );
   }
@@ -1034,10 +1063,15 @@ export function AppDesk() {
             </Button>
           ) : safePage === "crm.enquiries" ? (
             <Button
+              key="new-enquiry"
               size="sm"
               className="h-7 px-3"
+              type="button"
               aria-keyshortcuts="Control+E"
-              onClick={() => requestListNavigation("crm.enquiries.new")}
+              onClick={(event) => {
+                event.preventDefault();
+                requestListNavigation("crm.enquiries.new");
+              }}
             >
               <PlusIcon className="size-4" />
               New enquiry
@@ -1047,6 +1081,7 @@ export function AppDesk() {
             </Button>
           ) : safePage === "crm.enquiries.new" ? (
             <Button
+              key="save-enquiry"
               size="sm"
               className="h-7 px-3"
               type="submit"
@@ -1108,10 +1143,7 @@ export function AppDesk() {
               />
             ) : null}
             {safePage === "ecommerce.overview" ? (
-              <EcommerceOverviewWorkspace
-                gateway={ecommerceOverviewGateway}
-                onOpenDesk={openEcommerceDesk}
-              />
+              <EcommerceOverviewWorkspace gateway={ecommerceOverviewGateway} />
             ) : null}
             {safePage === "logicx-erp.overview" ? (
               <LogicxErpOverviewWorkspace gateway={logicxErpOverviewGateway} />
@@ -1145,6 +1177,9 @@ export function AppDesk() {
                 onOpenMyCalls={() => requestListNavigation("crm.my-calls")}
               />
             ) : null}
+            {safePage === "crm.data-source" ? (
+              <CrmDataSourceWorkspace frappeEnabled={enabledApps.includes("frappe")} />
+            ) : null}
             {safePage === "crm.reports" ? (
               <CrmReportsWorkspace
                 onOpenEnquiries={openReportEnquiries}
@@ -1166,19 +1201,18 @@ export function AppDesk() {
                 currentUserEmail={signedInUser.email}
                 reportFilters={reportFiltersFromLocation()}
                 mobileFilter={mobileFilterFromLocation(location.href)}
-                initialRecordId={enquiryRecordIdFromLocation(location.href)}
-                initialLiveName={liveEnquiryNameFromLocation(location.pathname)}
-                onOpenLiveEnquiry={openLiveEnquiry}
-                onCloseLiveEnquiry={() => requestListNavigation("crm.enquiries")}
+                initialRecordKey={enquiryRecordKeyFromLocation(location.href)}
+                onOpenRecord={openEnquiryRecord}
                 onClearMobileFilter={() => requestListNavigation("crm.enquiries")}
                 onBackToReports={() => requestListNavigation("crm.reports")}
               />
             ) : null}
             {safePage === "crm.enquiries.new" ? (
               <EnquiryWorkspace
-                key={safePage}
+                key={`${safePage}:${crmListRevision}`}
                 currentUserEmail={signedInUser.email}
                 initialCreate
+                onOpenRecord={openEnquiryRecord}
                 onSeeMoreEnquiries={openMobileEnquiries}
                 onOpenEnquiry={openMobileEnquiry}
                 onCloseCreate={() => completeListNavigation("crm.enquiries", true)}
@@ -1190,6 +1224,7 @@ export function AppDesk() {
                 key={safePage}
                 scope="assigned"
                 currentUserEmail={signedInUser.email}
+                onOpenRecord={openEnquiryRecord}
               />
             ) : null}
             {safePage === "crm.my-calls" ? (
@@ -1197,6 +1232,7 @@ export function AppDesk() {
                 key={safePage}
                 scope="created"
                 currentUserEmail={signedInUser.email}
+                onOpenRecord={openEnquiryRecord}
               />
             ) : null}
             {safePage === "crm.list-in" ? (
@@ -1450,10 +1486,12 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "auditor.overview" ||
     key === "auditor.clients" ||
     key === "ecommerce.overview" ||
+    key === "q-cafe.overview" ||
     ecommerceModulePages.includes(key as EcommerceModulePage) ||
     key === "logicx-erp.overview" ||
     key === "logicx-erp.schemes" ||
     key === "crm.overview" ||
+    key === "crm.data-source" ||
     key === "crm.reports" ||
     key === "crm.enquiries" ||
     key === "crm.enquiries.new" ||
@@ -1532,9 +1570,11 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
 }
 
 function tenantPathMatchesPage(pathname: string, page: AppPage): boolean {
+  if (page === "ecommerce.overview" && pathname === "/app/ecommerce") return true;
+  if (page === "q-cafe.overview" && pathname === "/app/q-cafe") return true;
   const canonicalPath = `/app/${page.replaceAll(".", "/")}`;
   if (pathname === canonicalPath) return true;
-  if (page === "crm.enquiries") return Boolean(liveEnquiryNameFromLocation(pathname));
+  if (page === "crm.enquiries") return Boolean(enquiryKeyFromPath(pathname));
   if (
     [
       "billing.quotation",
@@ -1605,6 +1645,9 @@ function LandingDesk({
 
   const choices = enabledApps.map((appId) => ({
     description:
+      appId === "q-cafe"
+        ? "Restaurant operations with a separate Q Cafe PIN login."
+        :
       appId === "ecommerce"
         ? "Tenant ecommerce operations workspace."
         : appId === "logicx-erp"
@@ -1623,6 +1666,9 @@ function LandingDesk({
                       ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
                       : "Shared workspace, company setup, roles, and cross-app launch desk.",
     icon:
+      appId === "q-cafe"
+        ? CoffeeIcon
+        :
       appId === "ecommerce"
         ? BoxesIcon
         : appId === "logicx-erp"
@@ -1643,6 +1689,9 @@ function LandingDesk({
                         ? ListChecksIcon
                         : LayoutDashboardIcon,
     iconClass:
+      appId === "q-cafe"
+        ? "bg-amber-700 text-white"
+        :
       appId === "ecommerce"
         ? "bg-indigo-600 text-white"
         : appId === "logicx-erp"
@@ -1664,6 +1713,9 @@ function LandingDesk({
                         : "bg-slate-950 text-white",
     id: appId,
     label:
+      appId === "q-cafe"
+        ? "Q Cafe"
+        :
       appId === "ecommerce"
         ? "Ecommerce"
         : appId === "logicx-erp"
@@ -1965,10 +2017,7 @@ function reportFiltersFromLocation(): EnquiryReportFilters | undefined {
     "listInId",
     "createdBy",
     "assignedUserId",
-    "filter",
-    "group",
-    "creatorEmployee",
-    "assigneeEmployee"
+    "filter"
   ] as const) {
     const value = search.get(key);
     if (value) filters[key] = value;
@@ -1988,14 +2037,12 @@ function mobileFilterFromLocation(href: string) {
   return { mobile, contactId };
 }
 
-function enquiryRecordIdFromLocation(href: string) {
-  const value = new URL(href, window.location.origin).searchParams.get("record");
-  if (!value || !/^[1-9]\d*$/.test(value)) return undefined;
-  const id = Number(value);
-  return Number.isSafeInteger(id) ? id : undefined;
+function enquiryRecordKeyFromLocation(href: string) {
+  const url = new URL(href, window.location.origin);
+  return enquiryKeyFromPath(url.pathname) ?? url.searchParams.get("record") ?? undefined;
 }
 
-function liveEnquiryNameFromLocation(pathname: string) {
+function enquiryKeyFromPath(pathname: string) {
   const match = /^\/app\/crm\/enquiries\/([^/]+)$/.exec(pathname);
   if (!match || match[1] === "new") return undefined;
   try {
@@ -2089,6 +2136,7 @@ function renderOwnedCommonMasterPage(page: AppPage) {
 
 function titleForPage(page: AppPage) {
   const labels: Partial<Record<AppPage, string>> = {
+    "q-cafe.overview": "Q Cafe",
     "frappe.overview": "Frappe",
     "frappe.enquiry-sync": "Enquiry sync",
     "frappe.connection": "Frappe connection",
@@ -2113,6 +2161,7 @@ function titleForPage(page: AppPage) {
     "logicx-erp.overview": "Overview",
     "logicx-erp.schemes": "Schemes",
     "crm.overview": "Overview",
+    "crm.data-source": "Data Sources",
     "crm.reports": "List in",
     "crm.enquiries": "All Enquiries",
     "crm.enquiries.new": "New enquiry",
@@ -2258,6 +2307,7 @@ function appFromPage(
   landingApp: PlatformAppId,
   enabledApps: PlatformAppId[]
 ): PlatformAppId {
+  if (page.startsWith("q-cafe")) return enabledApps.includes("q-cafe") ? "q-cafe" : landingApp;
   if (page.startsWith("frappe")) return enabledApps.includes("frappe") ? "frappe" : landingApp;
   if (page.startsWith("crm")) return enabledApps.includes("crm") ? "crm" : landingApp;
   if (page.startsWith("auditor")) return enabledApps.includes("auditor") ? "auditor" : landingApp;

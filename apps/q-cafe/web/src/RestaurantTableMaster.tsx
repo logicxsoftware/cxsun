@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Armchair, Pencil, Plus, Save, Trash2 } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
+import { Button } from '@cxsun/ui/components/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@codexsun/ui/components/ui/alert-dialog';
+} from '@cxsun/ui/components/alert-dialog';
 import type { RestaurantTable } from './api';
 
 type Props = {

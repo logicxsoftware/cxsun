@@ -24,7 +24,7 @@ use std::{
 use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 
-struct ApiProcess(Mutex<Option<Child>>);
+struct ApiProcess(Mutex<Option<(Child, String)>>);
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -604,8 +604,8 @@ struct UpdateManifest {
 }
 
 fn update_manifest_url() -> String {
-    env::var("QCAFE_UPDATE_MANIFEST_URL").unwrap_or_else(|_| {
-        "https://github.com/CODEXSUN/codexsun-qcafe/releases/latest/download/qcafe-update.json"
+    env::var("CXSUN_Q_CAFE_UPDATE_MANIFEST_URL").unwrap_or_else(|_| {
+        "https://github.com/logicxsoftware/cxsun/releases/latest/download/qcafe-update.json"
             .to_string()
     })
 }
@@ -683,21 +683,21 @@ fn launch_verified_installer(installer: &Path) -> Result<(), String> {
         .map_err(|_| "The verified installer could not start.".to_string())
 }
 
-fn request_api_shutdown() {
+fn request_api_shutdown(token: &str) {
     let _ = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(2))
         .build()
         .and_then(|client| {
             client
                 .post("http://127.0.0.1:4180/internal/shutdown")
-                .header("Authorization", "Bearer desktop-local-operator")
+                .header("Authorization", format!("Bearer {token}"))
                 .send()
         })
         .and_then(|response| response.error_for_status());
 }
 
 fn stop_api(process: &ApiProcess) -> Result<(), String> {
-    let mut child = match process
+    let (mut child, token) = match process
         .0
         .lock()
         .map_err(|_| "Q Cafe API process lock failed.")?
@@ -706,7 +706,7 @@ fn stop_api(process: &ApiProcess) -> Result<(), String> {
         Some(child) => child,
         None => return Ok(()),
     };
-    request_api_shutdown();
+    request_api_shutdown(&token);
     for _ in 0..50 {
         if child
             .try_wait()
@@ -748,7 +748,7 @@ fn qcafe_exit_application(
     Ok(())
 }
 
-fn start_api(app: &AppHandle) -> Result<Child, String> {
+fn start_api(app: &AppHandle) -> Result<(Child, String), String> {
     let settings_dir = application_settings_dir(app);
     let mut storage = load_or_configure_storage(&settings_dir)?;
     let api_root = prepare_api_runtime(&settings_dir)?;
@@ -779,6 +779,7 @@ fn start_api(app: &AppHandle) -> Result<Child, String> {
         .open(&api_log)
         .map_err(|error| format!("Q Cafe API log could not open: {error}"))?;
     let runtime_instance_id = Uuid::new_v4().to_string();
+    let operator_token = Uuid::new_v4().to_string();
     let mut command = Command::new(node);
     command
         .arg(api_root.join("src").join("server.mjs"))
@@ -790,7 +791,7 @@ fn start_api(app: &AppHandle) -> Result<Child, String> {
             "QCAFE_DEMO",
             env::var("QCAFE_DEMO").unwrap_or_else(|_| "false".to_string()),
         )
-        .env("QCAFE_API_TOKEN", "desktop-local-operator")
+        .env("QCAFE_API_TOKEN", &operator_token)
         .env("QCAFE_RUNTIME_INSTANCE_ID", &runtime_instance_id)
         .env(
             "QCAFE_BOOTSTRAP_OWNER_PIN",
@@ -806,7 +807,7 @@ fn start_api(app: &AppHandle) -> Result<Child, String> {
         .spawn()
         .map_err(|error| format!("Q Cafe API could not start: {error}"))?;
     wait_for_api(&mut child, &api_log, &runtime_instance_id)?;
-    Ok(child)
+    Ok((child, operator_token))
 }
 
 fn replace_api(app: &AppHandle, process: &ApiProcess) -> Result<(), String> {

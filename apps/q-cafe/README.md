@@ -1,23 +1,27 @@
-# Q Cafe import status
+# Q Cafe in the CXSUN workspace
 
-This directory contains an external Q Cafe source import. It is not yet a CXSUN application. The import includes a React web workspace, a standalone SQLite API with nine migrations and tests, Docker files, and a Tauri Windows shell.
+Q Cafe keeps its React frontend, SQLite API, PIN sign-in, and Tauri desktop source. The CXSUN Platform registers it as a tenant app and opens its frontend at `/app/q-cafe`. The tenant must sign in to Platform to use the launcher. Q Cafe then asks for its own cashier PIN or username. Platform authentication does not replace Q Cafe's staff roles or PIN checks.
 
-## Adoption gaps
+## Local development
 
-| Area | Current import | Work needed for CXSUN adoption |
-| --- | --- | --- |
-| Web workspace | The web source uses retired `@codexsun/ui` imports and `@codexsun/devkit-ito`, which is absent here. Its direct build fails on missing imports and TypeScript errors. | Move to `@cxsun/ui`, resolve the topology feature through a current public contract, and split business screens into owned frontend modules. |
-| Root tooling | The root has no Q Cafe scripts, lockfile entry, app registration, or boundary-check rule. Q Cafe package names use the retired `@codexsun/*` scope. | Add current package names, root scripts and lockfile entries, Platform composition, and boundary checks as one integration change. |
-| API ownership | One `server.mjs` and one `store.mjs` own all restaurant actions and tables. Routes use a separate JSON response shape. | Split restaurant entities into API leaf modules with fixed contracts, owned migrations, services, repositories, and exports. |
-| Identity and data | The API uses an operator key, PIN sessions, and a local SQLite database. It does not use Platform tenant sessions or tenant database selection. | Choose an explicit deployment model and enforce Platform identity, permissions, and tenant scope before using the shared desk. |
-| Desktop build | Tauri expects a web build, a bundled Node executable, and a print-service executable. The root desktop scripts and print-service source are absent. | Add reproducible packaging from source. Generate binaries during packaging and keep them outside Git. |
-| Docker runtime | The Dockerfile installs the whole root and starts the root `dev` command. | Add an app-specific production entry point that follows the root dependency and build rules. |
-| Naming and docs | Environment keys use `QCAFE_*`, and the imported release notes refer to unavailable root commands. | Migrate internal keys to `CXSUN_*` when integrating, and update operations instructions after the runtime is wired. |
+Set these values in the root `.env` (the root `.env.example` documents them):
 
-The API has useful domain behavior, including orders, POS billing, kitchen state, stock adjustments, bookings, staff PINs, activity records, and SQLite migrations. Its existing tests can run from the repository root:
-
-```powershell
-node --test apps/q-cafe/api/src/access-flow.test.mjs apps/q-cafe/api/src/backup.test.mjs apps/q-cafe/api/src/staff-auth.test.mjs apps/q-cafe/api/src/store.test.mjs
+```dotenv
+CXSUN_TENANCY_MODE=single
+CXSUN_Q_CAFE_API_PORT=4180
+CXSUN_Q_CAFE_WEB_PORT=5180
+CXSUN_Q_CAFE_DATABASE_PATH=apps/q-cafe/.local/q-cafe.sqlite
+CXSUN_Q_CAFE_IMAGE_DIRECTORY=apps/q-cafe/.local/images
 ```
 
-Do not deploy or register this import as a CXSUN tenant app yet. The web build fails, and the desktop packaging inputs are incomplete. The local `.local/` folder contains private operator credentials and restaurant data. Keep it outside Git and preserve it when cleaning generated files.
+Run `npm run dev` from the repository root. This starts the Platform API and web server, Q Cafe API and web server, and the other workspace frontends. Open the Platform app launcher and select **Q Cafe**, or open `/app/q-cafe` after Platform sign-in. The Platform web server forwards `/q-cafe/` to the Q Cafe Vite frontend and `/api/v1/q-cafe` to its loopback API. `npm run dev:q-cafe:api` and `npm run dev:q-cafe:web` start its services separately.
+
+The Q Cafe API's internal operator token is generated when its local service starts. PIN sign-in and staff permission checks remain in the Q Cafe API. Existing `.local/` data is preserved. Do not remove the SQLite file or use a bootstrap PIN against an existing restaurant database.
+
+## Build and checks
+
+`npm run build:q-cafe` builds the browser frontend into `dist/apps/q-cafe/web`; `npm run build:q-cafe:desktop` builds the Tauri asset variant with a root base path. The Windows build commands are in the [desktop README](desktop/README.md). Q Cafe's own release version remains in `version.json`; the three npm workspace package versions follow the root CXSUN version. Run `npm test -w @cxsun/q-cafe-api` for API tests and `npm run typecheck -w @cxsun/q-cafe-web` for frontend types.
+
+## Deployment boundary
+
+This adapter is for a single tenant. Q Cafe currently uses one SQLite database and does not select storage by Platform tenant. The development supervisor therefore starts Q Cafe only with `CXSUN_TENANCY_MODE=single`; the Q Cafe API refuses to start otherwise. Do not expose this shared database to a multi-tenant deployment. Hosted routing, persistent storage, and independent Q Cafe API process supervision still need a production deployment configuration.

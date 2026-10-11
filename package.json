@@ -1,6 +1,6 @@
 {
   "name": "cxsun",
-  "version": "1.0.84",
+  "version": "1.0.85",
   "private": true,
   "packageManager": "npm@12.2.0",
   "description": "CODEXSUN",
@@ -17,6 +17,13 @@
     "dev": "node tools/dev-stack.mjs",
     "dev:api": "node tools/preflight.mjs platform-api",
     "dev:web": "node tools/preflight.mjs platform-web",
+    "dev:q-cafe:api": "node tools/preflight.mjs q-cafe-api",
+    "dev:q-cafe:web": "node tools/preflight.mjs q-cafe-web",
+    "dev:q-cafe": "node tools/dev-q-cafe.mjs",
+    "build:q-cafe": "npm run build -w @cxsun/q-cafe-web",
+    "build:q-cafe:desktop": "npm run build -w @cxsun/q-cafe-web -- --mode desktop",
+    "dev:q-cafe:windows": "npm run dev -w @cxsun/q-cafe-desktop",
+    "build:q-cafe:windows": "npm run package:windows -w @cxsun/q-cafe-desktop",
     "start:api:production": "node --import ./tools/register-production-package-resolution.mjs dist/apps/platform/api/server.js",
     "test:dev-stack": "node --import tsx --test tools/dev-stack-contract.test.mjs tools/dev-shutdown-control.test.mjs tools/dev-api-source-changes.test.mjs",
     "test:product-stacks": "node --test tools/product-stack-contract.test.mjs",
@@ -101,7 +108,9 @@
     "desktop:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File apps/platform/windows/scripts/desktop.ps1 uninstall",
     "dev:ecommerce": "node tools/preflight.mjs ecommerce-web",
     "test:e2e:ecommerce": "tsx tools/e2e/ecommerce-access.e2e.ts",
-    "dev:storefront": "node tools/preflight.mjs ecommerce-storefront",
+    "dev:storefront": "node tools/preflight.mjs ecommerce-web",
+    "dev:uiux": "node tools/preflight.mjs uiux-web",
+    "dev:project-manager": "node tools/preflight.mjs project-manager-web",
     "test:e2e:ecommerce-modules": "tsx tools/e2e/ecommerce-modules.e2e.ts"
   },
   "devDependencies": {

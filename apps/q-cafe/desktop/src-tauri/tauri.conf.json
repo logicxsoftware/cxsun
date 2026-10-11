@@ -4,10 +4,16 @@
   "version": "1.0.38",
   "identifier": "in.codexsun.qcafe",
   "build": {
-    "beforeDevCommand": "npm.cmd --loglevel=error --prefix ../../.. run dev:q-cafe",
-    "devUrl": "http://127.0.0.1:5180",
-    "beforeBuildCommand": "npm.cmd --loglevel=error --prefix ../../.. run build:q-cafe",
-    "frontendDist": "../../web/dist"
+    "beforeDevCommand": {
+      "cwd": "../../../..",
+      "script": "npm.cmd run dev:q-cafe"
+    },
+    "devUrl": "http://127.0.0.1:5180/q-cafe/",
+    "beforeBuildCommand": {
+      "cwd": "../../../..",
+      "script": "npm.cmd run build:q-cafe:desktop"
+    },
+    "frontendDist": "../../../../dist/apps/q-cafe/web"
   },
   "app": {
     "windows": [
@@ -35,8 +41,7 @@
       "nsis"
     ],
     "resources": {
-      "resources/node.exe": "node.exe",
-      "resources/q-cafe-print-service.exe": "q-cafe-print-service.exe",
+      "../../../../dist/apps/q-cafe/desktop/resources/node.exe": "node.exe",
       "resources/q-cafe-print-service-installer.cjs": "q-cafe-print-service-installer.cjs"
     },
     "windows": {

@@ -6,7 +6,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@codexsun/ui/components/ui/sheet';
+} from '@cxsun/ui/components/sheet';
 
 type Props = {
   open: boolean;

@@ -1,18 +1,26 @@
 import type {
   ZetroGrant,
   ZetroGrantChange,
+  ZetroGrantEvent,
+  ZetroApproval,
   ZetroInteractionLog,
   ZetroPatternDraft,
   ZetroQueryPattern,
   ZetroRole,
-  ZetroTenantOption
+  ZetroTenantOption,
+  ZetroReviewConversation,
+  ZetroReviewDetail
 } from "./admin.types";
 
 type Envelope<T> = { success: true; data: T } | { success: false; error: { message: string } };
 
 async function adminRequest<T>(
   path: string,
-  body?: ZetroPatternDraft | ZetroGrantChange,
+  body?:
+    | ZetroPatternDraft
+    | ZetroGrantChange
+    | { note: string }
+    | { status: "approved" | "rejected"; note: string },
   method?: "POST" | "PUT"
 ): Promise<T> {
   const baseUrl = (window as Window & { __CXSUN_RUNTIME_CONFIG__?: Record<string, string> })
@@ -50,3 +58,25 @@ export const listZetroRoles = (tenantId: string) =>
   adminRequest<ZetroRole[]>(`/zetro/admin/tenants/${tenantId}/roles`);
 export const saveZetroGrant = (tenantId: string, change: ZetroGrantChange) =>
   adminRequest<{ saved: true }>(`/zetro/admin/tenants/${tenantId}/grants`, change, "PUT");
+export const listZetroGrantEvents = (tenantId: string) =>
+  adminRequest<ZetroGrantEvent[]>(`/zetro/admin/tenants/${tenantId}/grants/events`);
+export const listZetroReviewConversations = (tenantId: string) =>
+  adminRequest<ZetroReviewConversation[]>(`/zetro/admin/tenants/${tenantId}/conversations`);
+export const getZetroReviewConversation = (tenantId: string, id: number) =>
+  adminRequest<ZetroReviewDetail>(`/zetro/admin/tenants/${tenantId}/conversations/${id}`);
+export const addZetroReviewNote = (tenantId: string, id: number, note: string) =>
+  adminRequest<{ saved: true }>(`/zetro/admin/tenants/${tenantId}/conversations/${id}/notes`, {
+    note
+  });
+export const listZetroApprovals = (tenantId: string) =>
+  adminRequest<ZetroApproval[]>(`/zetro/admin/tenants/${tenantId}/approvals`);
+export const decideZetroApproval = (
+  tenantId: string,
+  id: number,
+  status: "approved" | "rejected",
+  note: string
+) =>
+  adminRequest<{ saved: true }>(`/zetro/admin/tenants/${tenantId}/approvals/${id}/decision`, {
+    status,
+    note
+  });

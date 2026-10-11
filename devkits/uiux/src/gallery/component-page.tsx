@@ -16,6 +16,7 @@ import {
 } from "@cxsun/ui/design-system";
 import { catalogItems, type CatalogItem, type CatalogVariant } from "./component-catalog";
 import { componentPage, componentPages, type ComponentPageId } from "./component-pages";
+import { componentImportPath } from "./component-metadata";
 import { galleryPageUrl } from "./gallery-routes";
 
 const componentSources = {
@@ -80,8 +81,8 @@ export function ComponentPage({
       <section className="grid gap-3 border-t pt-6">
         <h2 className="text-lg font-semibold">{item.name} usage</h2>
         <p className="text-sm text-muted-foreground">
-          Review each live variant. The page header copies the import path; each variant card shows
-          and copies the shared component source.
+          V01, V02, and later labels identify gallery previews. The flavor ID stays stable for saved preferences.
+          Use the import path above for the shared component. Each code button shows a flavor example when available, or the component implementation.
         </p>
         <nav aria-label="Component pages" className="grid gap-3 sm:grid-cols-2">
           <PageLink
@@ -101,7 +102,6 @@ export function ComponentPage({
     </div>
   );
 }
-
 function ComponentHeader({ item }: { item: CatalogItem }) {
   const [copied, setCopied] = useState(false);
   const importPath = componentImportPath(item.id);
@@ -118,6 +118,7 @@ function ComponentHeader({ item }: { item: CatalogItem }) {
         <span className="rounded-full bg-muted px-3 py-1 text-xs">Component</span>
         <ChevronRightIcon className="size-4 text-muted-foreground" />
         <h1 className="font-semibold">{item.name}</h1>
+        <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{item.category}</span>
       </div>
       <div className="flex min-w-0 items-center gap-2">
         <code className="max-w-[70vw] truncate rounded-md bg-muted px-3 py-2 text-xs">
@@ -133,6 +134,7 @@ function ComponentHeader({ item }: { item: CatalogItem }) {
           {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
         </Button>
       </div>
+      <p className="w-full text-sm text-muted-foreground">{item.description} · {item.variants.length} live {item.variants.length === 1 ? "flavor" : "flavors"}</p>
     </header>
   );
 }
@@ -152,10 +154,11 @@ function VariantPreview({
   const [source, setSource] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const isDefault = selectedDefault === variant.id;
+  const changesComponentDefault = item.id === "button";
   const importPath = componentImportPath(item.id);
 
   async function copySource() {
-    await navigator.clipboard.writeText(await readSource());
+    await navigator.clipboard.writeText(variant.exampleCode ?? await readSource());
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   }
@@ -173,19 +176,20 @@ function VariantPreview({
 
   async function toggleCode() {
     setShowCode((value) => !value);
-    if (source === null) await readSource();
+    if (!variant.exampleCode && source === null) await readSource();
   }
 
   return (
     <article>
       <header className="flex min-h-12 flex-wrap items-center gap-2 border-b px-4 py-2 text-sm">
-        <span className="font-mono text-xs text-muted-foreground">
-          {String(index + 1).padStart(2, "0")}.
+        <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+          V{String(index + 1).padStart(2, "0")}
         </span>
         <span className="font-semibold">{variant.name}</span>
+        <code className="text-xs text-muted-foreground">{item.id}/{variant.id}</code>
         {isDefault ? (
           <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-            Default
+            {changesComponentDefault ? "Default" : "Preferred preview"}
           </span>
         ) : null}
         <div className="ml-auto flex items-center gap-1">
@@ -196,11 +200,11 @@ function VariantPreview({
               type="button"
               variant="ghost"
             >
-              Set default
+              {changesComponentDefault ? "Set default" : "Prefer preview"}
             </Button>
           ) : null}
           <Button
-            aria-label={`Copy ${variant.name} component source`}
+            aria-label={`Copy ${variant.name} ${variant.exampleCode ? "usage example" : "component source"}`}
             onClick={() => void copySource()}
             size="icon"
             type="button"
@@ -209,7 +213,7 @@ function VariantPreview({
             {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
           </Button>
           <Button
-            aria-label={`${showCode ? "Hide" : "Show"} ${variant.name} component source`}
+            aria-label={`${showCode ? "Hide" : "Show"} ${variant.name} ${variant.exampleCode ? "usage example" : "component source"}`}
             aria-expanded={showCode}
             onClick={() => void toggleCode()}
             size="icon"
@@ -220,16 +224,17 @@ function VariantPreview({
           </Button>
         </div>
       </header>
+      {variant.description ? <p className="px-4 pt-3 text-xs text-muted-foreground">{variant.description}</p> : null}
       <div className="grid min-h-52 place-items-center px-6 py-12">
         <div className="w-full max-w-[34rem]">{variant.preview}</div>
       </div>
       {showCode ? (
         <div className="border-t bg-muted/20 px-5 py-4">
           <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Shared component source · {importPath}
+            {variant.exampleCode ? "Flavor usage example" : "Shared component source"} · {importPath}
           </p>
           <pre className="max-h-[28rem] overflow-auto text-xs leading-6">
-            <code>{source ?? "Loading source…"}</code>
+            <code>{variant.exampleCode ?? source ?? "Loading source…"}</code>
           </pre>
         </div>
       ) : null}
@@ -268,9 +273,4 @@ function PageLink({
       {direction === "next" ? <ArrowRightIcon className="size-4 shrink-0" /> : null}
     </a>
   );
-}
-
-function componentImportPath(id: string) {
-  const file = id === "field" ? "Field" : id === "status-badge" ? "StatusBadge" : id;
-  return `@cxsun/ui/components/${file}`;
 }

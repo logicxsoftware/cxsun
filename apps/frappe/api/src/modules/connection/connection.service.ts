@@ -248,7 +248,7 @@ export class FrappeConnectionService {
 
   private async request<T>(
     path: string,
-    method: "GET" | "POST" | "PUT",
+    method: "GET" | "POST" | "PUT" | "DELETE",
     body?: unknown,
     settings: FrappeSettings = this.settings
   ): Promise<T> {
@@ -258,7 +258,7 @@ export class FrappeConnectionService {
 
 export async function requestFrappe<T>(
   path: string,
-  method: "GET" | "POST" | "PUT",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   settings: FrappeSettings,
   body?: unknown
 ): Promise<T> {
@@ -303,6 +303,7 @@ export async function requestFrappe<T>(
     });
   }
   if (!response.ok) throw upstreamError(`Frappe returned HTTP ${response.status}.`);
+  if (response.status === 204 || method === "DELETE") return {} as T;
   const data = await readResponse(response);
   try {
     return JSON.parse(data) as T;

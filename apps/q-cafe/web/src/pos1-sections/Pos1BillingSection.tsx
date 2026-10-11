@@ -1,5 +1,5 @@
 import { CheckCircle2, Minus, Plus, Trash2 } from 'lucide-react';
-import { TopologyMarker } from '@codexsun/devkit-ito';
+import { TopologyMarker } from '../ito-bridge';
 import { money } from '../api';
 import type { Pos1BillingSectionProps } from './types';
 

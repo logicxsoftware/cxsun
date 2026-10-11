@@ -34,7 +34,12 @@ import {
   migrateSalesTypes,
   salesTypesMigration
 } from "./others/sales-types/sales-types.migration.js";
-import { brandsMigration, migrateBrands } from "./products/brands/brands.migration.js";
+import {
+  brandsMigration,
+  brandsStorefrontMigration,
+  migrateBrands,
+  upgradeBrandsStorefront
+} from "./products/brands/brands.migration.js";
 import { coloursMigration, migrateColours } from "./products/colours/colours.migration.js";
 import { hsnCodesMigration, migrateHsnCodes } from "./products/hsn-codes/hsn-codes.migration.js";
 import {
@@ -98,6 +103,7 @@ export const commonMigrationSteps = [
   { ...prioritiesMigration, migrate: migratePriorities },
   { ...salesTypesMigration, migrate: migrateSalesTypes },
   { ...brandsMigration, migrate: migrateBrands },
+  { ...brandsStorefrontMigration, migrate: upgradeBrandsStorefront },
   { ...coloursMigration, migrate: migrateColours },
   { ...hsnCodesMigration, migrate: migrateHsnCodes },
   { ...productCategoriesMigration, migrate: migrateProductCategories },

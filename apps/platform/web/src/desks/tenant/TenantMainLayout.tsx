@@ -53,7 +53,7 @@ export function TenantMainLayout(props: TenantMainLayoutProps) {
   return (
     <SidebarProvider
       className="h-dvh min-h-0"
-      style={{ "--sidebar-width": "19rem" } as CSSProperties}
+      style={{ "--sidebar-width": "19rem", "--sidebar-width-icon": "2.5rem" } as CSSProperties}
     >
       <TenantMainShell {...props} />
     </SidebarProvider>
@@ -105,7 +105,7 @@ function TenantMainShell({
 
   return (
     <AppLayout className="relative h-dvh w-full">
-      <div className="shrink-0 [&>header]:h-[50px] [&>header>div:last-child]:gap-3">
+      <div className="tenant-main-menu shrink-0 [&>header]:h-[50px] [&>header>div:last-child]:gap-3">
         <TopMenu
           appItems={appItems}
           applicationName={workspaceName}

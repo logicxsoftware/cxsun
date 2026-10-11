@@ -4,6 +4,7 @@ export {
   mappedLocalUserForEmployeeCode
 } from "./user-mapping.repository.js";
 export {
+  frappeUserMappingMigrationBatch,
   frappeUserMappingMigrations,
   migrateFrappeUserMappingDatabase,
   rollbackFrappeUserMappingDatabase

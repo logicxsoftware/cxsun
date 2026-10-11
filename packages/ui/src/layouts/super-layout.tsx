@@ -87,7 +87,7 @@ function superWorkspaceItems(activeWorkspace: "platform" | "task-manager" | "uiu
       description: "Shared UI gallery, layouts, and workspace blocks.",
       icon: PaletteIcon,
       active: activeWorkspace === "uiux",
-      url: "/sa/uiux"
+      url: "/sa/uiux?uiux=components"
     }
   ];
 }

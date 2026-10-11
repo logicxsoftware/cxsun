@@ -223,6 +223,7 @@ import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import { toast as sonnerToast } from "sonner";
 import { useState, type ComponentType, type ReactNode } from "react";
 import { importedComponentItems, importedStatusBadgeVariants } from "./imported-component-catalog";
+import { flavorName } from "./component-metadata";
 
 export type CatalogCategory =
   "Control" | "Form" | "Feedback" | "Navigation" | "Overlay" | "Data" | "Layout";
@@ -239,6 +240,7 @@ export type CatalogItem = {
 export type CatalogVariant = {
   defaultable?: boolean;
   description?: string;
+  exampleCode?: string;
   id: string;
   name: string;
   preview: ReactNode;
@@ -274,8 +276,24 @@ export const catalogItems: CatalogItem[] = [
     "Data",
     "Stacked disclosure sections for dense business content.",
     [
-      variant("default", "Default", <AccordionPreview />),
-      variant("contained", "Contained", <AccordionPreview className="rounded-md border px-4" />)
+      variant("default", "Borderless", <AccordionPreview />, "Open disclosure rows with dividing lines.",
+        `import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@cxsun/ui/components/accordion";
+
+<Accordion type="single" collapsible defaultValue="one">
+  <AccordionItem value="one">
+    <AccordionTrigger>Question</AccordionTrigger>
+    <AccordionContent>Answer</AccordionContent>
+  </AccordionItem>
+</Accordion>`),
+      variant("contained", "Boxed", <AccordionPreview className="rounded-md border px-4" />, "Disclosure rows inside a bordered surface.",
+        `import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@cxsun/ui/components/accordion";
+
+<Accordion type="single" collapsible defaultValue="one" className="rounded-md border px-4">
+  <AccordionItem value="one">
+    <AccordionTrigger>Question</AccordionTrigger>
+    <AccordionContent>Answer</AccordionContent>
+  </AccordionItem>
+</Accordion>`)
     ]
   ),
   item(
@@ -319,7 +337,9 @@ export const catalogItems: CatalogItem[] = [
     variant("default", "Default", <Badge>Default</Badge>),
     variant("secondary", "Secondary", <Badge variant="secondary">Secondary</Badge>),
     variant("outline", "Outline", <Badge variant="outline">Outline</Badge>),
-    variant("destructive", "Destructive", <Badge variant="destructive">Blocked</Badge>)
+    variant("destructive", "Destructive", <Badge variant="destructive">Blocked</Badge>),
+    variant("studio-success", "Studio Success", <Badge variant="studio-success">Complete</Badge>),
+    variant("studio-warning", "Studio Warning", <Badge variant="studio-warning">Needs review</Badge>)
   ]),
   item(
     "breadcrumb",
@@ -350,6 +370,8 @@ export const catalogItems: CatalogItem[] = [
         </Button>
       ),
       variant("ghost", "Ghost", <Button variant="ghost">Ghost</Button>),
+      variant("success", "Success", <Button variant="success">Approve</Button>),
+      variant("destructive", "Destructive", <Button variant="destructive">Remove</Button>),
       variant("danger", "Danger", <Button variant="danger">Delete</Button>),
       variant("link", "Link", <Button variant="link">Open record</Button>)
     ]
@@ -435,7 +457,8 @@ export const catalogItems: CatalogItem[] = [
   ]),
   item("field", "Field", "Form", "Fieldset, label, helper text, and error composition.", [
     variant("vertical", "Vertical", <FieldPreview />),
-    variant("horizontal", "Horizontal", <FieldPreview horizontal />)
+    variant("horizontal", "Horizontal", <FieldPreview orientation="horizontal" />),
+    variant("responsive", "Responsive", <FieldPreview orientation="responsive" />)
   ]),
   item(
     "global-loader",
@@ -469,7 +492,8 @@ export const catalogItems: CatalogItem[] = [
   item("item", "Item", "Data", "Composable list item for summaries and settings rows.", [
     variant("default", "Default", <ItemPreview />),
     variant("outline", "Outline", <ItemPreview variant="outline" />),
-    variant("muted", "Muted", <ItemPreview variant="muted" />)
+    variant("muted", "Muted", <ItemPreview variant="muted" />),
+    variant("small", "Small", <ItemPreview size="sm" />)
   ]),
   item("kbd", "Kbd", "Data", "Keyboard shortcut marker.", [
     variant("single", "Single", <Kbd>Ctrl</Kbd>),
@@ -530,7 +554,10 @@ export const catalogItems: CatalogItem[] = [
     )
   ]),
   item("sheet", "Sheet", "Overlay", "Side panel for inspection and settings.", [
-    variant("right", "Right", <SheetPreview />)
+    variant("right", "Right", <SheetPreview side="right" />),
+    variant("left", "Left", <SheetPreview side="left" />),
+    variant("top", "Top", <SheetPreview side="top" />),
+    variant("bottom", "Bottom", <SheetPreview side="bottom" />)
   ]),
   item("sidebar", "Sidebar", "Layout", "Application navigation shell primitives.", [
     variant("default", "Default", <SidebarPreview />)
@@ -549,14 +576,14 @@ export const catalogItems: CatalogItem[] = [
   item("spinner", "Spinner", "Feedback", "Small inline loading icon.", [
     variant("default", "Default", <Spinner className="size-6" />)
   ]),
-  item("status-badge", "Status Badge", "Feedback", "Workspace status tone badge.", [
+  item("status-tone-badge", "Status Tone Badge", "Feedback", "Compact label with a semantic color tone.", [
     variant("green", "Green", <StatusBadge tone="green">Active</StatusBadge>),
     variant("blue", "Blue", <StatusBadge tone="blue">Info</StatusBadge>),
     variant("amber", "Amber", <StatusBadge tone="amber">Pending</StatusBadge>),
     variant("red", "Red", <StatusBadge tone="red">Blocked</StatusBadge>),
-    variant("neutral", "Neutral", <StatusBadge>Archived</StatusBadge>),
-    ...importedStatusBadgeVariants
+    variant("neutral", "Neutral", <StatusBadge>Archived</StatusBadge>)
   ]),
+  item("status-badge", "Status Badge", "Feedback", "Named workflow statuses with accessible labels.", importedStatusBadgeVariants),
   item("switch", "Switch", "Form", "Binary on/off control.", [
     variant("on", "On", <SwitchPreview checked />),
     variant("off", "Off", <SwitchPreview checked={false} />)
@@ -653,7 +680,11 @@ function item(
     description,
     id,
     name,
-    variants: variants.map((entry) => ({ defaultable: true, ...entry }))
+    variants: variants.map((entry) => ({
+      defaultable: true,
+      ...entry,
+      name: flavorName(id, entry.name)
+    }))
   };
 }
 
@@ -661,9 +692,10 @@ function variant(
   id: string,
   name: string,
   preview: ReactNode,
-  description?: string
+  description?: string,
+  exampleCode?: string
 ): CatalogVariant {
-  return description ? { id, name, preview, description } : { id, name, preview };
+  return { id, name, preview, ...(description ? { description } : {}), ...(exampleCode ? { exampleCode } : {}) };
 }
 
 function AccordionPreview({ className }: { className?: string }) {
@@ -925,16 +957,17 @@ function EmptyPreview({ icon = false }: { icon?: boolean }) {
   );
 }
 
-function FieldPreview({ horizontal = false }: { horizontal?: boolean }) {
+function FieldPreview({ orientation = "vertical" }: { orientation?: "vertical" | "horizontal" | "responsive" }) {
+  const inputId = `tenant-code-${orientation}`;
   return (
     <FieldSet className="max-w-md">
       <FieldLegend>Tenant details</FieldLegend>
-      <Field orientation={horizontal ? "horizontal" : "vertical"}>
-        <FieldLabel htmlFor={horizontal ? "tenant-code-horizontal" : "tenant-code"}>
+      <Field orientation={orientation}>
+        <FieldLabel htmlFor={inputId}>
           Tenant code
         </FieldLabel>
         <FieldContent>
-          <Input id={horizontal ? "tenant-code-horizontal" : "tenant-code"} placeholder="CXSUN" />
+          <Input id={inputId} placeholder="CXSUN" />
           <FieldDescription>Unique short code for the tenant workspace.</FieldDescription>
         </FieldContent>
       </Field>
@@ -992,9 +1025,9 @@ function InputOTPPreview() {
   );
 }
 
-function ItemPreview({ variant = "default" }: { variant?: "default" | "outline" | "muted" }) {
+function ItemPreview({ variant = "default", size = "default" }: { variant?: "default" | "outline" | "muted"; size?: "default" | "sm" }) {
   return (
-    <Item variant={variant} className="max-w-lg">
+    <Item variant={variant} size={size} className="max-w-lg">
       <ItemMedia variant="icon">
         <UserIcon />
       </ItemMedia>
@@ -1158,13 +1191,13 @@ function SelectPreview() {
   );
 }
 
-function SheetPreview() {
+function SheetPreview({ side }: { side: "right" | "left" | "top" | "bottom" }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="outline">Open sheet</Button>
       </SheetTrigger>
-      <SheetContent>
+      <SheetContent side={side}>
         <SheetHeader>
           <SheetTitle>Pattern details</SheetTitle>
           <SheetDescription>Use sheets for side inspection and quick settings.</SheetDescription>

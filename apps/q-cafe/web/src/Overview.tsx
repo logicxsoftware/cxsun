@@ -23,8 +23,8 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
-import { TopologyMarker, type InterfaceTopologyController } from '@codexsun/devkit-ito';
+import { Button } from '@cxsun/ui/components/button';
+import { TopologyMarker, type InterfaceTopologyController } from './ito-bridge';
 import { money, type PosBill, type PosItem, type ReceiptTransaction, type Snapshot } from './api';
 import { loadSettings } from './Settings';
 import { ThermalBillReceipt } from './ThermalBillReceipt';

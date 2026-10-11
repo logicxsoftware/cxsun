@@ -6,9 +6,9 @@ import { resolve } from "node:path";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, root, "");
-  const port = Number(process.env.CXSUN_STOREFRONT_WEB_PORT ?? env.CXSUN_STOREFRONT_WEB_PORT);
+  const port = Number(process.env.CXSUN_ECOMMERCE_WEB_PORT ?? env.CXSUN_ECOMMERCE_WEB_PORT);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
-    throw new Error("CXSUN_STOREFRONT_WEB_PORT is required");
+    throw new Error("CXSUN_ECOMMERCE_WEB_PORT is required");
   const apiPort = Number(process.env.PLATFORM_API_PORT ?? env.PLATFORM_API_PORT);
   if (!Number.isInteger(apiPort) || apiPort < 1) throw new Error("PLATFORM_API_PORT is required");
   return {

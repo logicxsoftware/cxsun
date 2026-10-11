@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { InterfaceTopologyController } from '@codexsun/devkit-ito';
+import type { InterfaceTopologyController } from '../ito-bridge';
 import type { CustomMenuItem } from '../mastersStore';
 
 export type EntryLine = {

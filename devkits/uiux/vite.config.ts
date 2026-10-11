@@ -1,8 +1,11 @@
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
+import { fileURLToPath } from "node:url";
 
-export default defineConfig({
+const root = fileURLToPath(new URL("../..", import.meta.url));
+
+export default defineConfig(({ mode }) => ({
   build: {
     emptyOutDir: true,
     outDir: "../../dist/devkits/uiux"
@@ -11,6 +14,7 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   server: {
     host: "127.0.0.1",
-    port: 7030
+    port: Number(process.env.CXSUN_UIUX_WEB_PORT ?? loadEnv(mode, root, "").CXSUN_UIUX_WEB_PORT),
+    strictPort: true
   }
-});
+}));

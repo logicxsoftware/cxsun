@@ -41,7 +41,7 @@ const server = createServer(async (request, response) => {
   try { const input = await body(request, action === actions.image ? 7_000_000 : 32768); const result = action[1](input); send(200, { ok: true, result }); } catch (error) { send(400, { error: error instanceof Error ? error.message : 'Invalid request.' }); }
 });
 
-server.listen(Number(process.env.QCAFE_API_PORT ?? 4180), '0.0.0.0');
+server.listen(Number(process.env.QCAFE_API_PORT ?? 4180), process.env.QCAFE_API_HOST ?? '127.0.0.1');
 process.once('SIGINT', shutdown);
 process.once('SIGTERM', shutdown);
 

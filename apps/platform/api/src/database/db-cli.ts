@@ -1,5 +1,6 @@
 import { createConnection } from "mysql2/promise";
 import { closeAllBillingDatabases } from "@cxsun/billing-api";
+import { closeAllAccountsDatabases } from "@cxsun/accounts-api";
 import { closeCoreDatabase } from "@cxsun/core-api";
 import {
   closePlatformDatabase,
@@ -118,7 +119,12 @@ async function main() {
 
     console.log(`ok db:${command} completed`);
   } finally {
-    await Promise.all([closeAllBillingDatabases(), closeCoreDatabase(), closePlatformDatabase()]);
+    await Promise.all([
+      closeAllAccountsDatabases(),
+      closeAllBillingDatabases(),
+      closeCoreDatabase(),
+      closePlatformDatabase()
+    ]);
   }
 }
 

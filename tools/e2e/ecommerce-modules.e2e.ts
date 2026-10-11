@@ -52,6 +52,28 @@ try {
   });
   assert.equal(staffCatalog.statusCode, 200, staffCatalog.body);
 
+  const staffHeaders = {
+    cookie,
+    host: "app.codexsun.test",
+    origin: env.PLATFORM_WEB_ORIGIN,
+    "x-cxsun-session-slot": sessionSlot
+  };
+  const dataSource = await app.inject({
+    headers: staffHeaders,
+    method: "GET",
+    url: "/ecommerce/settings/data-source"
+  });
+  assert.equal(dataSource.statusCode, 200, dataSource.body);
+  assert.ok(Array.isArray(dataSource.json().data.modules));
+  assert.equal("apiKey" in dataSource.json().data, false);
+  const duplicateConnection = await app.inject({
+    headers: staffHeaders,
+    method: "PUT",
+    payload: {},
+    url: "/ecommerce/settings/data-source/frappe"
+  });
+  assert.equal(duplicateConnection.statusCode, 404);
+
   const unknownHost = await app.inject({
     headers: { host: "unknown.invalid", "x-tenant-db": "CODEXSUN_db" },
     method: "GET",
@@ -68,6 +90,11 @@ try {
   const bootstrap = publicHost.json();
   assert.equal(bootstrap.success, true);
   assert.ok(Array.isArray(bootstrap.data.sliders));
+  assert.ok(Array.isArray(bootstrap.data.discovery.brands));
+  for (const brand of bootstrap.data.discovery.brands as Array<Record<string, unknown>>) {
+    assert.equal(typeof brand.logoAlt, "string");
+    assert.equal(typeof brand.logoUrl, "string");
+  }
   for (const path of [
     "/storefront/catalog",
     "/storefront/categories",
@@ -95,6 +122,14 @@ try {
     user: env.DB_USER
   });
   try {
+    const [brandColumns] = await database.query(
+      "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='core_brands' AND COLUMN_NAME IN ('logo_url','logo_alt','show_on_storefront')"
+    );
+    assert.equal(
+      (brandColumns as unknown[]).length,
+      3,
+      "Core brand storefront fields are missing."
+    );
     const [oldTables] = await database.query(
       "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('ecommerce_catalog','ecommerce_catalog_activity','ecommerce_storefront_config','ecommerce_storefront_quotes','ecommerce_storefront_quote_items','ecommerce_storefront_activity')"
     );

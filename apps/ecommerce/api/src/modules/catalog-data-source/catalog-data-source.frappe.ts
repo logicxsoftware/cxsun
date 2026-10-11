@@ -219,21 +219,6 @@ export class FrappeCatalogSource implements StorefrontCatalogSource {
     }>(credentials, "upsert_catalog_snapshot", "POST", { payload: JSON.stringify(snapshot) });
   }
 
-  async seedDemo() {
-    const credentials = await this.resolveCredentials();
-    return this.method<{
-      catalogs: number;
-      erpnext_items: number;
-      items: number;
-      featured_cards: number;
-      brand_strips: number;
-      season_strips: number;
-      campaign_events: number;
-      promotions: number;
-      sliders: number;
-    }>(credentials, "seed_dummy_catalog", "POST");
-  }
-
   async itemLookup(search: string) {
     const credentials = await this.resolveCredentials();
     const url = resourceUrl(credentials.url, "Item");

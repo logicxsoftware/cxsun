@@ -22,10 +22,34 @@ const root = resolve(import.meta.dirname, "..");
 const app = process.argv[2];
 
 const apps = {
-  "ecommerce-storefront": {
-    displayName: "public storefront",
-    cwd: "apps/ecommerce/storefront",
-    envKey: "CXSUN_STOREFRONT_WEB_PORT",
+  "q-cafe-api": {
+    displayName: "Q Cafe API",
+    cwd: "apps/q-cafe/api",
+    envKey: "CXSUN_Q_CAFE_API_PORT",
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: ["src/server.mjs"]
+  },
+  "q-cafe-web": {
+    displayName: "Q Cafe web",
+    cwd: "apps/q-cafe/web",
+    envKey: "CXSUN_Q_CAFE_WEB_PORT",
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"]
+  },
+  "uiux-web": {
+    displayName: "uiux web",
+    cwd: "devkits/uiux",
+    envKey: "CXSUN_UIUX_WEB_PORT",
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"]
+  },
+  "project-manager-web": {
+    displayName: "project manager web",
+    cwd: "devkits/project-manager/web",
+    envKey: "CXSUN_PROJECT_MANAGER_WEB_PORT",
     host: "127.0.0.1",
     command: process.execPath,
     args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"]
@@ -103,7 +127,7 @@ await freePort(port, host);
 
 if (app === "platform-api") {
   ensurePlatformApiDependencies();
-} else if (app === "platform-web" || app === "ecommerce-web" || app === "ecommerce-storefront") {
+} else if (app === "platform-web" || app === "ecommerce-web" || app === "project-manager-web") {
   await waitForPlatformApi(
     requiredDevPort(process.env.PLATFORM_API_PORT ?? env.PLATFORM_API_PORT, "PLATFORM_API_PORT")
   );
@@ -143,7 +167,7 @@ async function shutdown(signal) {
 function launchChild() {
   const launched = spawn(
     config.command,
-    [...config.args, ...(app !== "platform-api" ? ["--host", host, "--port", String(port)] : [])],
+    [...config.args, ...(!["platform-api", "q-cafe-api"].includes(app) ? ["--host", host, "--port", String(port)] : [])],
     {
       cwd: resolve(root, config.cwd),
       detached: process.platform !== "win32",
@@ -160,6 +184,7 @@ function launchChild() {
               CXSUN_DEV_SHUTDOWN_TOKEN: controlToken
             }
           : {}),
+        ...(app === "q-cafe-api" ? qCafeApiEnvironment(env, port) : {}),
         [config.envKey]: String(port)
       },
       stdio: "inherit"
@@ -178,6 +203,24 @@ function launchChild() {
     console.error(`  x Failed to launch ${config.displayName}: ${error.message}`);
     process.exit(1);
   });
+}
+
+function qCafeApiEnvironment(runtimeEnv, port) {
+  if ((process.env.CXSUN_TENANCY_MODE ?? runtimeEnv.CXSUN_TENANCY_MODE) !== "single") {
+    throw new Error("Q Cafe's shared SQLite store requires CXSUN_TENANCY_MODE=single.");
+  }
+  const dataPath = runtimeEnv.CXSUN_Q_CAFE_DATABASE_PATH;
+  const imagePath = runtimeEnv.CXSUN_Q_CAFE_IMAGE_DIRECTORY;
+  if (!dataPath || !imagePath) {
+    throw new Error("CXSUN_Q_CAFE_DATABASE_PATH and CXSUN_Q_CAFE_IMAGE_DIRECTORY are required.");
+  }
+  return {
+    QCAFE_API_HOST: "127.0.0.1",
+    QCAFE_API_PORT: String(port),
+    QCAFE_API_TOKEN: randomBytes(32).toString("hex"),
+    QCAFE_DATABASE_PATH: resolve(root, dataPath),
+    QCAFE_IMAGE_DIRECTORY: resolve(root, imagePath)
+  };
 }
 
 function watchApiSources() {
@@ -278,7 +321,7 @@ function ensurePlatformApiDependencies() {
 
 function ensureWorkspaceLinks() {
   const packagePath = resolve(root, config.cwd, "package.json");
-  const dependencies = Object.keys(JSON.parse(readFileSync(packagePath, "utf8")).dependencies);
+  const dependencies = Object.keys(JSON.parse(readFileSync(packagePath, "utf8")).dependencies ?? {});
   const missing = dependencies.filter(
     (name) =>
       name.startsWith("@cxsun/") && !existsSync(resolve(root, "node_modules", name, "package.json"))

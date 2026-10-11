@@ -1,1 +1,15 @@
-{"extends":"../../../tsconfig.base.json","compilerOptions":{"jsx":"react-jsx","lib":["ES2023","DOM","DOM.Iterable"],"module":"ESNext","moduleResolution":"Bundler","noEmit":true,"types":["vite/client"]},"include":["src","vite.config.ts"]}
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": false,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "paths": {
+      "@cxsun/ui": ["../../../packages/ui/src/index.ts"],
+      "@cxsun/ui/components/*": ["../../../packages/ui/src/components/*"],
+      "@cxsun/ui/features/interface-topology": ["../../../packages/ui/src/features/interface-topology/index.ts"]
+    },
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

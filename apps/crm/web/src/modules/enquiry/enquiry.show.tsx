@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Activity, MessageSquare, ReceiptText, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
+import { GlobalLoader } from "@cxsun/ui/components/global-loader";
 import { WorkspaceAnimatedTabs } from "@cxsun/ui/workspace/animated-tabs";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
 import { WorkspaceShowLayout } from "@cxsun/ui/workspace/show";
@@ -33,13 +34,15 @@ type EnquiryTab = "comments" | "jobs" | "estimate" | "activity";
 export function EnquiryShow({
   id,
   contacts,
+  suppliers,
   users,
   listOptions,
   statuses,
   priorities
 }: {
-  id: number;
+  id: string;
   contacts: EnquiryLookup[];
+  suppliers: EnquiryLookup[];
   users: EnquiryLookup[];
   listOptions: EnquiryMasterLookup[];
   statuses: EnquiryMasterLookup[];
@@ -58,7 +61,7 @@ export function EnquiryShow({
   const whatsApp = whatsappUrl(mobile);
   const error = enquiry.error ?? comments.error ?? jobs.error ?? estimates.error ?? activity.error;
   const jobAction = useMutation({
-    mutationFn: (jobId: number | null) => (jobId ? stopEnquiryJob(id, jobId) : startEnquiryJob(id)),
+    mutationFn: (jobId: string | null) => (jobId ? stopEnquiryJob(id, jobId) : startEnquiryJob(id)),
     onSuccess: async (job) => {
       await Promise.all([
         client.invalidateQueries({ queryKey: enquiryJobsQueryKey(id) }),
@@ -110,7 +113,7 @@ export function EnquiryShow({
         <EnquiryEstimates
           enquiryId={id}
           estimates={estimates.data ?? []}
-          contacts={contacts}
+          contacts={suppliers.length ? suppliers : contacts}
           loading={estimates.isLoading}
         />
       )
@@ -121,6 +124,10 @@ export function EnquiryShow({
       content: <EnquiryActivityPanel activity={activity.data ?? []} loading={activity.isLoading} />
     }
   ];
+  if (!record && !error) {
+    return <GlobalLoader className="min-h-[32rem]" fullScreen={false} />;
+  }
+
   return (
     <WorkspacePage
       className="!w-full !max-w-none px-1 lg:px-2"
@@ -173,9 +180,7 @@ export function EnquiryShow({
           </Button>
         </div>
       ) : null}
-      {!record ? (
-        !error && <p className="text-sm text-muted-foreground">Loading enquiry…</p>
-      ) : (
+      {record ? (
         <>
           <EnquirySummary record={record} users={users} />
           <WorkspaceShowLayout className="xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -198,7 +203,7 @@ export function EnquiryShow({
             />
           </WorkspaceShowLayout>
         </>
-      )}
+      ) : null}
     </WorkspacePage>
   );
 }

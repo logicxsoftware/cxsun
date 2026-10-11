@@ -1,5 +1,5 @@
 import { useMemo, useState, useDeferredValue, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
@@ -7,9 +7,6 @@ import { WorkspaceFilters } from "@cxsun/ui/workspace/filters";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
 import { WorkspacePagination } from "@cxsun/ui/workspace/pagination";
 import { buildShowingLabel } from "@cxsun/ui/workspace/utils";
-import { useListIn } from "../list-in/index";
-import { useStatus } from "../status/index";
-import { usePriority } from "../priority/index";
 import { EnquiryForm } from "./enquiry.form";
 import {
   enquiriesQueryKey,
@@ -20,11 +17,9 @@ import {
   enquiryContactsQueryKey,
   useEnquiryPage,
   useEnquiryContacts,
-  useEnquiryUsers
+  useEnquiryOptions
 } from "./enquiry.hooks";
 import { EnquiryList } from "./enquiry.list";
-import { FrappeLiveEnquiries } from "./enquiry.live";
-import { crmRequest } from "../../crm-request";
 import { EnquiryAttention } from "./enquiry.attention";
 import { EnquiryShow } from "./enquiry.show";
 import { createEnquiry, openNewEnquiryCall, updateEnquiry } from "./enquiry.services";
@@ -47,52 +42,11 @@ const columnOptions = [
   { id: "status", label: "Status" }
 ];
 
-export function EnquiryWorkspace(props: Parameters<typeof LocalEnquiryWorkspace>[0]) {
-  const source = useQuery({
-    queryKey: ["crm", "enquiries", "source"],
-    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source")
-  });
-  if (source.isLoading)
-    return (
-      <WorkspacePage title="Enquiries" technicalName="page.crm.enquiries.loading">
-        <p className="text-sm text-muted-foreground">Loading enquiry source…</p>
-      </WorkspacePage>
-    );
-  if (source.error)
-    return (
-      <WorkspacePage title="Enquiries" technicalName="page.crm.enquiries.source-error">
-        <p role="alert" className="text-sm text-destructive">
-          {source.error.message}
-        </p>
-      </WorkspacePage>
-    );
-  if (source.data?.provider === "frappe") {
-    if (props.initialCreate)
-      return (
-        <WorkspacePage title="New enquiry" technicalName="page.crm.enquiries.frappe-create">
-          <p className="text-sm text-muted-foreground">
-            Frappe Live creation is not available in CRM yet. Select Local in App data sources to
-            create a local enquiry.
-          </p>
-        </WorkspacePage>
-      );
-    return (
-      <FrappeLiveEnquiries
-        scope={props.scope ?? "all"}
-        initialRecordName={props.initialLiveName}
-        onOpenEnquiry={props.onOpenLiveEnquiry}
-        onCloseEnquiry={props.onCloseLiveEnquiry}
-        reportFilters={props.reportFilters}
-        onBackToReports={props.onBackToReports}
-        mobileFilter={props.mobileFilter}
-        onClearMobileFilter={props.onClearMobileFilter}
-      />
-    );
-  }
-  return <LocalEnquiryWorkspace {...props} />;
+export function EnquiryWorkspace(props: Parameters<typeof EnquiryPage>[0]) {
+  return <EnquiryPage {...props} />;
 }
 
-function LocalEnquiryWorkspace({
+function EnquiryPage({
   scope = "all",
   reportFilters,
   mobileFilter,
@@ -100,10 +54,8 @@ function LocalEnquiryWorkspace({
   onSeeMoreEnquiries,
   onOpenEnquiry,
   onBackToReports,
-  initialRecordId,
-  initialLiveName: _initialLiveName,
-  onOpenLiveEnquiry: _onOpenLiveEnquiry,
-  onCloseLiveEnquiry: _onCloseLiveEnquiry,
+  initialRecordKey,
+  onOpenRecord,
   initialCreate = false,
   onCloseCreate,
   onCancelCreate
@@ -113,12 +65,10 @@ function LocalEnquiryWorkspace({
   mobileFilter?: { mobile: string; contactId: number | null } | undefined;
   onClearMobileFilter?: () => void;
   onSeeMoreEnquiries?: ((mobile: string, contactId: number | null) => void) | undefined;
-  onOpenEnquiry?: ((id: number, mobile: string, contactId: number | null) => void) | undefined;
+  onOpenEnquiry?: ((id: string, mobile: string, contactId: number | null) => void) | undefined;
   onBackToReports?: () => void;
-  initialRecordId?: number | undefined;
-  initialLiveName?: string | undefined;
-  onOpenLiveEnquiry?: ((name: string) => void) | undefined;
-  onCloseLiveEnquiry?: (() => void) | undefined;
+  initialRecordKey?: string | undefined;
+  onOpenRecord?: ((key: string) => void) | undefined;
   currentUserEmail?: string;
   initialCreate?: boolean;
   onCloseCreate?: () => void;
@@ -128,7 +78,11 @@ function LocalEnquiryWorkspace({
   const [editing, setEditing] = useState<EnquiryRecord | null | undefined>(
     initialCreate ? null : undefined
   );
-  const [showing, setShowing] = useState<number | null>(initialRecordId ?? null);
+  const [showing, setShowing] = useState<string | null>(initialRecordKey ?? null);
+  const showRecord = (key: string) => {
+    setShowing(key);
+    onOpenRecord?.(key);
+  };
   const [search, setSearch] = useState("");
   const [showInlineFilters, setShowInlineFilters] = useState(false);
   const [columnFilters, setColumnFilters] = useState<EnquiryColumnFilters>({});
@@ -152,10 +106,11 @@ function LocalEnquiryWorkspace({
     reportFilters
   });
   const contacts = useEnquiryContacts(editing !== undefined || showing !== null);
-  const users = useEnquiryUsers();
-  const lists = useListIn();
-  const statuses = useStatus();
-  const priorities = usePriority();
+  const options = useEnquiryOptions();
+  const users = { data: options.data?.users, error: options.error };
+  const lists = { data: options.data?.lists, error: options.error };
+  const statuses = { data: options.data?.statuses, error: options.error };
+  const priorities = { data: options.data?.priorities, error: options.error };
   const filterOptions = useMemo(
     () => enquiryFilterOptions(query.data?.statusCounts ?? [], statuses.data ?? []),
     [query.data?.statusCounts, statuses.data]
@@ -206,6 +161,10 @@ function LocalEnquiryWorkspace({
     onError: (error) => toast.error("Unable to save enquiry", { description: error.message })
   });
   const total = query.data?.total ?? 0;
+  const resetSave = save.reset;
+  useEffect(() => {
+    resetSave();
+  }, [initialCreate, resetSave]);
   const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
   const currentPage = Math.min(page, totalPages);
   const records = query.data?.items ?? [];
@@ -242,7 +201,7 @@ function LocalEnquiryWorkspace({
           }
         }}
         onSeeMoreEnquiries={onSeeMoreEnquiries}
-        onOpenEnquiry={onOpenEnquiry}
+        onOpenEnquiry={onOpenEnquiry ?? (onOpenRecord ? (id) => onOpenRecord(id) : undefined)}
         onContactSaved={async () => {
           await Promise.all([
             client.invalidateQueries({ queryKey: enquiryContactsQueryKey }),
@@ -258,6 +217,7 @@ function LocalEnquiryWorkspace({
       <EnquiryShow
         id={showing}
         contacts={contacts.data ?? []}
+        suppliers={options.data?.suppliers ?? []}
         users={users.data ?? []}
         listOptions={lists.data ?? []}
         statuses={statuses.data ?? []}
@@ -287,7 +247,7 @@ function LocalEnquiryWorkspace({
           </Button>
         </div>
       ) : null}
-      {scope === "assigned" ? <EnquiryAttention onOpen={setShowing} /> : null}
+      {scope === "assigned" ? <EnquiryAttention onOpen={showRecord} /> : null}
       <WorkspaceFilters
         toolbarAction={
           <Button
@@ -364,7 +324,7 @@ function LocalEnquiryWorkspace({
         }
         visibleColumns={visibleColumns}
         loading={query.isLoading}
-        onShow={(record) => setShowing(record.id)}
+        onShow={(record) => showRecord(record.id)}
         onEdit={setEditing}
         onOpenCall={(record) => openCall.mutate(record)}
         openingCallId={openCall.isPending ? openCall.variables.id : null}

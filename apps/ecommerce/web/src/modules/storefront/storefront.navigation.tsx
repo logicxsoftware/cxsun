@@ -66,7 +66,7 @@ export function StoreHeader({
     <>
       <StorefrontAnnouncementBanner announcement={announcement} />
       <header className="cx-store__header">
-        <a className="cx-store__brand" href="/">
+        <a className="cx-store__brand" href="/shop">
           {branding?.logoUrl ? (
             <img
               alt=""

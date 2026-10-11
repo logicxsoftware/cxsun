@@ -30,15 +30,40 @@ export function BrandsList({
     {
       accessorKey: "name",
       cell: ({ row }) => (
-        <button
-          className="cursor-pointer font-medium text-foreground hover:underline"
-          onClick={() => onEdit(row.original)}
-          type="button"
-        >
-          {String(row.original.name)}
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-white p-1.5">
+            {row.original.logoUrl ? (
+              <img
+                className="max-h-full max-w-full object-contain"
+                src={row.original.logoUrl}
+                alt={row.original.logoAlt}
+              />
+            ) : (
+              <span className="text-xs font-semibold text-muted-foreground">
+                {row.original.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <button
+            className="cursor-pointer font-medium text-foreground hover:underline"
+            onClick={() => onEdit(row.original)}
+            type="button"
+          >
+            {String(row.original.name)}
+          </button>
+        </div>
       ),
-      header: "Name"
+      header: "Brand"
+    },
+    {
+      accessorKey: "showOnStorefront",
+      cell: ({ row }) => (
+        <WorkspaceStatusBadge
+          label={row.original.showOnStorefront ? "Visible" : "Hidden"}
+          tone={row.original.showOnStorefront ? "info" : "neutral"}
+        />
+      ),
+      header: "Storefront"
     },
     {
       accessorKey: "isActive",

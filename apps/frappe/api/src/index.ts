@@ -1,5 +1,6 @@
 export {
   frappeConnectionModule,
+  frappeTenantMigrationBatch,
   frappeTenantMigrations,
   migrateFrappeTenantDatabase,
   rollbackFrappeTenantDatabase,
@@ -7,6 +8,7 @@ export {
 } from "./modules/connection/index.js";
 export { listLiveFrappeEnquiries } from "./modules/connection/index.js";
 export { FrappeConnectionRepository } from "./modules/connection/index.js";
+export { FrappeConnectionAccess } from "./modules/connection/index.js";
 export { requestFrappe } from "./modules/connection/index.js";
 export type { LiveEnquiryQuery } from "./modules/connection/index.js";
 export type { FrappeDatabase, FrappeSettings } from "./modules/connection/index.js";
@@ -20,6 +22,7 @@ export type { ImportProgress } from "./modules/enquiry-sync/index.js";
 export { frappeUserSyncModule } from "./modules/user-sync/index.js";
 export {
   frappeUserMappingModule,
+  frappeUserMappingMigrationBatch,
   mappedEmployeeCodeForLocalUser,
   mappedLocalUserForEmployeeCode,
   frappeUserMappingMigrations,

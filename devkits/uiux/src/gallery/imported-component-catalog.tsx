@@ -13,17 +13,43 @@ import { Questionnaire, QuestionnaireChoice, QuestionnaireChoices, Questionnaire
 import { RichTextEditor } from "@cxsun/ui/components/rich-text-editor";
 import { Sparkline } from "@cxsun/ui/components/sparkline";
 import { StatusBadge as ImportedStatusBadge } from "@cxsun/ui/components/status-badge";
+import type { StatusBadgeValue } from "@cxsun/ui/components/status-badge";
 import type { CatalogItem } from "./component-catalog";
+import { flavorName } from "./component-metadata";
 
-function entry(id: string, name: string, category: CatalogItem["category"], description: string, preview: CatalogItem["variants"][number]["preview"]): CatalogItem {
-  return { id, name, category, description, defaultVariantId: "default", variants: [{ id: "default", name: "Default", preview }] };
+function entry(
+  id: string,
+  name: string,
+  category: CatalogItem["category"],
+  description: string,
+  preview: CatalogItem["variants"][number]["preview"],
+  additionalVariants: CatalogItem["variants"] = []
+): CatalogItem {
+  return {
+    id,
+    name,
+    category,
+    description,
+    defaultVariantId: "default",
+    variants: [{ id: "default", name: flavorName(id, "Default"), preview }, ...additionalVariants]
+  };
 }
 
 export const importedComponentItems: CatalogItem[] = [
   entry("attachment", "Attachment", "Data", "File attachment card with media and metadata.",
-    <Attachment><AttachmentMedia><FileTextIcon /></AttachmentMedia><AttachmentContent><AttachmentTitle>design-notes.pdf</AttachmentTitle><AttachmentDescription>2.4 MB</AttachmentDescription></AttachmentContent></Attachment>),
+    <AttachmentPreview />, [
+      { id: "sm", name: "Small", preview: <AttachmentPreview size="sm" /> },
+      { id: "xs", name: "Extra small", preview: <AttachmentPreview size="xs" /> },
+      { id: "vertical", name: "Vertical", preview: <AttachmentPreview orientation="vertical" /> },
+      { id: "error", name: "Upload error", preview: <AttachmentPreview state="error" /> }
+    ]),
   entry("bubble", "Bubble", "Data", "Conversation message bubble.",
-    <BubbleGroup><Bubble><BubbleContent>Can you review the latest design?</BubbleContent></Bubble><Bubble align="end" variant="secondary"><BubbleContent>The review is ready.</BubbleContent></Bubble></BubbleGroup>),
+    <BubbleGroup><Bubble><BubbleContent>Can you review the latest design?</BubbleContent></Bubble><Bubble align="end" variant="secondary"><BubbleContent>The review is ready.</BubbleContent></Bubble></BubbleGroup>,
+    (["secondary", "muted", "tinted", "outline", "ghost", "destructive"] as const).map((variant) => ({
+      id: variant,
+      name: variant.charAt(0).toUpperCase() + variant.slice(1),
+      preview: <Bubble variant={variant}><BubbleContent>{variant} message</BubbleContent></Bubble>
+    }))),
   entry("combobox", "Combobox", "Form", "Searchable selection field.",
     <Combobox items={["Design", "Engineering", "Support"]}><ComboboxInput placeholder="Choose a team" /><ComboboxContent><ComboboxList>{["Design", "Engineering", "Support"].map((name) => <ComboboxItem key={name} value={name}>{name}</ComboboxItem>)}</ComboboxList></ComboboxContent></Combobox>),
   entry("compact-model-switcher", "Compact Model Switcher", "Control", "Provider, model, and reasoning selection.",
@@ -33,7 +59,10 @@ export const importedComponentItems: CatalogItem[] = [
   entry("markdown-content", "Markdown Content", "Data", "Rendered Markdown with GitHub style tables.",
     <MarkdownContent content={"## Release notes\n\n- New gallery blocks\n- Shared UI components"} />),
   entry("marker", "Marker", "Data", "Small section marker with an icon.",
-    <Marker variant="separator"><MarkerIcon><FileTextIcon /></MarkerIcon><MarkerContent>Today</MarkerContent></Marker>),
+    <Marker variant="separator"><MarkerIcon><FileTextIcon /></MarkerIcon><MarkerContent>Today</MarkerContent></Marker>, [
+      { id: "plain", name: "Plain", preview: <Marker><MarkerIcon><FileTextIcon /></MarkerIcon><MarkerContent>Today</MarkerContent></Marker> },
+      { id: "border", name: "Bordered", preview: <Marker variant="border"><MarkerIcon><FileTextIcon /></MarkerIcon><MarkerContent>Today</MarkerContent></Marker> }
+    ]),
   entry("message-scroller", "Message Scroller", "Layout", "Scrollable conversation surface.",
     <MessageScroller className="h-36"><MessageScrollerViewport><MessageScrollerContent>{["First message", "Second message", "Latest response"].map((message) => <MessageScrollerItem className="rounded-md border p-3" key={message}>{message}</MessageScrollerItem>)}</MessageScrollerContent></MessageScrollerViewport></MessageScroller>),
   entry("message", "Message", "Data", "Conversation row with author and content.",
@@ -48,7 +77,33 @@ export const importedComponentItems: CatalogItem[] = [
     <Sparkline data={[12, 19, 15, 24, 22, 31, 27]} showDot showTrendBadge type="area" />)
 ];
 
-export const importedStatusBadgeVariants: CatalogItem["variants"] = [
-  { id: "workspace-active", name: "Workspace active", preview: <ImportedStatusBadge status="active" /> },
-  { id: "workspace-attention", name: "Workspace attention", preview: <ImportedStatusBadge status="attention" /> }
+const badgeStatuses: StatusBadgeValue[] = [
+  "active", "in-review", "complete", "planned", "draft", "open", "won", "lost", "pending",
+  "processing", "failed", "cancelled", "archived", "suspended", "queued", "attention", "idle"
 ];
+
+export const importedStatusBadgeVariants: CatalogItem["variants"] = badgeStatuses.map((status) => ({
+  id: status,
+  name: status.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" "),
+  preview: <ImportedStatusBadge status={status} />
+}));
+
+function AttachmentPreview({
+  size = "default",
+  orientation = "horizontal",
+  state = "done"
+}: {
+  size?: "default" | "sm" | "xs";
+  orientation?: "horizontal" | "vertical";
+  state?: "idle" | "uploading" | "processing" | "error" | "done";
+}) {
+  return (
+    <Attachment size={size} orientation={orientation} state={state}>
+      <AttachmentMedia><FileTextIcon /></AttachmentMedia>
+      <AttachmentContent>
+        <AttachmentTitle>design-notes.pdf</AttachmentTitle>
+        <AttachmentDescription>2.4 MB</AttachmentDescription>
+      </AttachmentContent>
+    </Attachment>
+  );
+}

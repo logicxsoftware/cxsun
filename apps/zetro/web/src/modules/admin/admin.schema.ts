@@ -3,7 +3,7 @@ import { zetroCapabilities } from "./admin.types";
 
 export const zetroPatternDraftSchema = z
   .object({
-    serialNo: z.number().int().min(7),
+    serialNo: z.number().int().min(36),
     questionPattern: z.string().trim().min(3).max(500),
     queryPattern: z.string().regex(/^[a-z][a-z0-9.-]{1,99}$/u),
     limitation: z.string().trim().min(3).max(500),

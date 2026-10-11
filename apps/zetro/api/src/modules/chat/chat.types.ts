@@ -89,6 +89,8 @@ export type ZetroDatabase = {
       | "today_report"
       | "month_report"
       | "long_outstanding_sales"
+      | "assigned_enquiries"
+      | "draft_query"
       | "off_topic";
     skill_key: string | null;
     skill_decision: "allowed" | "denied" | "failed" | null;

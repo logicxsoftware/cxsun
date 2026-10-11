@@ -22,6 +22,7 @@ export function ZetroGrantSection({ tenantId }: { tenantId: string }) {
     mutationFn: (value: ZetroGrantChange) => saveZetroGrant(tenantId, value),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: zetroAdminGrantsKey(tenantId) });
+      void client.invalidateQueries({ queryKey: ["zetro", "admin", tenantId, "grant-events"] });
       setChange((value) => ({ ...value, reason: "" }));
       toast.success("Role access updated");
     },

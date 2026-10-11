@@ -26,6 +26,7 @@ export function ZetroPatternList({
           <thead className="border-b text-muted-foreground">
             <tr>
               <th className="p-2">#</th>
+              <th className="p-2">Review status</th>
               <th className="p-2">UUID</th>
               <th className="p-2">Question pattern</th>
               <th className="p-2">Query pattern</th>
@@ -37,14 +38,18 @@ export function ZetroPatternList({
             {patterns?.map((item) => (
               <tr key={item.uuid} className="border-b align-top">
                 <td className="p-2 font-medium">{item.serial_no}</td>
+                <td className="p-2 font-medium">
+                  {item.status === "active"
+                    ? "Live"
+                    : item.status === "draft"
+                      ? "Draft"
+                      : "Retired"}
+                </td>
                 <td className="p-2 font-mono text-xs break-all">{item.uuid}</td>
                 <td className="p-2">{item.question_pattern}</td>
                 <td className="p-2 font-mono text-xs">{item.query_pattern}</td>
                 <td className="p-2">{item.limitation}</td>
-                <td className="p-2">
-                  {item.extra}
-                  <span className="ml-2 text-xs text-muted-foreground">({item.status})</span>
-                </td>
+                <td className="p-2">{item.extra}</td>
               </tr>
             ))}
           </tbody>

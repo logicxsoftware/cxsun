@@ -1,5 +1,5 @@
 import { Plus, Printer, Search, Send, X } from 'lucide-react';
-import { TopologyMarker } from '@codexsun/devkit-ito';
+import { TopologyMarker } from '../ito-bridge';
 import type { Pos1HeaderSectionProps } from './types';
 
 export function Pos1HeaderSection({

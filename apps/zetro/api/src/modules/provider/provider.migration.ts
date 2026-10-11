@@ -1,14 +1,32 @@
 import { sql, type Kysely } from "kysely";
+import { runMigrationBatch, type MigrationBatch } from "@cxsun/framework/db";
 import type { ZetroProviderDatabase } from "./provider.types.js";
 
-export const zetroProviderMigrations = [
-  {
-    name: "zetro.provider.v1",
-    description: "Store encrypted provider settings in each tenant database."
-  }
-];
+export const zetroProviderMigrationBatch: MigrationBatch<ZetroProviderDatabase> = {
+  batch: 1,
+  scope: "zetro.provider",
+  version: "1.0.84",
+  description: "Adopt Zetro provider settings in the tenant migration ledger.",
+  steps: [
+    {
+      name: "zetro.provider.v1",
+      checksum: "zetro.provider.v1",
+      description: "Create or adopt encrypted Zetro provider settings.",
+      version: 1,
+      up: applyZetroProviderSchema
+    }
+  ]
+};
+
+export const zetroProviderMigrations = zetroProviderMigrationBatch.steps.map(
+  ({ name, description }) => ({ name, description })
+);
 
 export async function migrateZetroProviderDatabase(database: Kysely<ZetroProviderDatabase>) {
+  return runMigrationBatch(database, zetroProviderMigrationBatch);
+}
+
+async function applyZetroProviderSchema(database: Kysely<ZetroProviderDatabase>) {
   await sql
     .raw(
       `CREATE TABLE IF NOT EXISTS zetro_provider_settings (
@@ -49,5 +67,6 @@ export async function migrateZetroProviderDatabase(database: Kysely<ZetroProvide
 }
 
 export async function rollbackZetroProviderDatabase(database: Kysely<ZetroProviderDatabase>) {
-  await sql.raw("DROP TABLE IF EXISTS zetro_provider_settings").execute(database);
+  void database;
+  throw new Error("Zetro rollback requires a reviewed, data-preserving migration plan.");
 }

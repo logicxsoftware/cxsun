@@ -80,7 +80,8 @@ export type PlatformAppsTable = {
     | "frappe"
     | "zetro"
     | "logicx-erp"
-    | "ecommerce";
+    | "ecommerce"
+    | "q-cafe";
   updated_at: TimestampColumn;
   uuid: string;
 };

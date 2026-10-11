@@ -143,10 +143,21 @@ export class TenantService {
       (key) => key !== "platform.application"
     );
     const legacyKeys = input.enabledModuleKeys
-      .map((key) => (key === "platform.tenant" ? "platform.application" : key))
-      .filter((key) => key !== "devkit" && key !== "project-manager");
+      .map((key) => {
+        if (key === "platform.tenant") return "platform.application";
+        if (key === "accounts.accounting") return "accounts.overview";
+        return key;
+      })
+      .filter(
+        (key) =>
+          key !== "devkit" &&
+          key !== "project-manager" &&
+          (isSingleTenantMode() || key !== "q-cafe")
+      );
     const defaultKeys = includeDefaults
-      ? defaultTenantModuleKeys.filter((key) => !disabledModuleKeys.includes(key))
+      ? defaultTenantModuleKeys.filter(
+          (key) => !disabledModuleKeys.includes(key) && (isSingleTenantMode() || key !== "q-cafe")
+        )
       : ["platform.application"];
     const enabledModuleKeys = Array.from(new Set([...defaultKeys, ...legacyKeys]));
     const defaultLandingApp = resolveLandingApp(input.defaultLandingApp, enabledModuleKeys);

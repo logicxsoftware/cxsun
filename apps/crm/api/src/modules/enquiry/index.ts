@@ -10,8 +10,16 @@ export type { EnquiryDatabase } from "./enquiry.types.js";
 export { EnquiryRepository } from "./enquiry.repository.js";
 export type { EnquiryListOptions, EnquiryRecord } from "./enquiry.types.js";
 export { EnquiryReadService } from "./enquiry.read-source.js";
+export { lookupAssignedEnquirySummary } from "./enquiry.assistant-read.js";
 export type {
   EnquiryRemoteSource,
   LiveEnquiryQuery,
-  LiveEnquiryPage
+  LiveEnquiryPage,
+  LiveEnquiryInput,
+  LiveEnquiryOptions,
+  LiveEnquiryPatch,
+  LiveEnquiryJob,
+  LiveEnquiryJobInput,
+  LiveEnquiryEstimate,
+  LiveEnquiryEstimateInput
 } from "./enquiry.read-source.js";

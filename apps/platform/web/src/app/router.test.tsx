@@ -4,6 +4,7 @@ import { router } from "./router";
 
 test("tenant, billing, and core deep links match the intended routes", () => {
   const cases = new Map([
+    ["/app/q-cafe", "/app/$"],
     ["/app/task-manager/overview", "/app/$"],
     ["/app/crm/overview", "/app/$"],
     ["/app/crm/contacts", "/app/$"],

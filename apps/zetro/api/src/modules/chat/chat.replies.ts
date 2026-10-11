@@ -1,4 +1,5 @@
 import type {
+  AssignedEnquiriesLookup,
   BillingPeriodLookup,
   CustomerOutstandingLookup,
   LongOutstandingSalesLookup
@@ -47,4 +48,11 @@ export function agedSalesReply(result: Awaited<ReturnType<LongOutstandingSalesLo
       `${item.invoiceNumber} (${item.documentKind}) — ${item.customerName}: ${item.currency} ${item.amountDue.toFixed(2)} outstanding, ${item.daysOld} days old (issued ${item.issuedOn})`
   );
   return `Oldest outstanding sales as of ${result.asOf} (${result.minimumDays}+ days) in ${result.companyName}, ${result.financialYearName}:\n${lines.join("\n")}\nSource: Billing confirmed sales and posted receipt allocations. Showing up to ${result.limit} oldest invoices.`;
+}
+
+export function assignedEnquiriesReply(result: Awaited<ReturnType<AssignedEnquiriesLookup>>) {
+  if (result.source === "frappe") {
+    return "CRM enquiries currently use Frappe. This Zetro question supports Local CRM enquiries only.";
+  }
+  return `Your assigned Local CRM enquiries as of ${result.asOf}: ${result.total} total, ${result.active} active, ${result.newCalls} new, and ${result.attention} needing attention. Source: CRM enquiry summary. This covers only enquiries assigned to your signed-in account; Frappe-sourced enquiries are excluded.`;
 }

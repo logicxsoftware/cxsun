@@ -21,7 +21,8 @@ export type Tenant = {
     | "frappe"
     | "zetro"
     | "logicx-erp"
-    | "ecommerce";
+    | "ecommerce"
+    | "q-cafe";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -59,7 +60,8 @@ export type TenantSavePayload = {
     | "frappe"
     | "zetro"
     | "logicx-erp"
-    | "ecommerce";
+    | "ecommerce"
+    | "q-cafe";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;
@@ -96,7 +98,8 @@ export type TenantRuntime = {
       | "frappe"
       | "zetro"
       | "logicx-erp"
-      | "ecommerce";
+      | "ecommerce"
+      | "q-cafe";
     label: string;
     moduleKey: string;
     stack:
@@ -113,7 +116,8 @@ export type TenantRuntime = {
       | "frappe"
       | "zetro"
       | "logicx-erp"
-      | "ecommerce";
+      | "ecommerce"
+      | "q-cafe";
   }>;
   defaultLandingApp:
     | "application"
@@ -129,6 +133,7 @@ export type TenantRuntime = {
     | "frappe"
     | "zetro"
     | "logicx-erp"
-    | "ecommerce";
+    | "ecommerce"
+    | "q-cafe";
   tenant: Tenant | null;
 };

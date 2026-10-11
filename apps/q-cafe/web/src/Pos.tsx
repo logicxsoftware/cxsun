@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, Coffee, Eye, Pencil, Plus, Printer, Receipt, Trash2, X } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
-import { TopologyMarker, type InterfaceTopologyController } from '@codexsun/devkit-ito';
+import { Button } from '@cxsun/ui/components/button';
+import { TopologyMarker, type InterfaceTopologyController } from './ito-bridge';
 import { money, type MenuItem, type Snapshot } from './api';
 import { field } from './Workspaces';
 import { getMergedMenu, getMergedTables, type CustomMenuItem, type TableMasterConfig } from './mastersStore';

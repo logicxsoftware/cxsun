@@ -1,4 +1,4 @@
-import type { InterfaceTopologySection } from '@codexsun/devkit-ito';
+import type { InterfaceTopologySection } from './ito-bridge';
 
 const item = (id: string, technicalName: string, name: string, scope: string, description: string): InterfaceTopologySection => ({ id, technicalName, name, scope, description });
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Coffee, KeyRound, MonitorCheck, Power, RefreshCw } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
+import { Button } from '@cxsun/ui/components/button';
 import { LicenseStateBadge } from './LicenseStateBadge';
 import {
   AlertDialog,
@@ -11,7 +11,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@codexsun/ui/components/ui/alert-dialog';
+} from '@cxsun/ui/components/alert-dialog';
 
 export type LicenseStatus = {
   licensed: boolean;

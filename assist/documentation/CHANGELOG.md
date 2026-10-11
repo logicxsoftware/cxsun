@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.84
+Current version: 1.0.85
 
-Release tag: v-1.0.84
+Release tag: v-1.0.85
 
-Changelog label: v 1.0.84
+Changelog label: v 1.0.85
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,6 +20,18 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.85
+
+### [v 1.0.85] 2026-10-11 11:34 pm - refine and added new app for qcafe
+
+#### Database Changes
+
+- Database update: Yes (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.85.
+
 ## v-1.0.84
 
 ### [v 1.0.84] 2026-10-11 7:59 pm - update to new version
@@ -31,6 +43,7 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 #### App Codebase Changes
 
 - Bumped workspace version to 1.0.84.
+- CRM Frappe Live now uses the same enquiry pages for create, edit, comments, job start/stop, vendor estimates, activity, and deletion, with Frappe lookup choices and record access checks. Local data behavior remains provider selected.
 
 ## v-1.0.83
 

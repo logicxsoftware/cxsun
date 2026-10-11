@@ -53,10 +53,12 @@ The browser sends the slot in `x-cxsun-session-slot` on application API requests
 The API validates the selected cookie and its active server session before it resolves tenant data.
 Login creates a new slot. Logout and session reset revoke only the selected server session.
 
-Tenant database provisioning follows the tenant's selected application set. Platform identity/access migrations run
-first. Billing activation then runs Core's owned prerequisite migrations and seeds before Billing's owned migrations
-and seeds. Mail migrations run only when Mail is enabled. Task Manager runs its own migrations and seeds when enabled. Tenant
-create/update and managed setup, reinstall, and migration actions use this same ordered composition contract.
+Tenant database provisioning runs the installed tenant app migrations for every tenant in a fixed order, independent of
+app activation. Platform identity/access and Core prerequisites run first. Billing schema runs before LogicX ERP schemes.
+Tenant module settings and app permission/default seeders still follow the tenant's enabled modules. A prepared table
+does not enable an app. Managed tenant setup, reinstall, and database CLI actions use this ordered composition contract.
+After changing tenant app activation, run managed setup or the tenant seed command to reconcile app defaults and
+permission grants. Q Cafe is a separate SQLite service and does not yet share this tenant database lifecycle.
 Managed lifecycle actions invalidate only the target tenant's Core and Billing bootstrap state before running, so a
 database recreated while the API process remains online receives the complete selected-app schema.
 

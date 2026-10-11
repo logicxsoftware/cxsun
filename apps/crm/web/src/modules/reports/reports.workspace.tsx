@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { crmRequest } from "../../crm-request";
 import { Button } from "@cxsun/ui/components/button";
 import { Input } from "@cxsun/ui/components/input";
 import { WorkspaceLookup } from "@cxsun/ui/workspace/lookup";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
-import { useEnquiryReport, useEnquiryUsers, type EnquiryReportFilters } from "../enquiry/index";
+import { useEnquiryReport, useEnquiryOptions, type EnquiryReportFilters } from "../enquiry/index";
 import { ReportsTable } from "./reports.table";
-import { LiveReportsWorkspace } from "./reports.live";
 import type { ReportView } from "./reports.model";
 
 const views: Array<{ id: ReportView; label: string }> = [
@@ -31,28 +28,10 @@ export function CrmReportsWorkspace({
   onOpenEnquiries: (filters: EnquiryReportFilters) => void;
   onViewChange: (title: string) => void;
 }) {
-  const source = useQuery({
-    queryKey: ["crm", "enquiries", "source"],
-    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source")
-  });
-  if (source.isLoading)
-    return (
-      <WorkspacePage title="Reports" technicalName="page.crm.reports.loading">
-        Loading report source…
-      </WorkspacePage>
-    );
-  if (source.error)
-    return (
-      <WorkspacePage title="Reports" technicalName="page.crm.reports.error">
-        <p role="alert">{source.error.message}</p>
-      </WorkspacePage>
-    );
-  if (source.data?.provider === "frappe")
-    return <LiveReportsWorkspace onOpenEnquiries={onOpenEnquiries} onViewChange={onViewChange} />;
-  return <LocalReportsWorkspace onOpenEnquiries={onOpenEnquiries} onViewChange={onViewChange} />;
+  return <ReportsContent onOpenEnquiries={onOpenEnquiries} onViewChange={onViewChange} />;
 }
 
-function LocalReportsWorkspace({
+function ReportsContent({
   onOpenEnquiries,
   onViewChange
 }: {
@@ -62,8 +41,9 @@ function LocalReportsWorkspace({
   const [view, setView] = useState<ReportView>("list-in");
   const [draft, setDraft] = useState<EnquiryReportFilters>({});
   const [filters, setFilters] = useState<EnquiryReportFilters>({});
-  const report = useEnquiryReport(filters);
-  const users = useEnquiryUsers();
+  const report = useEnquiryReport(filters, view);
+  const options = useEnquiryOptions();
+  const users = { data: options.data?.users, isLoading: options.isLoading };
   const invalidDates = Boolean(draft.fromDate && draft.toDate && draft.fromDate > draft.toDate);
   useEffect(() => onViewChange(viewTitles[view]), [onViewChange, view]);
   return (

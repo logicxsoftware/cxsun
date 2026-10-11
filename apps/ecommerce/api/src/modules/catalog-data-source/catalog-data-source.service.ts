@@ -1,5 +1,6 @@
 import { AppError, isAppError } from "@cxsun/framework/errors";
 import { StorefrontRepository } from "../storefront/storefront.repository.js";
+import { getEcommerceTenantKey } from "../../database/ecommerce-database.js";
 import type { StorefrontCatalogFilters } from "../storefront/storefront.types.js";
 import { isFrappeOperatingWindow } from "./catalog-data-source.availability.js";
 import { FrappeCatalogSource } from "./catalog-data-source.frappe.js";
@@ -9,8 +10,6 @@ import type {
   CatalogSyncResult,
   CatalogDataSourceControl,
   CatalogDataSourceProvider,
-  FrappeConnectionPayload,
-  FrappeVerificationPayload,
   StorefrontCatalogSource
 } from "./catalog-data-source.types.js";
 
@@ -48,6 +47,10 @@ class OwnCatalogSource implements StorefrontCatalogSource {
   }
 }
 
+const cacheRefreshIntervalMs = 15 * 60 * 1_000;
+const cacheRefreshes = new Map<string, Promise<void>>();
+const emptyDiscovery = { brands: [], categories: [], priceRange: { maximum: 0, minimum: 0 } };
+
 export class CatalogDataSourceService implements StorefrontCatalogSource {
   private readonly own = new OwnCatalogSource();
   private readonly fallback = new OwnCatalogSource(new StorefrontRepository(true));
@@ -66,7 +69,8 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
   constructor(
     private readonly control: CatalogDataSourceControl,
     private readonly repository = new CatalogDataSourceRepository(),
-    private readonly now = () => new Date()
+    private readonly now = () => new Date(),
+    private readonly tenantKey = getEcommerceTenantKey
   ) {
     this.frappe = new FrappeCatalogSource(() => control.credentials());
   }
@@ -84,25 +88,12 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
     return syncResult("own-to-frappe", snapshot, "CXShop catalog was synchronized to Frappe.");
   }
 
-  async seedDemoInFrappe(): Promise<CatalogSyncResult> {
-    await this.frappe.seedDemo();
-    return this.pullFromFrappe();
-  }
-
   frappeItems(search: string) {
     return this.frappe.itemLookup(search);
   }
 
   frappeItem(itemCode: string) {
     return this.frappe.item(itemCode);
-  }
-
-  saveFrappeConnection(input: FrappeConnectionPayload, actorEmail: string) {
-    return this.control.save(input, actorEmail);
-  }
-
-  verifyFrappeConnection(input: FrappeVerificationPayload) {
-    return this.control.verify(input);
   }
 
   async settings() {
@@ -129,7 +120,7 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
     const connection = await this.control.settings();
     if (provider === "frappe" && !connection.frappeConfigured) {
       throw AppError.validation(
-        "Configure and verify the Frappe connection before selecting Frappe Live."
+        "Enable and verify the connection in the Frappe app before selecting Frappe Live."
       );
     }
     await this.repository.saveModuleProvider(module, provider, actorEmail);
@@ -178,13 +169,13 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
 
   async discovery() {
     if (await this.modulesUseSameProvider(["products", "categories", "brands"])) {
-      const discovery = await this.read("products", (source) => source.discovery());
+      const discovery = await this.read("products", (source) => source.discovery(), emptyDiscovery);
       return { ...discovery, brands: await this.withResolvedLogos(discovery.brands) };
     }
     const [productDiscovery, categories, brandDiscovery] = await Promise.all([
-      this.read("products", (source) => source.discovery()),
+      this.read("products", (source) => source.discovery(), emptyDiscovery),
       this.read("categories", (source) => source.categories()),
-      this.read("brands", (source) => source.discovery())
+      this.read("brands", (source) => source.discovery(), emptyDiscovery)
     ]);
     return {
       ...productDiscovery,
@@ -195,13 +186,13 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
 
   async product(slug: string) {
     if (await this.modulesUseSameProvider(["product-details", "variants", "product-images"])) {
-      const product = await this.read("product-details", (source) => source.product(slug));
+      const product = await this.read("product-details", (source) => source.product(slug), null);
       return product ? this.withResolvedImage(product) : null;
     }
     const [details, variants, images] = await Promise.all([
-      this.read("product-details", (source) => source.product(slug)),
-      this.read("variants", (source) => source.product(slug)),
-      this.read("product-images", (source) => source.product(slug))
+      this.read("product-details", (source) => source.product(slug), null),
+      this.read("variants", (source) => source.product(slug), null),
+      this.read("product-images", (source) => source.product(slug), null)
     ]);
     if (!details) return null;
     return this.withResolvedImage({
@@ -266,14 +257,15 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
 
   private async read<T>(
     module: CatalogDataSourceModule,
-    operation: (source: StorefrontCatalogSource) => Promise<T>
+    operation: (source: StorefrontCatalogSource) => Promise<T>,
+    disabledValue: T = [] as T
   ) {
     const providers = await this.moduleProviders();
-    if (providers.find((item) => item.module === module)?.enabled === false)
-      return emptyResult<T>();
+    if (providers.find((item) => item.module === module)?.enabled === false) return disabledValue;
     if (providers.find((item) => item.module === module)?.provider !== "frappe") {
       return operation(this.own);
     }
+    if (!(await this.control.settings()).frappeConfigured) return this.cached(operation);
     if (!isFrappeOperatingWindow(this.now()) || Date.now() < this.frappeRetryAfter) {
       return this.cached(operation);
     }
@@ -284,6 +276,7 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
       }
       this.frappeRetryAfter = 0;
       this.frappeWasUnavailable = false;
+      await this.refreshLocalCacheIfDue();
       return result;
     } catch (error) {
       if (!isFrappeUnavailable(error)) throw error;
@@ -301,7 +294,11 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
     const selected = modules.map(
       (module) => providers.find((item) => item.module === module)?.provider ?? "own"
     );
-    return selected.every((provider) => provider === selected[0]);
+    return (
+      modules.every(
+        (module) => providers.find((item) => item.module === module)?.enabled !== false
+      ) && selected.every((provider) => provider === selected[0])
+    );
   }
 
   private async moduleProviders() {
@@ -324,6 +321,24 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
     if (!isEmptyCatalogResult(cached)) return cached;
     return operation(this.own);
   }
+
+  private async refreshLocalCacheIfDue() {
+    const tenantKey = this.tenantKey();
+    const pending = cacheRefreshes.get(tenantKey);
+    if (pending) return pending;
+    const refresh = (async () => {
+      const age = await this.repository.cacheAgeMs();
+      if (age !== null && age < cacheRefreshIntervalMs) return;
+      await this.pullFromFrappe();
+    })()
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : "Frappe cache refresh failed.";
+        console.warn(`[ecommerce.catalog] local cache refresh failed: ${message}`);
+      })
+      .finally(() => cacheRefreshes.delete(tenantKey));
+    cacheRefreshes.set(tenantKey, refresh);
+    return refresh;
+  }
 }
 
 function isFrappeUnavailable(error: unknown) {
@@ -332,10 +347,6 @@ function isFrappeUnavailable(error: unknown) {
 
 function isEmptyCatalogResult(value: unknown) {
   return value == null || (Array.isArray(value) && value.length === 0);
-}
-
-function emptyResult<T>() {
-  return [] as T;
 }
 
 function isFrappeFile(value: unknown): value is string {

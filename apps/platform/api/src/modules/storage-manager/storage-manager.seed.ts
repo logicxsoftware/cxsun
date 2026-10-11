@@ -1,8 +1,8 @@
 import type { Kysely } from "kysely";
 import type { PlatformDatabase } from "../../database/schema.js";
-import { StorageManagerRepository } from "./storage-manager.repository.js";
+import { ensureAppStorage } from "./storage-manager.paths.js";
 
 export async function seedStorageManagerModule(_database: Kysely<PlatformDatabase>) {
-  await new StorageManagerRepository().roots();
-  return { seeded: 1, storage: "root-and-tenant-folders-ready" } as const;
+  await ensureAppStorage();
+  return { seeded: 1, storage: "app-root-ready" } as const;
 }

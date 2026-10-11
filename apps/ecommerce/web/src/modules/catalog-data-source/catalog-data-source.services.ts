@@ -4,9 +4,7 @@ import type {
   CatalogDataSourceModule,
   CatalogDataSourceProvider,
   CatalogDataSourceSettings,
-  CatalogSyncResult,
-  FrappeConnectionPayload,
-  FrappeVerificationPayload
+  CatalogSyncResult
 } from "./catalog-data-source.types";
 
 type Envelope<T> = { data: T; success: true } | { error: { message: string }; success: false };
@@ -43,15 +41,5 @@ export const testCatalogDataSource = (provider: CatalogDataSourceProvider) =>
     { body: JSON.stringify({ provider }), method: "POST" },
     "/test"
   );
-export const verifyFrappeConnection = (input: FrappeVerificationPayload) =>
-  request<CatalogDataSourceConnectionResult>(
-    { body: JSON.stringify(input), method: "POST" },
-    "/frappe/verify"
-  );
-export const saveFrappeConnection = (input: FrappeConnectionPayload) =>
-  request<Omit<CatalogDataSourceSettings, "modules">>(
-    { body: JSON.stringify(input), method: "PUT" },
-    "/frappe"
-  );
-export const syncCatalogDataSource = (action: "pull" | "push" | "seed-demo") =>
+export const syncCatalogDataSource = (action: "pull" | "push") =>
   request<CatalogSyncResult>({ method: "POST" }, `/sync/${action}`);

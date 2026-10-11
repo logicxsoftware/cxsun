@@ -49,8 +49,8 @@ export async function listEnquiryPage(options: {
   return request<EnquiryPage>(`/crm/enquiries?${query}`);
 }
 
-export function listEnquiryReport(filters: EnquiryReportFilters) {
-  const query = new URLSearchParams();
+export function listEnquiryReport(filters: EnquiryReportFilters, view: "list-in" | "creator" | "assignee" | "status") {
+  const query = new URLSearchParams({ view });
   addDateRange(query, filters);
   if (filters.assignedUserId) query.set("assignedUserId", filters.assignedUserId);
   return request<EnquiryReportRow[]>(`/crm/enquiries/reports?${query}`);
@@ -74,62 +74,62 @@ export const getEnquirySummary = (today: string) =>
   request<EnquirySummary>(`/crm/enquiries/summary?today=${today}`);
 export const readEnquiryAlert = (id: number) =>
   request<{ read: boolean }>(`/crm/enquiries/alerts/${id}/read`, { method: "POST" });
-export const getEnquiry = (id: number) => request<EnquiryRecord>(`/crm/enquiries/${id}`);
-export const listEnquiryComments = (id: number) =>
+export const getEnquiry = (id: string) => request<EnquiryRecord>(`/crm/enquiries/${encodeURIComponent(id)}`);
+export const listEnquiryComments = (id: string) =>
   request<EnquiryComment[]>(`/crm/enquiries/${id}/comments`);
 export const createEnquiryComment = (
-  id: number,
+  id: string,
   body: string,
-  parentId: number | null,
+  parentId: string | null,
   bodyFormat: "plain" | "html" = "plain"
 ) =>
   request<EnquiryComment>(`/crm/enquiries/${id}/comments`, {
     method: "POST",
     body: JSON.stringify({ body, parentId, bodyFormat })
   });
-export const updateEnquiryProperties = (id: number, patch: EnquiryPropertyPatch) =>
+export const updateEnquiryProperties = (id: string, patch: EnquiryPropertyPatch) =>
   request<EnquiryRecord>(`/crm/enquiries/${id}/properties`, {
     method: "PATCH",
     body: JSON.stringify(patch)
   });
-export const openNewEnquiryCall = (id: number) =>
+export const openNewEnquiryCall = (id: string) =>
   request<EnquiryRecord>(`/crm/enquiries/${id}/open-new-call`, { method: "POST" });
-export const listEnquiryJobs = (id: number) => request<EnquiryJob[]>(`/crm/enquiries/${id}/jobs`);
-export const startEnquiryJob = (id: number) =>
+export const listEnquiryJobs = (id: string) => request<EnquiryJob[]>(`/crm/enquiries/${id}/jobs`);
+export const startEnquiryJob = (id: string) =>
   request<EnquiryJob>(`/crm/enquiries/${id}/jobs/start`, { method: "POST" });
-export const stopEnquiryJob = (id: number, jobId: number) =>
+export const stopEnquiryJob = (id: string, jobId: string) =>
   request<EnquiryJob>(`/crm/enquiries/${id}/jobs/${jobId}/stop`, { method: "POST" });
-export const createEnquiryJob = (id: number, payload: EnquiryJobSavePayload) =>
+export const createEnquiryJob = (id: string, payload: EnquiryJobSavePayload) =>
   request<EnquiryJob>(`/crm/enquiries/${id}/jobs`, {
     method: "POST",
     body: JSON.stringify(payload)
   });
-export const updateEnquiryJob = (id: number, jobId: number, payload: EnquiryJobSavePayload) =>
+export const updateEnquiryJob = (id: string, jobId: string, payload: EnquiryJobSavePayload) =>
   request<EnquiryJob>(`/crm/enquiries/${id}/jobs/${jobId}`, {
     method: "PUT",
     body: JSON.stringify(payload)
   });
-export const listEnquiryEstimates = (id: number) =>
+export const listEnquiryEstimates = (id: string) =>
   request<EnquiryEstimate[]>(`/crm/enquiries/${id}/estimates`);
-export const createEnquiryEstimate = (id: number, payload: EnquiryEstimateSavePayload) =>
+export const createEnquiryEstimate = (id: string, payload: EnquiryEstimateSavePayload) =>
   request<EnquiryEstimate>(`/crm/enquiries/${id}/estimates`, {
     method: "POST",
     body: JSON.stringify(payload)
   });
 export const updateEnquiryEstimate = (
-  id: number,
-  estimateId: number,
+  id: string,
+  estimateId: string,
   payload: EnquiryEstimateSavePayload
 ) =>
   request<EnquiryEstimate>(`/crm/enquiries/${id}/estimates/${estimateId}`, {
     method: "PUT",
     body: JSON.stringify(payload)
   });
-export const listEnquiryActivity = (id: number) =>
+export const listEnquiryActivity = (id: string) =>
   request<EnquiryActivity[]>(`/crm/enquiries/${id}/activity`);
 export const createEnquiry = (payload: EnquirySavePayload) =>
   request<EnquiryRecord>("/crm/enquiries", { method: "POST", body: JSON.stringify(payload) });
-export const updateEnquiry = (id: number, payload: EnquirySavePayload) =>
+export const updateEnquiry = (id: string, payload: EnquirySavePayload) =>
   request<EnquiryRecord>(`/crm/enquiries/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 export const listCoreContacts = () => request<EnquiryLookup[]>("/core/master/contacts");
 export const listTenantUsers = () => request<EnquiryLookup[]>("/tenant/access/users");

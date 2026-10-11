@@ -1,20 +1,24 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createListIn, listInQueryKey } from "../list-in/index";
-import { createPriority, priorityQueryKey } from "../priority/index";
-import { createStatus, statusQueryKey } from "../status/index";
+import { crmRequest } from "../../crm-request";
 import { prioritySwatch, statusIcon } from "../../crm-colors";
 
 export function useEnquiryMasterCreate() {
   const client = useQueryClient();
+  const create = async (kind: "list-in" | "status" | "priority", name: string) => {
+    const record = await crmRequest<{ id: string; name: string; code: string }>(
+      `/crm/enquiries/options/${kind}`,
+      { method: "POST", body: JSON.stringify({ name }) }
+    );
+    await client.invalidateQueries({ queryKey: ["crm", "enquiries", "options"] });
+    return record;
+  };
   return {
     listIn: async (name: string) => {
-      const record = await createListIn({ name, sortOrder: 1000 });
-      await client.invalidateQueries({ queryKey: listInQueryKey });
+      const record = await create("list-in", name);
       return { label: record.name, value: String(record.id) };
     },
     status: async (name: string) => {
-      const record = await createStatus({ name, sortOrder: 1000 });
-      await client.invalidateQueries({ queryKey: statusQueryKey });
+      const record = await create("status", name);
       return {
         label: record.name,
         value: String(record.id),
@@ -22,8 +26,7 @@ export function useEnquiryMasterCreate() {
       };
     },
     priority: async (name: string) => {
-      const record = await createPriority({ name, sortOrder: 1000 });
-      await client.invalidateQueries({ queryKey: priorityQueryKey });
+      const record = await create("priority", name);
       return {
         label: record.name,
         value: String(record.id),

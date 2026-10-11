@@ -10,7 +10,7 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-test("checks conversation ownership and saves a business provider reply without old answers", async () => {
+test("uses earlier user questions but excludes stored answers from provider context", async () => {
   let saved: unknown[] = [];
   let requestBody: unknown;
   let callCount = 0;
@@ -29,6 +29,7 @@ test("checks conversation ownership and saves a business provider reply without 
         : [])
     ],
     allowedCapabilities: async () => [],
+    recentUserPrompts: async () => ["Earlier"],
     saveReply: async (...args: unknown[]) => {
       saved = args;
       return 5;
@@ -67,7 +68,9 @@ test("checks conversation ownership and saves a business provider reply without 
   const messages = (requestBody as { messages: Array<{ content: string }> }).messages;
   assert.match(messages[0]!.content, /business coworker inside one authenticated tenant/);
   assert.match(messages[0]!.content, /backend decides access/);
-  assert.equal(messages[1]!.content, "Next question");
+  assert.equal(messages[1]!.content, "Earlier");
+  assert.equal(messages[2]!.content, "Next question");
+  assert.ok(!messages.some((message) => message.content === "A reply"));
   assert.equal(result.conversation.id, 5);
 });
 
@@ -199,7 +202,7 @@ test("does not save a message when the provider fails", async () => {
 });
 
 test("denies a balance lookup without a capability grant and queues review", async () => {
-  const attempts: unknown[] = [];
+  let recordedEvent: unknown;
   let interaction: unknown;
   const repository = {
     saveReply: async (
@@ -207,10 +210,12 @@ test("denies a balance lookup without a capability grant and queues review", asy
       _id: number | null,
       _prompt: string,
       reply: string,
-      metadata: unknown
+      metadata: unknown,
+      event: unknown
     ) => {
       assert.match(reply, /current permissions/);
       interaction = metadata;
+      recordedEvent = event;
       return 7;
     },
     get: async () => ({ id: 7, uuid: "00000007", title: "Balance" }),
@@ -218,13 +223,7 @@ test("denies a balance lookup without a capability grant and queues review", asy
     allowedCapabilities: async () => []
   } as unknown as ZetroChatRepository;
   const policy = {
-    canReadCapability: async () => false,
-    recordToolAttempt: async (input: unknown) => {
-      attempts.push(input);
-    },
-    requestApproval: async (input: unknown) => {
-      attempts.push(input);
-    }
+    canReadCapability: async () => false
   } as unknown as ZetroPolicyRepository;
   globalThis.fetch = async () =>
     new Response(
@@ -257,7 +256,11 @@ test("denies a balance lookup without a capability grant and queues review", asy
   );
   await service.send("staff@example.com", null, "How much does ACME owe?");
   assert.equal(called, false);
-  assert.equal(attempts.length, 2);
+  assert.deepEqual(recordedEvent, {
+    capabilityKey: "billing.customer-outstanding.read",
+    decision: "denied",
+    request: { contact: "ACME" }
+  });
   assert.deepEqual(
     {
       intent: (interaction as { intent: string }).intent,
@@ -286,8 +289,7 @@ test("uses the authorized Billing result for a balance answer", async () => {
     allowedCapabilities: async () => []
   } as unknown as ZetroChatRepository;
   const policy = {
-    canReadCapability: async () => true,
-    recordToolAttempt: async () => undefined
+    canReadCapability: async () => true
   } as unknown as ZetroPolicyRepository;
   globalThis.fetch = async () =>
     new Response(
@@ -351,6 +353,213 @@ test("redacts stored financial replies after a grant is revoked", async () => {
   assert.equal(
     detail.messages[1]?.content,
     "This answer requires current business record permission."
+  );
+});
+
+test("routes an exact monthly report without a provider call and still checks permission", async () => {
+  let providerCalls = 0;
+  let billingReads = 0;
+  let recentPromptReads = 0;
+  let savedEvent: unknown;
+  const repository = {
+    get: async () => ({ id: 13, uuid: "00000013", title: "Reports" }),
+    recentUserPrompts: async () => {
+      recentPromptReads += 1;
+      return [];
+    },
+    saveReply: async (_owner: string, _id: number | null, _prompt: string, _reply: string, _interaction: unknown, event: unknown) => {
+      savedEvent = event;
+      return 13;
+    },
+    messages: async () => [],
+    allowedCapabilities: async () => []
+  } as unknown as ZetroChatRepository;
+  const policy = {
+    canReadCapability: async () => false
+  } as unknown as ZetroPolicyRepository;
+  globalThis.fetch = async () => {
+    providerCalls += 1;
+    throw new Error("Provider should not classify an exact report question");
+  };
+  const service = new ZetroChatService(
+    repository,
+    { apiKey: "test", baseUrl: "https://example.com/v1", model: "test" },
+    policy,
+    async () => ({ companyName: "", financialYearName: "", matches: [] }),
+    async (period) => {
+      billingReads += 1;
+      return unusedPeriodLookup(period);
+    },
+    unusedAgedLookup
+  );
+  await service.send("staff@example.com", 13, "This month payments?");
+  assert.equal(providerCalls, 0);
+  assert.equal(recentPromptReads, 0);
+  assert.equal(billingReads, 0);
+  assert.deepEqual(savedEvent, {
+    capabilityKey: "billing.monthly-summary.read",
+    decision: "denied",
+    request: { period: "month_report", category: "payment" }
+  });
+});
+
+test("streams a general reply and saves the same completed text", async () => {
+  const progress: Array<{ event: string; content: string }> = [];
+  let savedReply = "";
+  let requests = 0;
+  const repository = {
+    saveReply: async (_owner: string, _id: number | null, _prompt: string, reply: string) => {
+      savedReply = reply;
+      return 11;
+    },
+    get: async () => ({ id: 11, uuid: "00000011", title: "Plan" }),
+    messages: async () => [{ id: 1, role: "assistant", content: savedReply }],
+    allowedCapabilities: async () => []
+  } as unknown as ZetroChatRepository;
+  globalThis.fetch = async () => {
+    requests += 1;
+    if (requests === 1)
+      return new Response(
+        JSON.stringify({
+          choices: [
+            { message: { content: '{"intent":"business_chat","contact":null,"category":null}' } }
+          ]
+        }),
+        { status: 200 }
+      );
+    return new Response(
+      'data: {"choices":[{"delta":{"content":"First "}}]}\n\ndata: {"choices":[{"delta":{"content":"step"}}]}\n\ndata: [DONE]\n\n',
+      { status: 200, headers: { "content-type": "text/event-stream" } }
+    );
+  };
+  const service = new ZetroChatService(
+    repository,
+    { apiKey: "test", baseUrl: "https://example.com/v1", model: "test" },
+    {} as ZetroPolicyRepository,
+    async () => ({ companyName: "", financialYearName: "", matches: [] }),
+    unusedPeriodLookup,
+    unusedAgedLookup
+  );
+  await service.send("user@example.com", null, "Help me plan", undefined, (event) =>
+    progress.push(event)
+  );
+  assert.equal(savedReply, "First step");
+  assert.equal(
+    progress
+      .filter((event) => event.event === "token")
+      .map((event) => event.content)
+      .join(""),
+    "First step"
+  );
+});
+
+test("does not stream a financial answer until its reply and audit event save", async () => {
+  const progress: Array<{ event: string; content: string }> = [];
+  let eventSaved = false;
+  const repository = {
+    saveReply: async (
+      _owner: string,
+      _id: number | null,
+      _prompt: string,
+      _reply: string,
+      _interaction: unknown,
+      event: unknown
+    ) => {
+      assert.ok(event);
+      assert.equal(
+        progress.some((item) => item.event === "token"),
+        false
+      );
+      eventSaved = true;
+      return 12;
+    },
+    get: async () => ({ id: 12, uuid: "00000012", title: "Balance" }),
+    messages: async () => [{ id: 1, role: "assistant", content: "ACME owes 120.50" }],
+    allowedCapabilities: async () => ["billing.customer-outstanding.read"]
+  } as unknown as ZetroChatRepository;
+  const policy = { canReadCapability: async () => true } as unknown as ZetroPolicyRepository;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: '{"intent":"customer_outstanding","contact":"ACME","category":null}'
+            }
+          }
+        ]
+      }),
+      { status: 200 }
+    );
+  const service = new ZetroChatService(
+    repository,
+    { apiKey: "test", baseUrl: "https://example.com/v1", model: "test" },
+    policy,
+    async () => ({
+      companyName: "Main",
+      financialYearName: "2026",
+      matches: [{ id: 1, code: "C-1", name: "ACME", balance: 120.5 }]
+    }),
+    unusedPeriodLookup,
+    unusedAgedLookup
+  );
+  await service.send("manager@example.com", null, "ACME balance", undefined, (event) =>
+    progress.push(event)
+  );
+  assert.equal(eventSaved, true);
+  assert.deepEqual(
+    progress.filter((item) => item.event === "token"),
+    [{ event: "token", content: "ACME owes 120.50" }]
+  );
+});
+
+test("never emits a financial answer when saving its audit fails", async () => {
+  const progress: Array<{ event: string; content: string }> = [];
+  let failureLogged = false;
+  const repository = {
+    saveReply: async () => {
+      throw new Error("Audit insert failed");
+    },
+    logFailed: async () => {
+      failureLogged = true;
+    }
+  } as unknown as ZetroChatRepository;
+  const policy = { canReadCapability: async () => true } as unknown as ZetroPolicyRepository;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              content: '{"intent":"customer_outstanding","contact":"ACME","category":null}'
+            }
+          }
+        ]
+      }),
+      { status: 200 }
+    );
+  const service = new ZetroChatService(
+    repository,
+    { apiKey: "test", baseUrl: "https://example.com/v1", model: "test" },
+    policy,
+    async () => ({
+      companyName: "Main",
+      financialYearName: "2026",
+      matches: [{ id: 1, code: "C-1", name: "ACME", balance: 120.5 }]
+    }),
+    unusedPeriodLookup,
+    unusedAgedLookup
+  );
+  await assert.rejects(
+    service.send("manager@example.com", null, "ACME balance", undefined, (event) =>
+      progress.push(event)
+    ),
+    /Audit insert failed/
+  );
+  assert.equal(failureLogged, true);
+  assert.equal(
+    progress.some((item) => item.event === "token"),
+    false
   );
 });
 

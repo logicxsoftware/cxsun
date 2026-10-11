@@ -7,18 +7,18 @@ export type EnquirySavePayload = {
   capturedPhone: string | null;
   source: string;
   sourceReference: string | null;
-  listInId: number | null;
-  statusId: number;
-  priorityId: number;
-  assignedUserId: number | null;
+  listInId: string | null;
+  statusId: string;
+  priorityId: string;
+  assignedUserId: string | null;
   enquiredAt: string;
   dueDate: string | null;
   closedReason: string | null;
 };
 
 export type EnquiryRecord = EnquirySavePayload & {
-  id: number;
-  enquiryNo: number;
+  id: string;
+  enquiryNo: string;
   uuid: string;
   contactName: string | null;
   listIn: string | null;
@@ -29,6 +29,7 @@ export type EnquiryRecord = EnquirySavePayload & {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  assignedToName: string | null;
 };
 
 export type EnquiryPage = {
@@ -49,32 +50,6 @@ export type EnquirySearchColumn =
   | "status";
 
 export type EnquiryColumnFilters = Partial<Record<Exclude<EnquirySearchColumn, "all">, string>>;
-export type LiveEnquiryRecord = {
-  name: string;
-  title: string;
-  details: string;
-  customer: string | null;
-  mobile: string | null;
-  date: string | null;
-  dueDate: string | null;
-  group: string | null;
-  creator: string | null;
-  assignee: string | null;
-  priority: string | null;
-  status: string | null;
-  statusDetails: string | null;
-  createdAt: string | null;
-  modifiedAt: string | null;
-};
-export type LiveEnquiryPage = {
-  source: "frappe";
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-  total: number;
-  statusCounts: Array<{ code: string; count: number }>;
-  items: LiveEnquiryRecord[];
-};
 export type EnquiryReportFilters = {
   fromDate?: string | undefined;
   toDate?: string | undefined;
@@ -82,15 +57,12 @@ export type EnquiryReportFilters = {
   createdBy?: string | undefined;
   assignedUserId?: string | undefined;
   filter?: string | undefined;
-  group?: string | undefined;
-  creatorEmployee?: string | undefined;
-  assigneeEmployee?: string | undefined;
 };
 export type EnquiryReportRow = {
-  listInId: number | null;
+  listInId: string | null;
   listIn: string | null;
   createdBy: string;
-  assignedUserId: number | null;
+  assignedUserId: string | null;
   status: string;
   statusName: string;
   count: number;
@@ -125,7 +97,7 @@ export type EnquirySummary = {
 };
 
 export type EnquiryLookup = {
-  id: number;
+  id: string | number;
   name: string;
   email?: string;
   status: string;
@@ -134,17 +106,17 @@ export type EnquiryLookup = {
 };
 
 export type EnquiryMasterLookup = {
-  id: number;
+  id: string | number;
   name: string;
   status: "active" | "inactive";
   code?: string;
 };
 
 export type EnquiryComment = {
-  id: number;
+  id: string;
   uuid: string;
-  enquiryId: number;
-  parentId: number | null;
+  enquiryId: string;
+  parentId: string | null;
   body: string;
   bodyFormat: "plain" | "html";
   createdBy: string;
@@ -153,17 +125,17 @@ export type EnquiryComment = {
 
 export type EnquiryJobStatus = "running" | "completed" | "cancelled";
 export type EnquiryJobSavePayload = {
-  employeeUserId: number;
+  employeeUserId: string;
   startAt: string;
   stopAt: string | null;
   ratePerHour: number;
   status: EnquiryJobStatus;
 };
 export type EnquiryJob = Omit<EnquiryJobSavePayload, "employeeUserId"> & {
-  id: number;
+  id: string;
   uuid: string;
-  enquiryId: number;
-  employeeUserId: number | null;
+  enquiryId: string;
+  employeeUserId: string | null;
   employee: string;
   durationSeconds: number;
   totalCost: number;
@@ -175,13 +147,13 @@ export type EnquiryJob = Omit<EnquiryJobSavePayload, "employeeUserId"> & {
 export type EnquiryEstimateSavePayload = {
   date: string;
   itemName: string;
-  supplierContactId: number;
+  supplierContactId: string;
   price: number;
 };
 export type EnquiryEstimate = EnquiryEstimateSavePayload & {
-  id: number;
+  id: string;
   uuid: string;
-  enquiryId: number;
+  enquiryId: string;
   supplierName: string;
   createdBy: string;
   createdAt: string;
@@ -189,9 +161,9 @@ export type EnquiryEstimate = EnquiryEstimateSavePayload & {
 };
 
 export type EnquiryActivity = {
-  id: number;
+  id: string;
   uuid: string;
-  enquiryId: number;
+  enquiryId: string;
   action: string;
   details: string;
   createdBy: string;

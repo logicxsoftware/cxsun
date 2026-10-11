@@ -5,7 +5,7 @@ import {
   RotateCcw,
   Utensils,
 } from 'lucide-react';
-import type { InterfaceTopologyController } from '@codexsun/devkit-ito';
+import type { InterfaceTopologyController } from './ito-bridge';
 import type { Snapshot } from './api';
 import { ItoRegion } from './ItoRegion';
 import { getMergedTables, type TableMasterConfig } from './mastersStore';

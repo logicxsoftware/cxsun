@@ -59,8 +59,7 @@ for (const scenario of [
       allowedCapabilities: async () => []
     } as unknown as ZetroChatRepository;
     const policy = {
-      canReadCapability: async () => true,
-      recordToolAttempt: async () => undefined
+      canReadCapability: async () => true
     } as unknown as ZetroPolicyRepository;
     globalThis.fetch = async () =>
       new Response(
@@ -109,15 +108,18 @@ test("shows the oldest unpaid sales only after an active grant", async () => {
   let allowed = false;
   let lookupCount = 0;
   let reply = "";
-  const approvals: unknown[] = [];
+  const events: unknown[] = [];
   const repository = {
     saveReply: async (
       _owner: string,
       _conversation: number | null,
       _prompt: string,
-      value: string
+      value: string,
+      _interaction: unknown,
+      event: unknown
     ) => {
       reply = value;
+      events.push(event);
       return 1;
     },
     get: async () => ({ id: 1, uuid: "00000001", title: "Aged sales" }),
@@ -125,11 +127,7 @@ test("shows the oldest unpaid sales only after an active grant", async () => {
     allowedCapabilities: async () => []
   } as unknown as ZetroChatRepository;
   const policy = {
-    canReadCapability: async () => allowed,
-    recordToolAttempt: async () => undefined,
-    requestApproval: async (...args: unknown[]) => {
-      approvals.push(args);
-    }
+    canReadCapability: async () => allowed
   } as unknown as ZetroPolicyRepository;
   globalThis.fetch = async () =>
     new Response(
@@ -174,9 +172,10 @@ test("shows the oldest unpaid sales only after an active grant", async () => {
   );
   await service.send("staff@example.com", null, "which sales invoices are unpaid longest?");
   assert.equal(lookupCount, 0);
-  assert.equal(approvals.length, 1);
+  assert.equal((events[0] as { decision: string }).decision, "denied");
   allowed = true;
   await service.send("manager@example.com", null, "oldest outstanding sales");
   assert.equal(lookupCount, 1);
+  assert.equal((events[1] as { decision: string }).decision, "allowed");
   assert.match(reply, /S-1.*ACME.*INR 250\.00.*68 days old/s);
 });

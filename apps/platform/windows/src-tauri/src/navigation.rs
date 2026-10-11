@@ -28,7 +28,7 @@ fn is_allowed_desktop_url(url: &Url) -> bool {
         || (cfg!(debug_assertions)
             && url.scheme() == "http"
             && url.host_str() == Some("localhost")
-            && url.port() == Some(7030))
+            && url.port() == Some(7060))
 }
 
 #[cfg(test)]

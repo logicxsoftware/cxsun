@@ -8,13 +8,19 @@ const service = new BrandsService();
 const idParamsSchema = z.object({ id: z.string().regex(/^\d+$/, "Brands ID must be numeric.") });
 const brandsSchema = z.object({
   id: z.number().int().positive(),
+  logoAlt: z.string(),
+  logoUrl: z.string(),
   name: z.string(),
+  showOnStorefront: z.boolean(),
   isActive: z.boolean(),
   sortOrder: z.number().int()
 });
 const brandsPayloadSchema = z.object({
   name: z.string().trim(),
   isActive: z.boolean().default(true),
+  logoAlt: z.string().trim().max(255).default(""),
+  logoUrl: z.union([z.literal(""), z.string().url().startsWith("https://")]).default(""),
+  showOnStorefront: z.boolean().default(true),
   sortOrder: z.number().int().min(0).default(1000)
 });
 const brandsQuerySchema = z.object({ search: z.string().trim().optional() });

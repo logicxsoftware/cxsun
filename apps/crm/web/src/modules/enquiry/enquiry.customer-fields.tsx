@@ -41,7 +41,7 @@ export function EnquiryCustomerFields({
 
   useEffect(() => {
     if (value.contactId || matches.length !== 1) return;
-    onChange({ contactId: matches[0]!.id, capturedName: null });
+    onChange({ contactId: Number(matches[0]!.id), capturedName: null });
   }, [matches, onChange, value.contactId]);
 
   const options = contacts
@@ -83,7 +83,7 @@ export function EnquiryCustomerFields({
             const found = matchingContacts(contacts, mobile, strictMobile);
             if (found.length === 1) {
               setManualName(false);
-              onChange({ capturedPhone: mobile, contactId: found[0]!.id, capturedName: null });
+              onChange({ capturedPhone: mobile, contactId: Number(found[0]!.id), capturedName: null });
             } else {
               onChange({
                 capturedPhone: mobile,
@@ -127,7 +127,7 @@ export function EnquiryCustomerFields({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => {
                   event.stopPropagation();
-                  setEditingContactId(selectedContact.id);
+                  setEditingContactId(Number(selectedContact.id));
                 }}
               >
                 <ArrowUpRight className="size-4" />
@@ -142,7 +142,7 @@ export function EnquiryCustomerFields({
               Boolean(!option && selected.trim() && selected.trim() !== value.capturedPhone)
             );
             onChange({
-              contactId: contact?.id ?? null,
+              contactId: contact ? Number(contact.id) : null,
               capturedName: contact ? null : selected || value.capturedPhone || null,
               capturedPhone: value.capturedPhone || contact?.primaryPhone || null
             });
@@ -155,7 +155,7 @@ export function EnquiryCustomerFields({
         onOpenChange={(open) => !open && setEditingContactId(null)}
         onSaved={async (contact) => {
           onChange({
-            contactId: contact.id,
+            contactId: Number(contact.id),
             capturedName: null,
             capturedPhone: contact.primaryPhone
           });

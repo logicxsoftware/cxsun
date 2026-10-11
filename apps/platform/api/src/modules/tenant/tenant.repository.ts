@@ -3,6 +3,7 @@ import type { Tenant, TenantSavePayload } from "./tenant.types.js";
 import { sql } from "kysely";
 import { getPlatformDatabase } from "../../database/platform-database.js";
 import { getTenantDatabase } from "../../database/tenant-database.js";
+import { env } from "../../env.js";
 import {
   defaultTenantDomainForSlug,
   normalizeTenantDomain,
@@ -156,11 +157,20 @@ export class TenantRepository {
           ...tenant.enabledModuleKeys,
           ...manuallyEnabledKeys,
           ...enabledModuleKeys
-        ].map((key) => (key === "platform.tenant" ? "platform.application" : key))
+        ].map((key) => {
+          if (key === "platform.tenant") return "platform.application";
+          if (key === "accounts.accounting") return "accounts.overview";
+          return key;
+        })
       )
     )
       .filter((key) => key === "platform.application" || !manuallyDisabledKeys.includes(key))
-      .filter((key) => key !== "devkit" && key !== "project-manager")
+      .filter(
+        (key) =>
+          key !== "devkit" &&
+          key !== "project-manager" &&
+          (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
+      )
       .sort();
     const payloadSettings = {
       ...tenant.payloadSettings,

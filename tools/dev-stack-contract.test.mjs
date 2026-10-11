@@ -130,3 +130,18 @@ test("configured ports and API readiness govern startup", () => {
   assert.match(stackSource, /readyUrl: `http:\/\/127\.0\.0\.1:\$\{apiPort\}\/ready`/u);
   assert.match(preflightSource, /`http:\/\/127\.0\.0\.1:\$\{apiPort\}\/ready`/u);
 });
+
+test("development services use one distinct frontend port each", async () => {
+  const example = await readFile(new URL("../.env.example", import.meta.url), "utf8");
+  const ports = new Map(
+    [
+      ...example.matchAll(
+        /^(PLATFORM_API_PORT|PLATFORM_WEB_PORT|CXSUN_ECOMMERCE_WEB_PORT|CXSUN_UIUX_WEB_PORT|CXSUN_PROJECT_MANAGER_WEB_PORT)=(\d+)$/gmu
+      )
+    ].map((match) => [match[1], Number(match[2])])
+  );
+  assert.deepEqual([...ports.values()], [7010, 7020, 7030, 7040, 7050]);
+  assert.match(stackSource, /await startAndWait\("uiux-web"\)/u);
+  assert.match(stackSource, /await startAndWait\("project-manager-web"\)/u);
+  assert.doesNotMatch(stackSource, /await startAndWait\("ecommerce-storefront"\)/u);
+});

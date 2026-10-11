@@ -1,17 +1,14 @@
 import { BarChart3, Clock3, MessageSquare, PhoneCall } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
-import { useQuery } from "@tanstack/react-query";
-import { crmRequest } from "../../crm-request";
 import { Card } from "@cxsun/ui/components/card";
 import {
   useEnquirySummary,
   useEnquiryOverviewActivity,
   useEnquiryAttention,
+  useEnquiryOptions,
   countEnquiryStatuses
 } from "../enquiry/index";
 import type { EnquiryMasterLookup } from "../enquiry/index";
-import { useStatus } from "../status/index";
-import { LiveOverviewWorkspace } from "./overview.live";
 
 export function CrmOverviewWorkspace({
   currentUserName,
@@ -23,28 +20,8 @@ export function CrmOverviewWorkspace({
   onOpenMyJob: () => void;
   onOpenMyCalls: () => void;
 }) {
-  const source = useQuery({
-    queryKey: ["crm", "enquiries", "source"],
-    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source")
-  });
-  if (source.isLoading)
-    return <p className="p-6 text-sm text-muted-foreground">Loading overview source…</p>;
-  if (source.error)
-    return (
-      <p className="p-6 text-sm text-destructive" role="alert">
-        {source.error.message}
-      </p>
-    );
-  if (source.data?.provider === "frappe")
-    return (
-      <LiveOverviewWorkspace
-        currentUserName={currentUserName}
-        onOpenMyJob={onOpenMyJob}
-        onOpenMyCalls={onOpenMyCalls}
-      />
-    );
   return (
-    <LocalOverviewWorkspace
+    <OverviewContent
       currentUserName={currentUserName}
       onOpenMyJob={onOpenMyJob}
       onOpenMyCalls={onOpenMyCalls}
@@ -52,7 +29,7 @@ export function CrmOverviewWorkspace({
   );
 }
 
-function LocalOverviewWorkspace({
+function OverviewContent({
   currentUserName,
   onOpenMyJob,
   onOpenMyCalls
@@ -64,7 +41,7 @@ function LocalOverviewWorkspace({
   const summary = useEnquirySummary();
   const activity = useEnquiryOverviewActivity();
   const followUps = useEnquiryAttention();
-  const statuses = useStatus();
+  const options = useEnquiryOptions();
   const jobs = summary.data?.assigned;
   const calls = summary.data?.created;
   const newJobs = jobs?.newCalls ?? 0;
@@ -175,7 +152,7 @@ function LocalOverviewWorkspace({
             </tr>
           </thead>
           <tbody>
-            {workMixRows(statuses.data ?? []).map(({ label, filter }) => (
+            {workMixRows(options.data?.statuses ?? []).map(({ label, filter }) => (
               <tr className="border-t" key={label}>
                 <th className="px-4 py-3 text-left font-medium">{label}</th>
                 <td className="px-4 py-3 text-center">

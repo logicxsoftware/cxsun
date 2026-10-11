@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Coffee, UserRound, Lock, KeyRound, Database, Power, RotateCcw } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
+import { Button } from '@cxsun/ui/components/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,13 +11,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@codexsun/ui/components/ui/alert-dialog';
+} from '@cxsun/ui/components/alert-dialog';
 import {
   InterfaceTopologyDrawer,
   TopologyInspectionControl,
   TopologyMarker,
   type InterfaceTopologyController,
-} from '@codexsun/devkit-ito';
+} from './ito-bridge';
 import { signIn, signInWithCredentials, setupOwner } from './api';
 import { ItoRegion } from './ItoRegion';
 import { LicenseActivation, type LicenseStatus } from './LicenseActivation';

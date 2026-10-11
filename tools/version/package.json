@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/version-tools",
-  "version": "1.0.84",
+  "version": "1.0.85",
   "private": true,
   "type": "module",
   "bin": {

@@ -114,7 +114,7 @@ export function StorefrontSearch({
           <div className="cx-store-search__top">
             <a
               className="cx-store-search__wordmark"
-              href="/"
+              href="/shop"
               aria-label={`${branding?.brandName || "Company"} home`}
             >
               <img alt="" aria-hidden="true" src={branding?.logoUrl ?? "/icons/logo.svg"} />

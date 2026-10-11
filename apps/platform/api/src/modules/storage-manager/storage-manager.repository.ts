@@ -39,7 +39,9 @@ export class StorageManagerRepository {
       const roots = await ensureTenantStorage(tenantKey);
       await this.updateTenantStorageRoots(tenant.id, roots);
       tenantRoots.push({
-        ...roots,
+        privateRoot: tenant.storagePrivateRoot || roots.privateRoot,
+        publicRoot: tenant.storagePublicRoot || roots.publicRoot,
+        root: tenant.storageRoot || roots.root,
         tenantCode: tenant.tenantCode,
         tenantId: tenant.id,
         tenantName: tenant.tenantName
@@ -220,9 +222,9 @@ export class StorageManagerRepository {
     await getPlatformDatabase()
       .updateTable("tenants")
       .set({
-        storage_private_root: roots.privateRoot,
-        storage_public_root: roots.publicRoot,
-        storage_root: roots.root
+        storage_private_root: sql`CASE WHEN storage_private_root = '' THEN ${roots.privateRoot} ELSE storage_private_root END`,
+        storage_public_root: sql`CASE WHEN storage_public_root = '' THEN ${roots.publicRoot} ELSE storage_public_root END`,
+        storage_root: sql`CASE WHEN storage_root = '' THEN ${roots.root} ELSE storage_root END`
       })
       .where("id", "=", tenantId)
       .execute();

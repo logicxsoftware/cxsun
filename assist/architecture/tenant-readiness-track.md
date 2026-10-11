@@ -11,6 +11,7 @@ CODEXSUN is intended to be:
 - Multi-tenant: every customer runs inside an explicit tenant context.
 - Multi-database: every tenant can have its own database, and production business data should be routed through the tenant database connection.
 - Multi-industry: tenants can activate industry packs that enable modules, workflows, defaults, reports, billing behavior, accounting behavior, and print formats.
+- One codebase and migration history serves every tenant. Industry choice controls activation and defaults after schema preparation; it does not create a separate migration fork.
 - Multi-company: a tenant can own multiple companies, branches, warehouses, counters, and devices.
 - Domain-bound: production tenant access should resolve the tenant from a custom domain or subdomain, then bind all tenant API calls to that tenant.
 
@@ -22,6 +23,7 @@ CODEXSUN is intended to be:
 - Tenant database registry exists in the master database through `tenant_databases`.
 - Tenant domain mapping exists in the master database through `tenant_domain_mappings`.
 - Tenant module activation exists through `tenant_module_activation`.
+- Shared tenant MariaDB app schemas migrate in one dependency order for every registered tenant, regardless of which apps are enabled. App defaults and permission seeds follow enabled modules.
 - Tenant login resolves `tenantCode`, verifies active tenant status, resolves the tenant database, and reads `users` from that tenant database.
 - Tenant sessions include `tenantId` and `tenantCode`.
 - Tenant web API calls send `x-tenant-id`.
@@ -56,6 +58,7 @@ CODEXSUN is intended to be:
 - The Windows enrollment host has only a safe local workspace projection; tenant-bound SQLite business
   repositories, device enrollment, offline authorization, module change capture, cloud sync routes,
   conflicts, numbering reservations, and auditor projection freshness are not implemented yet.
+- Q Cafe currently uses one independently configured SQLite database path and PIN session store. Its registry entry does not yet make the Q Cafe service tenant-isolated; tenant-bound storage and authentication are required before a shared Q Cafe service can serve multiple tenants.
 
 ## Non-Negotiable Rules
 

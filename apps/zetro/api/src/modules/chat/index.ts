@@ -3,6 +3,7 @@ export { ZetroChatService } from "./chat.service.js";
 export { ZetroChatRepository } from "./chat.repository.js";
 export { seedZetroChatPermissions } from "./chat.seed.js";
 export {
+  zetroChatMigrationBatch,
   zetroChatMigrations,
   migrateZetroChatDatabase,
   rollbackZetroChatDatabase

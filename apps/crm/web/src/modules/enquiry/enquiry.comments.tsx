@@ -15,20 +15,20 @@ export function EnquiryComments({
   comments,
   loading
 }: {
-  enquiryId: number;
+  enquiryId: string;
   comments: EnquiryComment[];
   loading: boolean;
 }) {
   const client = useQueryClient();
   const [body, setBody] = useState("");
-  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyTo, setReplyTo] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
   const save = useMutation({
-    mutationFn: (parentId: number | null) =>
+    mutationFn: (parentId: string | null) =>
       createEnquiryComment(enquiryId, body, parentId, "html"),
     onSuccess: async () => {
       setBody("");

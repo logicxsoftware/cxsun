@@ -12,7 +12,8 @@ export type PlatformAppId =
   | "frappe"
   | "zetro"
   | "logicx-erp"
-  | "ecommerce";
+  | "ecommerce"
+  | "q-cafe";
 
 export type PlatformAppDefinition = {
   alwaysEnabled: boolean;
@@ -36,7 +37,8 @@ export type PlatformAppDefinition = {
     | "frappe"
     | "zetro"
     | "logicx-erp"
-    | "ecommerce";
+    | "ecommerce"
+    | "q-cafe";
   uuid: string;
 };
 

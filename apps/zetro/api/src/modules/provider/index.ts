@@ -4,6 +4,7 @@ export { registerZetroProviderRoutes } from "./provider.routes.js";
 export { zetroProviderModule } from "./provider.module.js";
 export { registerZetroProviderAdminRoutes } from "./provider.admin.routes.js";
 export {
+  zetroProviderMigrationBatch,
   zetroProviderMigrations,
   migrateZetroProviderDatabase,
   rollbackZetroProviderDatabase

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Utensils } from 'lucide-react';
-import { TopologyMarker } from '@codexsun/devkit-ito';
+import { TopologyMarker } from '../ito-bridge';
 import { money } from '../api';
 import type { Pos1ProductSectionProps } from './types';
 

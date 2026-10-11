@@ -36,6 +36,25 @@ const platformMasterTables = new Set([
   "tenants"
 ]);
 
+const frappeLegacyKeyedTables = new Set([
+  "frappe_data_sources",
+  "frappe_connection_settings",
+  "frappe_enquiry_sync",
+  "frappe_user_mappings"
+]);
+
+function hasTenantOwnerPrefix(file, table) {
+  if (
+    /^(app|accounts|auditor|core|billing|crm|devkit|ecommerce|frappe|mail|logicx_erp|project_manager|zetro|zuno)_/.test(
+      table
+    )
+  ) {
+    return true;
+  }
+  // Contact 360 shipped these names before the CRM owner prefix contract existed.
+  return file.replaceAll("\\", "/").startsWith("apps/crm/") && table.startsWith("contact_");
+}
+
 const migrationFiles = execFileSync("rg", ["--files", "apps", "devkits", "-g", "*.migration.ts"], {
   encoding: "utf8"
 })
@@ -69,11 +88,7 @@ test("every fresh SQL table follows its database ownership naming contract", () 
         failures.push(`${file}: ${table} prefixes a master table`);
       } else if (platformMasterTables.has(table)) {
         // Platform master tables are intentionally unprefixed.
-      } else if (
-        !/^(app|accounts|auditor|core|billing|crm|devkit|mail|logicx_erp|project_manager|zetro|zuno)_/.test(
-          table
-        )
-      ) {
+      } else if (!hasTenantOwnerPrefix(file, table)) {
         failures.push(`${file}: ${table} has no tenant owner prefix`);
       }
       const columnNames = sqlColumnNames(body);
@@ -81,6 +96,17 @@ test("every fresh SQL table follows its database ownership naming contract", () 
         if (columnNames.filter((candidate) => candidate === name).length > 1) {
           failures.push(`${file}: ${table} declares ${name} more than once`);
         }
+      }
+      // The Frappe v1 definitions adopt tables with natural keys. A recorded v2
+      // step converts them in place and adds the standard columns.
+      if (
+        frappeLegacyKeyedTables.has(table) &&
+        file.replaceAll("\\", "/").startsWith("apps/frappe/")
+      ) {
+        if (!source.includes("ensureStandardTableColumns")) {
+          failures.push(`${file}: ${table} has no standard-column upgrade`);
+        }
+        continue;
       }
       for (const [column, pattern] of [
         ["id", /\bid\s+INT\s+NOT NULL\s+AUTO_INCREMENT\s+PRIMARY KEY\b/i],
@@ -99,11 +125,7 @@ test("every fresh SQL table follows its database ownership naming contract", () 
         failures.push(`${file}: ${table} prefixes a master table`);
       } else if (platformMasterTables.has(table)) {
         // Platform master tables are intentionally unprefixed.
-      } else if (
-        !/^(app|accounts|auditor|core|billing|crm|devkit|mail|logicx_erp|project_manager|zetro|zuno)_/.test(
-          table
-        )
-      ) {
+      } else if (!hasTenantOwnerPrefix(file, table)) {
         failures.push(`${file}: ${table} has no tenant owner prefix`);
       }
       for (const column of ["id", "uuid", "status", "created_by", "created_at", "updated_at"]) {

@@ -1,6 +1,5 @@
 import {
   ensureStandardTableColumns,
-  rollbackMigrationBatch,
   runMigrationBatch,
   type MigrationBatch
 } from "@cxsun/framework/db";
@@ -66,6 +65,19 @@ export const mailMigrationBatch: MigrationBatch<MailDatabase> = {
       name: "mail.smtp-only-provider-v1",
       up: retireProviderApiSchema,
       version: 4
+    },
+    {
+      checksum: "mail.retired-provider-metadata-v1",
+      description: "Keep a field for the original provider when SMTP replaced it.",
+      name: "mail.retired-provider-metadata-v1",
+      up: async (database) => {
+        await sql
+          .raw(
+            "ALTER TABLE mail_settings ADD COLUMN IF NOT EXISTS retired_provider_kind VARCHAR(24) NULL"
+          )
+          .execute(database);
+      },
+      version: 5
     }
   ]
 };
@@ -75,7 +87,8 @@ export async function migrateMailModule(database: Kysely<MailDatabase>) {
 }
 
 export async function rollbackMailModule(database: Kysely<MailDatabase>) {
-  return rollbackMigrationBatch(database, mailMigrationBatch);
+  void database;
+  throw new Error("Mail rollback requires a reviewed, data-preserving migration plan.");
 }
 
 async function applyMailSchema(database: Kysely<MailDatabase>) {
@@ -210,7 +223,15 @@ async function applyHostingerProviderSchema(database: Kysely<MailDatabase>) {
 
 async function retireProviderApiSchema(database: Kysely<MailDatabase>) {
   await sql
-    .raw(`UPDATE mail_settings SET provider = 'smtp' WHERE provider = 'hostinger-api'`)
+    .raw(
+      "ALTER TABLE mail_settings ADD COLUMN IF NOT EXISTS retired_provider_kind VARCHAR(24) NULL"
+    )
+    .execute(database);
+  await sql
+    .raw(
+      `UPDATE mail_settings SET retired_provider_kind = provider, provider = 'smtp'
+      WHERE provider = 'hostinger-api'`
+    )
     .execute(database);
   await renameSettingsColumn(database, {
     from: "hostinger_mailbox_id",
@@ -222,12 +243,6 @@ async function retireProviderApiSchema(database: Kysely<MailDatabase>) {
     to: "retired_provider_api_token_secret",
     type: "LONGTEXT NOT NULL"
   });
-  await sql
-    .raw(
-      `UPDATE mail_settings
-       SET retired_provider_mailbox_id = '', retired_provider_api_token_secret = ''`
-    )
-    .execute(database);
 }
 
 async function restoreRetiredProviderSchema(database: Kysely<MailDatabase>) {

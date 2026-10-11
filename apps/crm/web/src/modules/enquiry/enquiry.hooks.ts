@@ -22,12 +22,12 @@ export const enquirySummaryQueryKey = ["crm", "enquiries", "summary"] as const;
 export const enquiryReportQueryKey = ["crm", "enquiries", "reports"] as const;
 export const enquiryContactsQueryKey = ["crm", "enquiry", "core-contacts"] as const;
 export const enquiryUsersQueryKey = ["crm", "enquiry", "tenant-users"] as const;
-export const enquiryDetailQueryKey = (id: number) => ["crm", "enquiry", id] as const;
-export const enquiryCommentsQueryKey = (id: number) => ["crm", "enquiry", id, "comments"] as const;
-export const enquiryJobsQueryKey = (id: number) => ["crm", "enquiry", id, "jobs"] as const;
-export const enquiryEstimatesQueryKey = (id: number) =>
+export const enquiryDetailQueryKey = (id: string) => ["crm", "enquiry", id] as const;
+export const enquiryCommentsQueryKey = (id: string) => ["crm", "enquiry", id, "comments"] as const;
+export const enquiryJobsQueryKey = (id: string) => ["crm", "enquiry", id, "jobs"] as const;
+export const enquiryEstimatesQueryKey = (id: string) =>
   ["crm", "enquiry", id, "estimates"] as const;
-export const enquiryActivityQueryKey = (id: number) => ["crm", "enquiry", id, "activity"] as const;
+export const enquiryActivityQueryKey = (id: string) => ["crm", "enquiry", id, "activity"] as const;
 
 export const useEnquirySummary = (enabled = true) =>
   useQuery({
@@ -62,10 +62,10 @@ export const useEnquiryPage = (options: {
     ],
     queryFn: () => listEnquiryPage(options)
   });
-export const useEnquiryReport = (filters: EnquiryReportFilters) =>
+export const useEnquiryReport = (filters: EnquiryReportFilters, view: "list-in" | "creator" | "assignee" | "status") =>
   useQuery({
-    queryKey: [...enquiryReportQueryKey, filters.fromDate, filters.toDate, filters.assignedUserId],
-    queryFn: () => listEnquiryReport(filters)
+    queryKey: [...enquiryReportQueryKey, view, filters.fromDate, filters.toDate, filters.assignedUserId],
+    queryFn: () => listEnquiryReport(filters, view)
   });
 export const useEnquiryOverviewActivity = () =>
   useQuery({
@@ -86,26 +86,24 @@ function localToday() {
 }
 export const useEnquiryContacts = (enabled = true) =>
   useQuery({ queryKey: enquiryContactsQueryKey, queryFn: listCoreContacts, enabled });
+export const useEnquiryOptions = () =>
+  useQuery({
+    queryKey: ["crm", "enquiries", "options"],
+    queryFn: () => crmRequest<{
+      lists: import("./enquiry.types").EnquiryMasterLookup[];
+      statuses: import("./enquiry.types").EnquiryMasterLookup[];
+      priorities: import("./enquiry.types").EnquiryMasterLookup[];
+      users: import("./enquiry.types").EnquiryLookup[];
+      suppliers: import("./enquiry.types").EnquiryLookup[];
+    }>("/crm/enquiries/options")
+  });
 export const useEnquiryUsers = (enabled = true) =>
   useQuery({ queryKey: enquiryUsersQueryKey, queryFn: listTenantUsers, enabled });
 export function useCrmNavigationCounts(_email: string, enabled: boolean) {
-  const source = useQuery({
-    queryKey: ["crm", "enquiries", "source"],
-    queryFn: () => crmRequest<{ provider: "local" | "frappe" }>("/crm/enquiries/source"),
-    enabled
-  });
   const summary = useQuery({
-    queryKey:
-      source.data?.provider === "frappe"
-        ? ["crm", "enquiries", "frappe-summary", new Date().toISOString().slice(0, 10)]
-        : ["crm", "enquiries", "navigation-summary", "local"],
-    queryFn: () =>
-      source.data?.provider === "frappe"
-        ? crmRequest<{ allCount: number; assigned: { total: number }; created: { total: number } }>(
-            `/crm/enquiries/live/summary?today=${localToday()}`
-          )
-        : getEnquirySummary(localToday()),
-    enabled: enabled && Boolean(source.data)
+    queryKey: ["crm", "enquiries", "navigation-summary", localToday()],
+    queryFn: () => getEnquirySummary(localToday()),
+    enabled
   });
   return {
     assigned: summary.data?.assigned.total ?? 0,
@@ -113,13 +111,13 @@ export function useCrmNavigationCounts(_email: string, enabled: boolean) {
     all: summary.data?.allCount ?? 0
   };
 }
-export const useEnquiryDetail = (id: number) =>
+export const useEnquiryDetail = (id: string) =>
   useQuery({ queryKey: enquiryDetailQueryKey(id), queryFn: () => getEnquiry(id) });
-export const useEnquiryComments = (id: number) =>
+export const useEnquiryComments = (id: string) =>
   useQuery({ queryKey: enquiryCommentsQueryKey(id), queryFn: () => listEnquiryComments(id) });
-export const useEnquiryJobs = (id: number) =>
+export const useEnquiryJobs = (id: string) =>
   useQuery({ queryKey: enquiryJobsQueryKey(id), queryFn: () => listEnquiryJobs(id) });
-export const useEnquiryEstimates = (id: number) =>
+export const useEnquiryEstimates = (id: string) =>
   useQuery({ queryKey: enquiryEstimatesQueryKey(id), queryFn: () => listEnquiryEstimates(id) });
-export const useEnquiryActivity = (id: number) =>
+export const useEnquiryActivity = (id: string) =>
   useQuery({ queryKey: enquiryActivityQueryKey(id), queryFn: () => listEnquiryActivity(id) });

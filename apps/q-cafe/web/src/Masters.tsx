@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { CheckCircle2, ImagePlus, LoaderCircle, Plus, Pencil, Trash2, Tags, PackageOpen, Save, Upload } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@codexsun/ui/components/ui/alert-dialog';
+import { Button } from '@cxsun/ui/components/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@cxsun/ui/components/alert-dialog';
 import { imageUrl, type Snapshot } from './api';
-import type { InterfaceTopologyController } from '@codexsun/devkit-ito';
+import type { InterfaceTopologyController } from './ito-bridge';
 import { readTodaySpecialDefinitions } from './todaySpecials';
 import { RestaurantTableMaster } from './RestaurantTableMaster';
 

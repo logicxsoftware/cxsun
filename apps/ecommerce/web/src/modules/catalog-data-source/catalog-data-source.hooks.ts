@@ -1,12 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCatalogDataSource,
-  saveFrappeConnection,
   saveCatalogDataSource,
   saveStorefrontSectionVisibility,
   syncCatalogDataSource,
-  testCatalogDataSource,
-  verifyFrappeConnection
+  testCatalogDataSource
 } from "./catalog-data-source.services";
 import type {
   CatalogDataSourceModule,
@@ -26,18 +24,10 @@ export function useCatalogDataSource() {
   const test = useMutation({
     mutationFn: (provider: CatalogDataSourceProvider) => testCatalogDataSource(provider)
   });
-  const saveConnection = useMutation({
-    mutationFn: saveFrappeConnection,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: catalogDataSourceQueryKey })
-  });
-  const verifyConnection = useMutation({
-    mutationFn: verifyFrappeConnection,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: catalogDataSourceQueryKey })
-  });
   const sync = useMutation({ mutationFn: syncCatalogDataSource });
   const visibility = useMutation({
     mutationFn: saveStorefrontSectionVisibility,
     onSuccess: (value) => queryClient.setQueryData(catalogDataSourceQueryKey, value)
   });
-  return { save, saveConnection, settings, sync, test, verifyConnection, visibility };
+  return { save, settings, sync, test, visibility };
 }

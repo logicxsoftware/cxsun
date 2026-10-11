@@ -10,6 +10,10 @@ export class ZetroPolicyRepository {
   constructor(private readonly database: Kysely<ZetroDatabase>) {}
 
   async canReadCapability(actorEmail: string, capabilityKey: ZetroRecordCapability) {
+    const applicationPermission =
+      capabilityKey === "crm.assigned-enquiries.read"
+        ? "crm.enquiry.view"
+        : "billing.application.records.view";
     const result = await sql<{ allowed: number }>`SELECT 1 AS allowed
       FROM app_users user
       JOIN app_user_roles user_role ON user_role.user_id = user.id AND user_role.status = 'active'
@@ -20,53 +24,9 @@ export class ZetroPolicyRepository {
       JOIN app_role_permissions role_permission ON role_permission.role_id = role.id
         AND role_permission.status = 'active'
       JOIN app_permissions permission ON permission.id = role_permission.permission_id
-        AND permission.\`key\` = 'billing.application.records.view' AND permission.status = 'active'
+        AND permission.\`key\` = ${applicationPermission} AND permission.status = 'active'
       WHERE user.email = ${actorEmail} AND user.status = 'active' LIMIT 1`.execute(this.database);
     return Boolean(result.rows[0]);
-  }
-
-  async recordToolAttempt(input: {
-    actorEmail: string;
-    conversationId: number | null;
-    capabilityKey: ZetroRecordCapability;
-    decision: "allowed" | "denied" | "failed";
-    request: unknown;
-    result?: unknown;
-  }) {
-    await this.database
-      .insertInto("zetro_tool_events")
-      .values({
-        uuid: randomBytes(4).toString("hex"),
-        actor_email: input.actorEmail,
-        conversation_id: input.conversationId,
-        capability_key: input.capabilityKey,
-        decision: input.decision,
-        request_json: JSON.stringify(input.request),
-        result_json: input.result === undefined ? null : JSON.stringify(input.result)
-      })
-      .execute();
-  }
-
-  async requestApproval(
-    actorEmail: string,
-    conversationId: number | null,
-    capabilityKey: ZetroRecordCapability,
-    request: unknown
-  ) {
-    await this.database
-      .insertInto("zetro_approval_requests")
-      .values({
-        uuid: randomBytes(4).toString("hex"),
-        actor_email: actorEmail,
-        conversation_id: conversationId,
-        capability_key: capabilityKey,
-        status: "pending",
-        request_json: JSON.stringify(request),
-        decided_by: null,
-        decision_note: null,
-        decided_at: null
-      })
-      .execute();
   }
 
   async grants() {

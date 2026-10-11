@@ -9,7 +9,7 @@ export default defineConfig({
   cacheDir: "../../../node_modules/.vite/platform-windows",
   plugins: [react()],
   server: {
-    port: 7030,
+    port: 7060,
     strictPort: true
   }
 });

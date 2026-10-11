@@ -7,13 +7,9 @@ import { catalogDataSourceModules } from "./catalog-data-source.types.js";
 const provider = z.enum(["own", "frappe"]);
 const moduleKey = z.enum(catalogDataSourceModules);
 const settings = z.object({
-  appKeyConfigured: z.boolean(),
-  appSecretConfigured: z.boolean(),
-  connectionName: z.string(),
   frappeConfigured: z.boolean(),
   frappeEnabled: z.boolean(),
   frappeUrl: z.string().nullable(),
-  lastVerifiedAt: z.string().nullable(),
   modules: z.array(
     z.object({
       description: z.string(),
@@ -25,9 +21,7 @@ const settings = z.object({
       updatedBy: z.string().nullable()
     })
   ),
-  saveToEnvironment: z.boolean(),
-  verificationStatus: z.enum(["live", "offline", "unverified"]),
-  verifiedUser: z.string().nullable()
+  verificationStatus: z.enum(["live", "offline", "unverified"])
 });
 const connection = z.object({
   connected: z.boolean(),
@@ -61,22 +55,6 @@ const frappeItem = z.object({
   standard_rate: z.union([z.number(), z.string()]).nullable().optional(),
   stock_uom: z.string().nullable().optional()
 });
-const optionalSecret = z.string().trim().max(2000).optional();
-const frappeVerification = z
-  .object({
-    apiKey: optionalSecret,
-    apiSecret: optionalSecret,
-    url: z.string().trim().min(1).max(500)
-  })
-  .strict();
-const frappeSave = frappeVerification
-  .extend({
-    connectionName: z.string().trim().min(1).max(160),
-    enabled: z.boolean(),
-    saveToEnvironment: z.literal(false)
-  })
-  .strict();
-
 export async function registerCatalogDataSourceRoutes(
   app: FastifyInstance,
   service: () => CatalogDataSourceService,
@@ -131,34 +109,6 @@ export async function registerCatalogDataSourceRoutes(
   });
   registerContractRoute(app, {
     method: "POST",
-    url: "/ecommerce/settings/data-source/frappe/verify",
-    schemas: { body: frappeVerification, response: connection },
-    handler: ({ body }) =>
-      service().verifyFrappeConnection({
-        url: body.url,
-        ...(body.apiKey ? { apiKey: body.apiKey } : {}),
-        ...(body.apiSecret ? { apiSecret: body.apiSecret } : {})
-      })
-  });
-  registerContractRoute(app, {
-    method: "PUT",
-    url: "/ecommerce/settings/data-source/frappe",
-    schemas: { body: frappeSave, response: settings.omit({ modules: true }) },
-    handler: ({ body, request }) =>
-      service().saveFrappeConnection(
-        {
-          connectionName: body.connectionName,
-          enabled: body.enabled,
-          saveToEnvironment: false,
-          url: body.url,
-          ...(body.apiKey ? { apiKey: body.apiKey } : {}),
-          ...(body.apiSecret ? { apiSecret: body.apiSecret } : {})
-        },
-        resolveActorEmail(request)
-      )
-  });
-  registerContractRoute(app, {
-    method: "POST",
     url: "/ecommerce/settings/data-source/sync/pull",
     schemas: { response: syncResult },
     handler: () => service().pullFromFrappe()
@@ -168,11 +118,5 @@ export async function registerCatalogDataSourceRoutes(
     url: "/ecommerce/settings/data-source/sync/push",
     schemas: { response: syncResult },
     handler: () => service().pushToFrappe()
-  });
-  registerContractRoute(app, {
-    method: "POST",
-    url: "/ecommerce/settings/data-source/sync/seed-demo",
-    schemas: { response: syncResult },
-    handler: () => service().seedDemoInFrappe()
   });
 }

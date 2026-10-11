@@ -90,24 +90,25 @@ column.
 
 Framework and UI are database-free infrastructure packages. They do not own migrations or seeders.
 
-Database installation, migration, seeding, tenant setup, and tenant reinstall use one deterministic order:
+Database installation, migration, seeding, tenant setup, and tenant reinstall use one deterministic order for every registered tenant database:
 
 1. Platform master module migrations.
 2. Platform master module seeders.
 3. Tenant runtime migrations: module settings, users, roles, permissions, user roles, and role permissions.
 4. Core leaf migrations in dependency order: Common lookups, Organisation, then Master modules.
-5. CRM Enquiry migration when CRM is enabled for the tenant.
-6. Billing leaf migrations: Settings, Sales, Purchase, Export Sales, Quotation, Payment, Receipt, then Dashboard.
-7. Mail migration when Mail is enabled for the tenant.
-8. Tenant runtime seeders.
-9. Core leaf seeders in the same dependency order.
-10. CRM Enquiry permissions when CRM is enabled.
-11. Billing seeders for all eight Billing modules and Billing permissions.
-12. Mail seeder when Mail is enabled.
+5. Project Manager registry, Ecommerce, CRM, Frappe, Auditor, and Zetro migrations.
+6. Billing migrations before LogicX ERP schemes, followed by Accounts, Mail, Task Manager, and Blog migrations.
+7. Tenant runtime seeders for users, roles, and tenant module settings. Known app settings are reconciled to the tenant registry, including disabling an app removed from the enabled set.
+8. Core leaf seeders in dependency order.
+9. Enabled app seeders in their composition order. These install defaults and permission grants only for apps enabled for that tenant; Blog defaults follow Task Manager. App schema presence does not activate an app.
 
 All module SQL and seed behavior remains in the owning module's `*.migration.ts` and `*.seed.ts` files. Database composition roots only order and record those module-owned lifecycle functions. Repeatable seeders are additive: they insert missing defaults but do not reset tenant passwords, module JSON, or edited lookup labels.
 
-`npm run db:migrate` runs migrations without application seeders. `npm run db:seed` ensures migrations and then runs seeders. Tenant setup and reinstall preserve existing data, run every selected migration first, then run every selected seeder repeatably.
+`npm run db:migrate` runs migrations without application seeders. `npm run db:seed` ensures migrations and then runs seeders. Tenant setup and reinstall preserve existing data, run every installed tenant-app migration first, then run enabled app seeders repeatably. Accounts activation uses `accounts.overview`; the older `accounts.accounting` key resolves to it during tenant access and seeding, then normalizes on tenant update.
+
+Q Cafe currently runs as a separate SQLite service with its own database path and PIN login. Its local migration files are outside the shared tenant MariaDB lifecycle. Multi-tenant mode keeps its tenant activation off, including when a legacy tenant or plan contains `q-cafe`. Give it a tenant-aware storage and authentication contract before operating multiple tenants on one Q Cafe service.
+
+For a local full lifecycle check against a disposable database, run `tsx tools/e2e/all-tenant-apps-upgrade.e2e.ts --fresh`. Pass a tenant SQL dump path instead of `--fresh` to restore it into a uniquely named sandbox and check migration, existing row retention, and repeat seeding. The test leaves the sandbox database for inspection.
 
 For production, run during the approved release window and keep logs with the release record.
 

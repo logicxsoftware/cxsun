@@ -49,14 +49,33 @@ export function ZetroChatPanel({
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [pendingReply, setPendingReply] = useState("");
+  const [pendingStatus, setPendingStatus] = useState("Thinking…");
+  const pendingReplyBuffer = useRef("");
+  const pendingReplyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const conversations = useZetroConversations(scopeKey);
   const detail = useZetroConversation(scopeKey, currentId);
   const send = useMutation({
     mutationFn: ({ prompt, attachment }: { prompt: string; attachment?: ZetroTextAttachment }) =>
-      sendZetroMessage(currentId, prompt, attachment),
+      sendZetroMessage(currentId, prompt, attachment, (event) => {
+        if (event.event === "token") {
+          pendingReplyBuffer.current += event.content;
+          if (pendingReplyTimer.current === null) {
+            pendingReplyTimer.current = setTimeout(() => {
+              pendingReplyTimer.current = null;
+              setPendingReply(pendingReplyBuffer.current);
+            }, 50);
+          }
+        } else setPendingStatus(event.content);
+      }),
     onMutate: ({ prompt, attachment }) => {
       setPendingPrompt(attachment ? `${prompt}\nFile: ${attachment.name}` : prompt);
+      if (pendingReplyTimer.current !== null) clearTimeout(pendingReplyTimer.current);
+      pendingReplyTimer.current = null;
+      pendingReplyBuffer.current = "";
+      setPendingReply("");
+      setPendingStatus("Thinking…");
       const previous = client.getQueryData<ZetroConversation[]>(zetroConversationsKey(scopeKey));
       if (currentId !== null && previous) {
         const active = previous.find((conversation) => conversation.id === currentId);
@@ -77,11 +96,19 @@ export function ZetroChatPanel({
       ]);
       setCurrentId(result.conversation.id);
       setPendingPrompt(null);
+      if (pendingReplyTimer.current !== null) clearTimeout(pendingReplyTimer.current);
+      pendingReplyTimer.current = null;
+      pendingReplyBuffer.current = "";
+      setPendingReply("");
       void client.invalidateQueries({ queryKey: zetroConversationsKey(scopeKey) });
     },
     onError: (error, _prompt, context) => {
       if (context?.previous) client.setQueryData(zetroConversationsKey(scopeKey), context.previous);
       setPendingPrompt(null);
+      if (pendingReplyTimer.current !== null) clearTimeout(pendingReplyTimer.current);
+      pendingReplyTimer.current = null;
+      pendingReplyBuffer.current = "";
+      setPendingReply("");
       toast.error("Zetro could not reply", { description: error.message });
     }
   });
@@ -89,7 +116,10 @@ export function ZetroChatPanel({
   useEffect(() => {
     const messages = messagesRef.current;
     if (messages) messages.scrollTop = messages.scrollHeight;
-  }, [detail.data?.messages.length, pendingPrompt]);
+  }, [detail.data?.messages.length, pendingPrompt, pendingReply]);
+  useEffect(() => () => {
+    if (pendingReplyTimer.current !== null) clearTimeout(pendingReplyTimer.current);
+  }, []);
   const remove = useMutation({
     mutationFn: deleteZetroConversation,
     onSuccess: async (_result, id) => {
@@ -271,7 +301,15 @@ export function ZetroChatPanel({
                 className="mr-auto max-w-[85%] rounded-xl bg-muted px-4 py-3 text-sm"
               >
                 <p className="mb-1 text-xs font-semibold text-muted-foreground">Zetro</p>
-                <p className="animate-pulse text-muted-foreground">Thinking…</p>
+                <p
+                  className={
+                    pendingReply
+                      ? "whitespace-pre-wrap break-words"
+                      : "animate-pulse text-muted-foreground"
+                  }
+                >
+                  {pendingReply || pendingStatus}
+                </p>
               </div>
             </>
           ) : null}

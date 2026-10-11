@@ -26,7 +26,7 @@ export function ZetroPatternDraftForm({
         <Input
           aria-label="Serial number"
           type="number"
-          min={7}
+          min={36}
           value={draft.serialNo}
           onChange={(event) =>
             setDraft((value) => ({ ...value, serialNo: Number(event.target.value) }))

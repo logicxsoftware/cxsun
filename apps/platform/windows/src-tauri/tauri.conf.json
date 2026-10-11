@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "CXSUN",
-  "version": "1.0.84",
+  "version": "1.0.85",
   "identifier": "com.codexsun.cxsun",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
-    "devUrl": "http://localhost:7030",
+    "devUrl": "http://localhost:7060",
     "frontendDist": "../../../../dist/apps/platform/windows/web"
   },
   "app": {

@@ -6,6 +6,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     credentials: "include",
     headers: {
       ...(options.body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(sessionStorage.getItem("cxsun.auth.slot")
+        ? { "x-cxsun-session-slot": sessionStorage.getItem("cxsun.auth.slot")! }
+        : {}),
       ...options.headers
     }
   });
@@ -40,6 +43,9 @@ export const apiBinaryPost = <T>(path: string, data: Blob, headers: Record<strin
 export async function apiGetBlob(path: string) {
   const response = await fetch(`/api/project-manager${path}`, {
     credentials: "include",
+    headers: sessionStorage.getItem("cxsun.auth.slot")
+      ? { "x-cxsun-session-slot": sessionStorage.getItem("cxsun.auth.slot")! }
+      : {},
     method: "GET"
   });
   if (!response.ok) {

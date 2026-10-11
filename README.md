@@ -67,7 +67,11 @@ Platform web: <http://127.0.0.1:7020>
 
 Ecommerce web: <http://127.0.0.1:7030> (`CXSUN_ECOMMERCE_WEB_PORT`)
 
-Techmedia public shop: <http://127.0.0.1:7040> (`CXSUN_STOREFRONT_WEB_PORT`)
+Ecommerce public shop: <http://127.0.0.1:7030/shop>
+
+UIUX gallery: <http://127.0.0.1:7040/uiux/main-layouts> (`CXSUN_UIUX_WEB_PORT`)
+
+Project Manager: <http://127.0.0.1:7050/registry> (`CXSUN_PROJECT_MANAGER_WEB_PORT`)
 
 ## Docker Deployment
 

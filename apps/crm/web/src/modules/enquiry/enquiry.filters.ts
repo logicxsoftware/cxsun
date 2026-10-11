@@ -16,7 +16,7 @@ export function enquiryInScope(
   userId: number | null,
   email: string
 ) {
-  if (scope === "assigned") return userId !== null && record.assignedUserId === userId;
+  if (scope === "assigned") return userId !== null && record.assignedUserId === String(userId);
   if (scope === "created") return record.createdBy.toLowerCase() === email.toLowerCase();
   return true;
 }

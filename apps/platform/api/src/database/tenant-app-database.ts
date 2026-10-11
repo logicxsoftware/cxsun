@@ -57,6 +57,13 @@ import {
 } from "@cxsun/mail-api";
 import type { Kysely } from "kysely";
 import {
+  blogsMigrationBatch,
+  migrateBlogsDatabase,
+  seedBlogsDatabase,
+  type BlogRequestContext
+} from "@codexsun/blog/api";
+import { runMigrationBatch } from "@cxsun/framework/db";
+import {
   frappeTenantMigrations,
   frappeUserMappingMigrations,
   seedFrappeConnectionPermissions,
@@ -98,8 +105,7 @@ const mailTenantMigrations = mailMigrationBatch.steps.map(({ description, name }
   name
 }));
 
-export function tenantDatabaseMigrationsFor(tenant: Tenant) {
-  const enabled = new Set(tenant.enabledModuleKeys);
+export function tenantDatabaseMigrationsFor(_tenant: Tenant) {
   return [
     ...tenantRuntimeMigrations.map(({ description, name, statements }) => ({
       description,
@@ -110,142 +116,97 @@ export function tenantDatabaseMigrationsFor(tenant: Tenant) {
       ...migration,
       statements: [`RUN ${migration.name}`]
     })),
-    ...(enabled.has("ecommerce")
-      ? ecommerceTenantMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
     ...projectManagerTenantMigrations.map(({ description, name }) => ({
       description,
       name,
       statements: [`RUN ${name}`]
     })),
-    ...(enabled.has("crm")
-      ? crmTenantMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("crm") && enabled.has("frappe")
-      ? frappeTenantMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("crm") && enabled.has("frappe")
-      ? frappeUserMappingMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("auditor")
-      ? auditorMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("zetro")
-      ? zetroChatMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("zetro")
-      ? zetroProviderMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("billing.sales")
-      ? billingTenantMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("logicx-erp") && enabled.has("billing.sales")
-      ? logicxErpSchemeMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("accounts.accounting")
-      ? accountsTenantMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("mail")
-      ? mailTenantMigrations.map((migration) => ({
-          ...migration,
-          statements: [`RUN ${migration.name}`]
-        }))
-      : []),
-    ...(enabled.has("platform.task-manager")
-      ? taskManagerTenantMigrationBatch.steps.map(({ description, name }) => ({
-          description,
-          name,
-          statements: [`RUN ${name}`]
-        }))
-      : [])
+    ...ecommerceTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...crmTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...frappeTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...frappeUserMappingMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...auditorMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...zetroChatMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...zetroProviderMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...billingTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...logicxErpSchemeMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...accountsTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...mailTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...taskManagerTenantMigrationBatch.steps.map(({ description, name }) => ({
+      description,
+      name,
+      statements: [`RUN ${name}`]
+    })),
+    ...blogsMigrationBatch.steps.map(({ description, name }) => ({
+      description,
+      name,
+      statements: [`RUN ${name}`]
+    }))
   ];
 }
 
 export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
-  const enabled = new Set(tenant.enabledModuleKeys);
   const provisionedApps = ["application"];
 
   await migrateCoreTenantDatabase(tenant.dbName);
   await migrateProjectManagerDatabase(database as never);
-  if (enabled.has("ecommerce")) {
-    await migrateEcommerceTenantDatabase(database as unknown as Kysely<EcommerceDatabase>);
-    provisionedApps.push("ecommerce");
-  }
-  if (enabled.has("crm")) {
-    await migrateCrmTenantDatabase(database as unknown as Kysely<EnquiryDatabase>);
-    provisionedApps.push("crm");
-  }
-  if (enabled.has("crm") && enabled.has("frappe")) {
-    await migrateFrappeTenantDatabase(database as unknown as Kysely<FrappeDatabase>);
-    await migrateFrappeUserMappingDatabase(
-      database as unknown as Kysely<FrappeUserMappingDatabase>
-    );
-    provisionedApps.push("frappe");
-  }
-  if (enabled.has("auditor")) {
-    await migrateAuditorDatabase(database as unknown as Kysely<AuditorClientDatabase>);
-    provisionedApps.push("auditor");
-  }
-  if (enabled.has("zetro")) {
-    await migrateZetroChatDatabase(database as unknown as Kysely<ZetroDatabase>);
-    await migrateZetroProviderDatabase(database as unknown as Kysely<ZetroProviderDatabase>);
-    provisionedApps.push("zetro");
-  }
-
-  if (enabled.has("billing.sales")) {
-    await migrateBillingTenantDatabase(tenant.dbName);
-    provisionedApps.push("billing");
-  }
-
-  if (enabled.has("logicx-erp") && enabled.has("billing.sales")) {
-    await migrateLogicxErpSchemeDatabase(database as unknown as Kysely<LogicxErpSchemeDatabase>);
-    provisionedApps.push("logicx-erp");
-  }
-
-  if (enabled.has("accounts.accounting")) {
-    await migrateAccountsTenantDatabase(tenant.dbName);
-    provisionedApps.push("accounts");
-  }
-
-  if (enabled.has("mail")) {
-    await migrateMailModule(database as never);
-    provisionedApps.push("mail");
-  }
-
-  if (enabled.has("platform.task-manager")) {
-    await migrateTaskManagerTenantModule(database as never);
-    provisionedApps.push("task-manager");
-  }
+  await migrateEcommerceTenantDatabase(database as unknown as Kysely<EcommerceDatabase>);
+  provisionedApps.push("ecommerce");
+  await migrateCrmTenantDatabase(database as unknown as Kysely<EnquiryDatabase>);
+  provisionedApps.push("crm");
+  await migrateFrappeTenantDatabase(database as unknown as Kysely<FrappeDatabase>);
+  await migrateFrappeUserMappingDatabase(database as unknown as Kysely<FrappeUserMappingDatabase>);
+  provisionedApps.push("frappe");
+  await migrateAuditorDatabase(database as unknown as Kysely<AuditorClientDatabase>);
+  provisionedApps.push("auditor");
+  await migrateZetroChatDatabase(database as unknown as Kysely<ZetroDatabase>);
+  await migrateZetroProviderDatabase(database as unknown as Kysely<ZetroProviderDatabase>);
+  provisionedApps.push("zetro");
+  await migrateBillingTenantDatabase(tenant.dbName);
+  provisionedApps.push("billing");
+  await migrateLogicxErpSchemeDatabase(database as unknown as Kysely<LogicxErpSchemeDatabase>);
+  provisionedApps.push("logicx-erp");
+  await migrateAccountsTenantDatabase(tenant.dbName);
+  provisionedApps.push("accounts");
+  await migrateMailModule(database as never);
+  provisionedApps.push("mail");
+  await migrateTaskManagerTenantModule(database as never);
+  provisionedApps.push("task-manager");
+  await migrateBlogsDatabase(database as never, runMigrationBatch);
+  provisionedApps.push("blog");
 
   return {
     migrationOrder: tenantDatabaseMigrationsFor(tenant).map((migration) => migration.name),
@@ -274,9 +235,7 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
     await seedEcommerceOverviewPermissions(
       database as unknown as Kysely<EcommercePermissionDatabase>
     );
-    await seedEcommerceTenantModules(
-      database as unknown as Kysely<EcommerceDatabase>, tenant.uuid
-    );
+    await seedEcommerceTenantModules(database as unknown as Kysely<EcommerceDatabase>, tenant.uuid);
     seededApps.push("ecommerce");
   }
   if (enabled.has("logicx-erp")) {
@@ -298,7 +257,7 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
     seededApps.push("billing");
   }
 
-  if (enabled.has("accounts.accounting")) {
+  if (enabled.has("accounts.overview") || enabled.has("accounts.accounting")) {
     await seedAccountsTenantDatabase(tenant.dbName);
     seededApps.push("accounts");
   }
@@ -314,6 +273,10 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
       scopeKey: taskManagerTenantScope(tenant)
     });
     seededApps.push("task-manager");
+  }
+  if (enabled.has("blog")) {
+    await seedBlogsDatabase(blogContext(database, tenant));
+    seededApps.push("blog");
   }
   return { seededApps };
 }
@@ -341,7 +304,8 @@ export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase
   if (enabled.has("logicx-erp") && enabled.has("billing.sales"))
     await rollbackLogicxErpSchemeDatabase(database as unknown as Kysely<LogicxErpSchemeDatabase>);
   if (enabled.has("billing.sales")) await rollbackBillingTenantDatabase(tenant.dbName);
-  if (enabled.has("accounts.accounting")) await rollbackAccountsTenantDatabase(tenant.dbName);
+  if (enabled.has("accounts.overview") || enabled.has("accounts.accounting"))
+    await rollbackAccountsTenantDatabase(tenant.dbName);
   if (enabled.has("ecommerce"))
     await rollbackEcommerceTenantDatabase(database as unknown as Kysely<EcommerceDatabase>);
   await rollbackCoreTenantDatabase(tenant.dbName);
@@ -358,4 +322,14 @@ export async function provisionSelectedTenantApps(
 
 export function taskManagerTenantScope(tenant: Pick<Tenant, "uuid">) {
   return `tenant:${tenant.uuid}`;
+}
+
+function blogContext(database: Kysely<TenantDatabase>, tenant: Tenant): BlogRequestContext {
+  return {
+    actorId: null,
+    database: database as unknown as BlogRequestContext["database"],
+    host: "cxsun",
+    origin: "",
+    scopeId: tenant.uuid
+  };
 }

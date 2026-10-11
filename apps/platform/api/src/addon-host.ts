@@ -112,6 +112,9 @@ async function resolveBlogContext(request: FastifyRequest): Promise<BlogContext>
     const access = tenantAccessContext(request);
     const tenant = await tenantService.getTenant(access.tenantId);
     if (!tenant) throw AppError.forbidden("Blog tenant context is unavailable.");
+    if (!tenant.enabledModuleKeys.includes("blog")) {
+      throw AppError.forbidden("Blog is not enabled for this tenant.");
+    }
     const context = blogContext(tenant, payload?.userId ?? null, request);
     await ensureBlogProvisioned(tenant.dbName, context);
     return context;
@@ -120,6 +123,9 @@ async function resolveBlogContext(request: FastifyRequest): Promise<BlogContext>
   const host = requestHost(request);
   const { tenant } = await tenantService.getPublicApplicationCompany(host);
   if (!tenant) throw AppError.notFound("A public Blog tenant was not found for this domain.");
+  if (!tenant.enabledModuleKeys.includes("blog")) {
+    throw AppError.notFound("A public Blog tenant was not found for this domain.");
+  }
   const context = blogContext(tenant, payload?.userId ?? null, request);
   await ensureBlogProvisioned(tenant.dbName, context);
   return context;

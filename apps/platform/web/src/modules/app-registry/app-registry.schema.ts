@@ -19,6 +19,7 @@ export const appRegistrySchema = z.object({
     "crm",
     "frappe",
     "logicx-erp",
-    "ecommerce"
+    "ecommerce",
+    "q-cafe"
   ])
 });

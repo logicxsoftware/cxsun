@@ -1,10 +1,13 @@
 {
-  "name": "@codexsun/q-cafe-desktop",
-  "version": "1.0.38",
+  "name": "@cxsun/q-cafe-desktop",
+  "version": "1.0.85",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node ../../../tools/start-q-cafe-desktop.mjs",
-    "build": "cd src-tauri && cargo tauri build --no-bundle && node ../../../../tools/stage-q-cafe-node-sidecar.mjs && cargo tauri bundle --bundles nsis"
+    "dev": "node ../../../node_modules/@tauri-apps/cli/tauri.js dev",
+    "package:windows": "node ../../../tools/package-q-cafe-windows.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1"
   }
 }

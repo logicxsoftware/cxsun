@@ -48,9 +48,9 @@ export function EnquiryList({
   onShow: (record: EnquiryRecord) => void;
   onEdit: (record: EnquiryRecord) => void;
   onOpenCall: (record: EnquiryRecord) => void;
-  openingCallId: number | null;
+  openingCallId: string | null;
 }) {
-  const userNames = new Map(users.map((user) => [user.id, user.name]));
+  const userNames = new Map(users.map((user) => [String(user.id), user.name]));
   const creatorNames = new Map<string, string>();
   for (const user of users) {
     if (user.email) creatorNames.set(user.email.toLowerCase(), user.name);
@@ -148,10 +148,12 @@ export function EnquiryList({
       id: "assignedTo",
       header: userColumnMode === "allocatedTo" ? "Allocated to" : "Assigned to",
       accessorFn: (record) =>
-        record.assignedUserId ? (userNames.get(record.assignedUserId) ?? "") : "",
+        record.assignedUserId
+          ? (userNames.get(record.assignedUserId) ?? record.assignedToName ?? "")
+          : "",
       cell: ({ row }) =>
         row.original.assignedUserId
-          ? (userNames.get(row.original.assignedUserId) ?? `#${row.original.assignedUserId}`)
+          ? (userNames.get(row.original.assignedUserId) ?? row.original.assignedToName ?? `#${row.original.assignedUserId}`)
           : "—"
     },
     {

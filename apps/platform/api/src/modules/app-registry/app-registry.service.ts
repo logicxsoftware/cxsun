@@ -4,6 +4,7 @@ import type {
   PlatformAppSavePayload
 } from "./app-registry.types.js";
 import { AppRegistryRepository } from "./app-registry.repository.js";
+import { env } from "../../env.js";
 
 export const defaultTenantModuleKeys = [
   "platform.application",
@@ -16,10 +17,22 @@ export const defaultTenantModuleKeys = [
   "frappe",
   "zetro",
   "logicx-erp",
-  "ecommerce"
+  "ecommerce",
+  "q-cafe"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    appId: "q-cafe",
+    id: 0,
+    label: "Q Cafe",
+    moduleKey: "q-cafe",
+    stack: "q-cafe",
+    uuid: "",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Restaurant operations in the Q Cafe workspace with its own PIN login."
+  },
   {
     appId: "ecommerce",
     id: 0,
@@ -168,12 +181,14 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
 
 export function resolveEnabledApps(enabledModuleKeys: string[]) {
   const enabled = new Set(["platform.application", ...enabledModuleKeys]);
+  if (enabled.has("accounts.accounting")) enabled.add("accounts.overview");
   return platformAppRegistry
     .filter((app) => app.appId !== "project-manager")
     .map((app) => ({
       ...app,
       enabled:
         (app.appId !== "frappe" || enabled.has("crm")) &&
+        (app.appId !== "q-cafe" || env.CXSUN_TENANCY_MODE === "single") &&
         (app.alwaysEnabled || enabled.has(app.moduleKey))
     }));
 }

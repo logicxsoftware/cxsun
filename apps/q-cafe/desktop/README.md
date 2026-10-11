@@ -1,21 +1,28 @@
 # Q Cafe Windows application
 
-This is imported desktop source, not a buildable CXSUN desktop release. The React web source is present but does not build here. The print-service source and root packaging scripts are absent. See the [Q Cafe import status](../README.md) before using the instructions below, which describe the original external project.
+The React frontend is developed in a browser and packaged into a Tauri Windows application. The web and Windows builds use the same Q Cafe screens and PIN flow. Tauri adds local data-folder selection, SQLite backup and API startup, licensing, updates, and Windows receipt printing.
 
-The Windows application packages the Q Cafe React web build and Node runtime in Tauri. On launch, the desktop executable writes its app-owned API and every migration into the selected data folder's `runtime\\api` directory before starting it. The API creates or upgrades `q-cafe.sqlite` in that folder without replacing existing business data.
+## Development
 
-The MSI and NSIS installers include `node.exe`, so a Windows machine does not need a separate Node.js installation. `QCAFE_NODE_BINARY` remains available only for a managed runtime override.
+Run commands from the repository root:
 
-Run `npm.cmd run dev:q-cafe:windows` for desktop development. Run `npm.cmd run build:q-cafe:windows` to produce versioned `qcafe-<version>-x64-setup.exe` and `qcafe-<version>-x64.msi` installers after the Tauri dependencies are installed.
+```powershell
+npm.cmd run dev:q-cafe
+npm.cmd run dev:q-cafe:windows
+```
 
-The desktop app is local-first. It records pending sync metadata in SQLite but does not contact a cloud service until a Q Cafe cloud adapter is configured.
+`dev:q-cafe` starts only the Q Cafe API and Vite frontend. Open `http://127.0.0.1:5180/q-cafe/` for browser development. `dev:q-cafe:windows` runs the Tauri host against that same Vite URL. Tauri starts the two services through its `beforeDevCommand`. Development requires `CXSUN_TENANCY_MODE=single` in the root `.env`.
 
-## Data folder and backups
+The browser build uses the `/q-cafe/` base path for the Platform proxy. The desktop build uses `/` so Tauri can load packaged assets from its own origin. The frontend calls the loopback API at `127.0.0.1:4180` in Tauri. In a release build, Rust extracts the API source and migrations, starts the bundled Node runtime, and keeps the API's operator token private to the process. Staff still sign in with their Q Cafe PIN or username.
 
-On the first production launch, Q Cafe asks the operator to choose its data folder. Choose a durable local or mapped location such as `D:\Q Cafe Data`. The selected folder contains `q-cafe.sqlite` and a `backups` directory. The application installation may remain on C:.
+## Packaging
 
-Q Cafe stores only the folder selection and the last successful backup date in `%APPDATA%\\in.codexsun.qcafe\\settings.json`. This JSON file does not contain business records. If it is missing, Q Cafe asks for the data folder again and does not replace or delete an existing database.
+Run `npm.cmd run build:q-cafe:windows` from the repository root. It builds the desktop frontend, Rust host, and Rust print service, then requests both NSIS and MSI installers. It stages the current Windows Node executable under root `dist`. Tauri builds the print service from `src-tauri/src/bin/q-cafe-print-service.rs` and bundles it alongside the host.
 
-At the first application start each day, Q Cafe creates a consistent SQLite backup before it starts the local API. Updates replace application files only; they retain both the settings JSON and the selected data folder.
+The installer carries `node.exe`, the print-service executable, and its installer script. Generated executables stay outside Git; the print-service Rust source is tracked. Q Cafe's release number is `1.0.38` in `version.json`, Tauri configuration, and Cargo metadata; npm workspace package versions follow the CXSUN root version.
 
-If the local API cannot start, Q Cafe reports the startup failure instead of showing a generic fetch error. The API startup log is at `runtime\\q-cafe-api.log` inside the selected data folder.
+The update command now looks for `qcafe-update.json` in the current CXSUN GitHub release. Publish a matching update manifest and installer asset before enabling update checks for customers. `CXSUN_Q_CAFE_UPDATE_MANIFEST_URL` can select a different trusted feed.
+
+## Local data
+
+On the first release launch, Q Cafe asks for a durable data folder. The SQLite database, images, backups, and API log live there. The Rust host keeps the selected folder in the user's application settings and makes a daily SQLite backup before API startup. Installing a new application version does not replace this data folder.

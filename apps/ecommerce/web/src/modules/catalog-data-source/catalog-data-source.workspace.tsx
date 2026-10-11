@@ -5,7 +5,6 @@ import { Button } from "@cxsun/ui/components/button";
 import { Card } from "@cxsun/ui/components/card";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
-import { CatalogDataSourceForm } from "./catalog-data-source.form";
 import { useCatalogDataSource } from "./catalog-data-source.hooks";
 import { CatalogDataSourceList } from "./catalog-data-source.list";
 import type {
@@ -14,15 +13,10 @@ import type {
 } from "./catalog-data-source.types";
 
 export function CatalogDataSourceWorkspace() {
-  const { save, saveConnection, settings, sync, test, verifyConnection } = useCatalogDataSource();
+  const { save, settings, sync, test } = useCatalogDataSource();
   const [compact, setCompact] = useState(false);
   const value = settings.data;
-  const busy =
-    save.isPending ||
-    saveConnection.isPending ||
-    sync.isPending ||
-    test.isPending ||
-    verifyConnection.isPending;
+  const busy = save.isPending || sync.isPending || test.isPending;
 
   function change(module: CatalogDataSourceModule, provider: CatalogDataSourceProvider) {
     save.mutate(
@@ -45,22 +39,7 @@ export function CatalogDataSourceWorkspace() {
     });
   }
 
-  function verifyConnectionDetails(input: Parameters<typeof verifyConnection.mutate>[0]) {
-    verifyConnection.mutate(input, {
-      onError: (error) => toast.error(error.message),
-      onSuccess: (result) =>
-        result.connected ? toast.success(result.message) : toast.error(result.message)
-    });
-  }
-
-  function saveConnectionDetails(input: Parameters<typeof saveConnection.mutate>[0]) {
-    saveConnection.mutate(input, {
-      onError: (error) => toast.error(error.message),
-      onSuccess: () => toast.success("Frappe connector saved to MariaDB and .env.")
-    });
-  }
-
-  function synchronize(action: "pull" | "push" | "seed-demo") {
+  function synchronize(action: "pull" | "push") {
     sync.mutate(action, {
       onError: (error) => toast.error(error.message),
       onSuccess: (result) =>
@@ -76,12 +55,6 @@ export function CatalogDataSourceWorkspace() {
       description="Route each Ecommerce module to local MariaDB or live Frappe. Local is the default and remains available for every module."
     >
       <div className={`grid ${compact ? "gap-3" : "gap-5"}`}>
-        <CatalogDataSourceForm
-          busy={busy || settings.isLoading}
-          onSave={saveConnectionDetails}
-          onVerify={verifyConnectionDetails}
-          {...(value ? { settings: value } : {})}
-        />
         <Card
           title="Module data routing"
           description="Choose one live read source per module. Changes apply immediately to storefront requests."
@@ -142,13 +115,16 @@ function ConnectionCard({
     <Card title="Frappe connection" description={url ?? "No Frappe URL is configured."}>
       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
         <WorkspaceStatusBadge
-          label={status === "live" ? "Live" : configured ? "Unverified" : "Not configured"}
-          tone={status === "live" ? "success" : "warning"}
+          label={status === "live" ? "Verified" : configured ? "Configured" : "Not configured"}
+          tone={status === "live" ? "success" : configured ? "info" : "warning"}
         />
         <Button disabled={busy || !configured} onClick={verify} variant="outline">
           <RefreshCwIcon className="size-4" />
           Test connection
         </Button>
+        <a className="text-sm text-primary underline" href="/app/frappe/connection">
+          Open Frappe connection settings
+        </a>
       </div>
     </Card>
   );
@@ -161,14 +137,14 @@ function SyncCard({
 }: {
   busy: boolean;
   configured: boolean;
-  synchronize: (action: "pull" | "push" | "seed-demo") => void;
+  synchronize: (action: "pull" | "push") => void;
 }) {
   return (
     <Card
       title="Catalog synchronization"
-      description="The local cache refreshes every 15 minutes from 8 AM to 10 PM. Frappe Live falls back to this cache during an outage and resumes automatically."
+      description="Live Frappe reads refresh the local cache when it is over 15 minutes old. Pull refreshes it now. The storefront uses cached data during an outage and resumes live reads when Frappe recovers."
     >
-      <div className="grid gap-3 p-4 sm:grid-cols-3">
+      <div className="grid gap-3 p-4 sm:grid-cols-2">
         <Button
           disabled={busy || !configured}
           onClick={() => synchronize("pull")}
@@ -184,9 +160,6 @@ function SyncCard({
         >
           <UploadIcon className="size-4" />
           Push to Frappe
-        </Button>
-        <Button disabled={busy || !configured} onClick={() => synchronize("seed-demo")}>
-          Seed 50 Frappe items
         </Button>
       </div>
     </Card>

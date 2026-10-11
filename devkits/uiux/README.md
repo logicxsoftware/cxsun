@@ -49,7 +49,7 @@ in `@cxsun/ui/layouts/main-layouts`.
 ## Run
 
 From the repository root, run `npm run dev -w @cxsun/uiux` to open the
-standalone gallery at `http://127.0.0.1:7030/uiux/main-layouts`. The embedded
+standalone gallery at `http://127.0.0.1:7040/uiux/main-layouts`. The embedded
 Super Admin desk keeps `/sa/uiux?uiux=main-layouts`. Run
 `npm run typecheck -w @cxsun/uiux` and `npm run build -w @cxsun/uiux` to check
 it. The existing component catalog remains at `/sa/design-system`.

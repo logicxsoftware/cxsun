@@ -6,6 +6,7 @@ import {
   BoxesIcon,
   Building2Icon,
   CircleGaugeIcon,
+  CoffeeIcon,
   Clock3Icon,
   CreditCardIcon,
   FileTextIcon,
@@ -47,7 +48,8 @@ export type PlatformAppId =
   | "frappe"
   | "zetro"
   | "logicx-erp"
-  | "ecommerce";
+  | "ecommerce"
+  | "q-cafe";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -62,7 +64,8 @@ export type PlatformAppRootPage =
   | "frappe.overview"
   | "zetro.chat"
   | "logicx-erp.overview"
-  | "ecommerce.overview";
+  | "ecommerce.overview"
+  | "q-cafe.overview";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -94,7 +97,8 @@ export type PlatformAppDefinition = {
     | "frappe"
     | "zetro"
     | "logicx-erp"
-    | "ecommerce";
+    | "ecommerce"
+    | "q-cafe";
 };
 
 export const defaultTenantModuleKeys = [
@@ -108,10 +112,22 @@ export const defaultTenantModuleKeys = [
   "frappe",
   "zetro",
   "logicx-erp",
-  "ecommerce"
+  "ecommerce",
+  "q-cafe"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    id: "q-cafe",
+    label: "Q Cafe",
+    moduleKey: "q-cafe",
+    stack: "q-cafe",
+    icon: CoffeeIcon,
+    accentClass: "bg-amber-700",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Restaurant operations with a separate Q Cafe PIN login."
+  },
   {
     id: "ecommerce",
     label: "Ecommerce",
@@ -303,6 +319,7 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 }
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
+  if (appId === "q-cafe") return "q-cafe.overview";
   if (appId === "ecommerce") return "ecommerce.overview";
   if (appId === "logicx-erp") return "logicx-erp.overview";
   if (appId === "zetro") return "zetro.chat";
@@ -318,6 +335,8 @@ export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
 }
 
 export function appRootUrl(appId: PlatformAppId) {
+  if (appId === "q-cafe") return "/app/q-cafe";
+  if (appId === "ecommerce") return "/app/ecommerce";
   return `/app/${appRootPage(appId).replaceAll(".", "/")}`;
 }
 
@@ -328,6 +347,14 @@ export function appMenuFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem {
+  if (appId === "q-cafe") {
+    return {
+      icon: CoffeeIcon,
+      title: "Q Cafe",
+      isActive: activePage === "q-cafe.overview",
+      onSelect: () => onSelect("q-cafe.overview")
+    };
+  }
   if (appId === "ecommerce") {
     return {
       icon: PackageIcon,
@@ -414,6 +441,17 @@ export function appMenuFor(
           title: "Contact 360",
           isActive: activePage === "crm.contact-360",
           onSelect: () => onSelect("crm.contact-360")
+        },
+        {
+          title: "On Research",
+          isActive: activePage === "crm.data-source",
+          items: [
+            {
+              title: "Data Sources",
+              isActive: activePage === "crm.data-source",
+              onSelect: () => onSelect("crm.data-source")
+            }
+          ]
         },
         {
           title: "Common",
@@ -735,6 +773,9 @@ export function appMenuItemsFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem[] {
+  if (appId === "q-cafe") {
+    return [{ icon: CoffeeIcon, title: "Q Cafe", isActive: true, onSelect: () => onSelect("q-cafe.overview") }];
+  }
   if (appId === "ecommerce") {
     return ecommerceMenuItems(activePage, onSelect);
   }
@@ -834,6 +875,7 @@ export function appMenuItemsFor(
       {
         icon: SearchIcon,
         isActive:
+          activePage === "crm.data-source" ||
           activePage === "crm.contact-360" ||
           activePage === "crm.my-job" ||
           activePage === "crm.my-calls" ||
@@ -842,6 +884,12 @@ export function appMenuItemsFor(
           activePage === "crm.priority",
         title: "On Research",
         items: [
+          {
+            icon: Settings2Icon,
+            title: "Data Sources",
+            isActive: activePage === "crm.data-source",
+            onSelect: () => onSelect("crm.data-source")
+          },
           {
             icon: UsersIcon,
             title: "Contact 360",

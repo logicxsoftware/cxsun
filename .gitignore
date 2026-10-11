@@ -9,6 +9,7 @@ logs
 **/build/
 **/out/
 **/bin/
+!apps/q-cafe/desktop/src-tauri/src/bin/
 **/obj/
 **/coverage/
 **/.turbo/

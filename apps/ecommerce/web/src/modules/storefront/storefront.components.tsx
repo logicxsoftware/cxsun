@@ -850,7 +850,7 @@ export function StoreFooter({
       <footer className="cx-store__footer">
         <div className="cx-store__footer-main">
           <section className="cx-store__footer-brand">
-            <a className="cx-store__footer-logo" href="/">
+            <a className="cx-store__footer-logo" href="/shop">
               <StoreBrandMark branding={branding} dark />
               {branding?.brandName ? <strong>{branding.brandName}</strong> : null}
             </a>

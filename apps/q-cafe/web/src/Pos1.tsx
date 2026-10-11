@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { TopologyMarker, type InterfaceTopologyController } from '@codexsun/devkit-ito';
+import { TopologyMarker, type InterfaceTopologyController } from './ito-bridge';
 import type { Snapshot } from './api';
 import { getMergedMenu, getMergedTables, type CustomMenuItem, type TableMasterConfig } from './mastersStore';
 import { loadSettings, type CafeSettings } from './Settings';

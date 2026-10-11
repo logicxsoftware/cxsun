@@ -65,7 +65,7 @@ export function EnquiryForm({
   lookupError: string;
   onBack: () => void;
   onSeeMoreEnquiries?: ((mobile: string, contactId: number | null) => void) | undefined;
-  onOpenEnquiry?: ((id: number, mobile: string, contactId: number | null) => void) | undefined;
+  onOpenEnquiry?: ((id: string, mobile: string, contactId: number | null) => void) | undefined;
   onContactSaved: () => Promise<void>;
   onSubmit: (payload: EnquirySavePayload) => void;
 }) {
@@ -306,7 +306,7 @@ export function EnquiryForm({
                       onCreate={createMaster.listIn}
                       onTextChange={() => set("listInId", null)}
                       onValueChange={(selected) =>
-                        set("listInId", selected ? Number(selected) : null)
+                        set("listInId", selected || null)
                       }
                     />
                     {issues.listInId ? <FieldError>{issues.listInId}</FieldError> : null}
@@ -320,7 +320,7 @@ export function EnquiryForm({
                       placeholder="Unassigned"
                       value={value.assignedUserId ? String(value.assignedUserId) : ""}
                       onValueChange={(selected) =>
-                        set("assignedUserId", selected ? Number(selected) : null)
+                        set("assignedUserId", selected || null)
                       }
                     />
                   </WorkspaceFormField>
@@ -341,8 +341,8 @@ export function EnquiryForm({
                         }))}
                       value={value.priorityId ? String(value.priorityId) : ""}
                       onCreate={createMaster.priority}
-                      onTextChange={() => set("priorityId", 0)}
-                      onValueChange={(selected) => set("priorityId", Number(selected))}
+                      onTextChange={() => set("priorityId", "")}
+                      onValueChange={(selected) => set("priorityId", selected)}
                     />
                   </WorkspaceFormField>
                   <WorkspaceFormField label="Status" className="enquiry-nav-field">
@@ -362,8 +362,8 @@ export function EnquiryForm({
                         }))}
                       value={value.statusId ? String(value.statusId) : ""}
                       onCreate={createMaster.status}
-                      onTextChange={() => set("statusId", 0)}
-                      onValueChange={(selected) => set("statusId", Number(selected))}
+                      onTextChange={() => set("statusId", "")}
+                      onValueChange={(selected) => set("statusId", selected)}
                     />
                   </WorkspaceFormField>
                   {needsOutcome ? (
@@ -455,8 +455,8 @@ function emptyEnquiry(
     source: "manual",
     sourceReference: null,
     listInId: null,
-    statusId: statuses.find((item) => item.code === "new")?.id ?? 0,
-    priorityId: priorities.find((item) => item.code === "normal")?.id ?? 0,
+    statusId: String(statuses.find((item) => item.code === "new")?.id ?? ""),
+    priorityId: String(priorities.find((item) => item.code === "normal")?.id ?? ""),
     assignedUserId: null,
     enquiredAt: new Date().toISOString(),
     dueDate: null,

@@ -59,6 +59,7 @@ export const componentPages = [
   { id: "spinner", name: "Spinner" },
   { id: "sparkline", name: "Sparkline" },
   { id: "status-badge", name: "Status Badge" },
+  { id: "status-tone-badge", name: "Status Tone Badge" },
   { id: "switch", name: "Switch" },
   { id: "table", name: "Table" },
   { id: "tabs", name: "Tabs" },

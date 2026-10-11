@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/crm-web",
-  "version": "1.0.84",
+  "version": "1.0.85",
   "private": true,
   "type": "module",
   "exports": {
@@ -9,6 +9,7 @@
     "./modules/reports": "./src/modules/reports/index.ts",
     "./modules/enquiry": "./src/modules/enquiry/index.ts",
     "./modules/enquiry/hooks": "./src/modules/enquiry/enquiry.hooks.ts",
+    "./modules/data-source": "./src/modules/data-source/index.ts",
     "./modules/list-in": "./src/modules/list-in/index.ts",
     "./modules/status": "./src/modules/status/index.ts",
     "./modules/priority": "./src/modules/priority/index.ts",
@@ -20,8 +21,8 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/core-web": "^1.0.84",
-    "@cxsun/ui": "^1.0.84",
+    "@cxsun/core-web": "^1.0.85",
+    "@cxsun/ui": "^1.0.85",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-table": "^9.2.6",
     "lucide-react": "^1.52.0",

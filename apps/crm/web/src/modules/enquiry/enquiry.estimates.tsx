@@ -23,7 +23,7 @@ export function EnquiryEstimates({
   contacts,
   loading
 }: {
-  enquiryId: number;
+  enquiryId: string;
   estimates: EnquiryEstimate[];
   contacts: EnquiryLookup[];
   loading: boolean;
@@ -135,7 +135,7 @@ function EstimateDialog({
       setIssue("Enter a date, item, vendor, and price greater than zero.");
       return;
     }
-    onSave({ date, itemName: itemName.trim(), supplierContactId: Number(supplier), price: amount });
+    onSave({ date, itemName: itemName.trim(), supplierContactId: supplier, price: amount });
   }
 
   return (

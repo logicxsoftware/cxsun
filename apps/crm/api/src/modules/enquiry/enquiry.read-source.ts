@@ -1,6 +1,7 @@
 import { AppError } from "@cxsun/framework/errors";
 import type { EnquiryListOptions } from "./enquiry.types.js";
 import { EnquiryService } from "./enquiry.service.js";
+import { indiaDate, localViewRecord, remoteViewRecord } from "./enquiry.view-model.js";
 
 export type LiveEnquiryQuery = {
   scope: "all" | "assigned" | "created";
@@ -40,6 +41,74 @@ export type LiveEnquiryRecord = {
   statusDetails: string | null;
   createdAt: string | null;
   modifiedAt: string | null;
+  creatorCode?: string | null;
+  assigneeCode?: string | null;
+  messages?: Array<{
+    name: string;
+    body: string;
+    parentName: string | null;
+    createdBy: string | null;
+    createdAt: string | null;
+  }>;
+  activity?: Array<{
+    name: string;
+    action: string;
+    details: string;
+    createdBy: string;
+    createdAt: string;
+  }>;
+  canDelete?: boolean;
+};
+
+export type LiveEnquiryInput = {
+  title: string;
+  details: string;
+  customer: string | null;
+  mobile: string;
+  date: string;
+  dueDate: string | null;
+  group: string | null;
+  assigneeCode: string | null;
+  priority: string;
+  status: string;
+  statusDetails: string | null;
+};
+
+export type LiveEnquiryOptions = {
+  groups: string[];
+  statuses: string[];
+  employees: Array<{ code: string; name: string }>;
+  customers: Array<{ code: string; name: string }>;
+  suppliers: Array<{ code: string; name: string }>;
+};
+export type LiveEnquiryJob = {
+  name: string;
+  createdAt?: string | null;
+  employee: string;
+  startTime: string;
+  stopTime: string | null;
+  status: string;
+  hours: number;
+  totalCost: number;
+  ratePerHour: number;
+};
+export type LiveEnquiryJobInput = {
+  employee: string;
+  startTime: string;
+  stopTime: string | null;
+  ratePerHour: number;
+  status: "Running" | "Completed" | "Cancelled";
+};
+export type LiveEnquiryEstimate = {
+  name: string;
+  date: string;
+  itemName: string;
+  supplier: string;
+  price: number;
+};
+export type LiveEnquiryEstimateInput = Omit<LiveEnquiryEstimate, "name">;
+export type LiveEnquiryPatch = {
+  [Key in keyof LiveEnquiryInput]?: LiveEnquiryInput[Key] | undefined;
 };
 
 export type LiveEnquiryPage = {
@@ -56,6 +125,24 @@ export type EnquiryRemoteSource = {
   provider(): Promise<"local" | "frappe">;
   list(query: LiveEnquiryQuery): Promise<LiveEnquiryPage>;
   get(name: string): Promise<LiveEnquiryRecord>;
+  options(): Promise<LiveEnquiryOptions>;
+  createOption?(kind: "list-in" | "status" | "priority", name: string): Promise<{ id: string; name: string; code: string }>;
+  create(input: LiveEnquiryInput): Promise<LiveEnquiryRecord>;
+  update(name: string, input: LiveEnquiryPatch): Promise<LiveEnquiryRecord>;
+  addMessage(name: string, body: string, parentName: string | null): Promise<LiveEnquiryRecord>;
+  suspendMessage(name: string, messageName: string): Promise<LiveEnquiryRecord>;
+  openNewCall(name: string): Promise<LiveEnquiryRecord>;
+  delete(name: string): Promise<{ deleted: true }>;
+  jobs(name: string): Promise<LiveEnquiryJob[]>;
+  startJob(name: string): Promise<LiveEnquiryJob>;
+  stopJob(name: string, jobName: string): Promise<LiveEnquiryJob>;
+  saveJob(name: string, input: LiveEnquiryJobInput, jobName?: string): Promise<LiveEnquiryJob>;
+  estimates(name: string): Promise<LiveEnquiryEstimate[]>;
+  saveEstimate(
+    name: string,
+    input: LiveEnquiryEstimateInput,
+    estimateName?: string
+  ): Promise<LiveEnquiryEstimate>;
   report(query: {
     view: "list-in" | "creator" | "assignee" | "status";
     fromDate?: string | undefined;
@@ -71,6 +158,11 @@ export type LiveScopeSummary = {
   total: number;
   statusCounts: Array<{ code: string; count: number }>;
   priorityCounts: Array<{ code: string; count: number }>;
+  updated7?: number;
+  updated30?: number;
+  created7?: number;
+  created30?: number;
+  oldestActiveDays?: number | null;
 };
 
 type ReadQuery = Omit<EnquiryListOptions, "actorEmail" | "actorUserId" | "canViewAll"> & {
@@ -101,6 +193,10 @@ export class EnquiryReadService {
 
   async list(query: ReadQuery) {
     if ((await this.source()) === "local") {
+      for (const value of [query.listInId, query.assignedUserId]) {
+        if (value && value !== "none" && !/^[1-9]\d*$/.test(value))
+          throw AppError.validation("A Local enquiry filter has an invalid identifier.");
+      }
       if (
         query.group ||
         query.creatorEmployee ||
@@ -109,12 +205,10 @@ export class EnquiryReadService {
         query.toDate
       )
         throw AppError.validation("Frappe report filters cannot filter Local enquiries.");
-      return { source: "local" as const, ...(await this.local.listPage(query)) };
+      const page = await this.local.listPage(query);
+      return { source: "local" as const, ...page, items: page.items.map(localViewRecord) };
     }
-    if (query.listInId || query.createdBy || query.assignedUserId || query.fromAt || query.toAt) {
-      throw AppError.validation("Local enquiry filters cannot filter Frappe enquiries.");
-    }
-    return this.remote.list({
+    const page = await this.remote.list({
       scope: query.scope,
       page: query.page,
       pageSize: query.pageSize,
@@ -129,11 +223,22 @@ export class EnquiryReadService {
       ...(query.searchAssignedTo ? { searchAssignedTo: query.searchAssignedTo } : {}),
       ...(query.searchStatus ? { searchStatus: query.searchStatus } : {}),
       ...(query.filter === "all" ? {} : { status: query.filter }),
-      ...(query.group ? { group: query.group } : {}),
-      ...(query.creatorEmployee ? { creator: query.creatorEmployee } : {}),
-      ...(query.assigneeEmployee ? { assignee: query.assigneeEmployee } : {}),
-      ...(query.fromDate ? { fromDate: query.fromDate } : {}),
-      ...(query.toDate ? { toDate: query.toDate } : {})
+      ...(query.listInId ? { group: query.listInId } : {}),
+      ...(query.createdBy ? { creator: query.createdBy } : {}),
+      ...(query.assignedUserId
+        ? { assignee: query.assignedUserId }
+        : {}),
+      ...(query.fromAt ? { fromDate: indiaDate(query.fromAt) } : {}),
+      ...(query.toAt ? { toDate: indiaDate(new Date(new Date(query.toAt).getTime() - 1).toISOString()) } : {})
     });
+    return {
+      source: "frappe" as const,
+      total: page.total,
+      statusCounts: page.statusCounts.map((item) => ({
+        ...item,
+        code: item.code.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+      })),
+      items: page.items.map((item) => remoteViewRecord(item))
+    };
   }
 }

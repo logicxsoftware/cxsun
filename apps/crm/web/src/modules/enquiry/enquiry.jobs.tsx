@@ -33,13 +33,13 @@ export function EnquiryJobs({
   onStart,
   onStop
 }: {
-  enquiryId: number;
+  enquiryId: string;
   jobs: EnquiryJob[];
   users: EnquiryLookup[];
   loading: boolean;
   jobLoading: boolean;
   onStart: () => void;
-  onStop: (jobId: number) => void;
+  onStop: (jobId: string) => void;
 }) {
   const client = useQueryClient();
   const [editing, setEditing] = useState<EnquiryJob | null | undefined>(undefined);
@@ -184,7 +184,7 @@ function JobDialog({
       return;
     }
     onSave({
-      employeeUserId: Number(employee),
+      employeeUserId: employee,
       startAt: start,
       stopAt: stop,
       ratePerHour: Number(rate),

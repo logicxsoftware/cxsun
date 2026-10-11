@@ -23,7 +23,30 @@ const fields = [
   "modified"
 ];
 
-type RemoteEnquiry = Record<string, string | null> & { name: string };
+type RemoteEnquiry = {
+  name: string;
+  title?: string | null;
+  enquiry_details?: string | null;
+  customer?: string | null;
+  mobile?: string | null;
+  date?: string | null;
+  due_date?: string | null;
+  group?: string | null;
+  user_employee?: string | null;
+  assigned_to_employee?: string | null;
+  priority?: string | null;
+  status?: string | null;
+  status_details?: string | null;
+  creation?: string | null;
+  modified?: string | null;
+  enquiry_messages?: Array<{
+    name?: string;
+    comment?: string;
+    parent_message?: string;
+    owner?: string;
+    creation?: string;
+  }>;
+};
 type RemoteEmployee = {
   name: string;
   employee_name?: string | null;
@@ -222,7 +245,53 @@ export async function getLiveFrappeEnquiry(
   )
     throw AppError.forbidden("You cannot view this enquiry.");
   const employeeNames = await loadEmployeeNames(settings, [record]);
-  return mapLiveEnquiry(record, employeeNames);
+  return {
+    ...mapLiveEnquiry(record, employeeNames),
+    activity: await loadActivity(settings, name),
+    canDelete: canViewAll
+  };
+}
+
+type DocInfo = {
+  user_info?: Record<string, { fullname?: string }>;
+  versions?: Array<{ name?: string; owner?: string; creation?: string; data?: string }>;
+  info_logs?: Array<{ name?: string; owner?: string; creation?: string; content?: string }>;
+};
+
+async function loadActivity(settings: FrappeSettings, name: string) {
+  const query = new URLSearchParams({ doctype: "Enquiry", name });
+  const response = await requestFrappe<{ docinfo?: DocInfo }>(
+    `/api/method/frappe.desk.form.load.get_docinfo?${query}`,
+    "GET",
+    settings
+  );
+  const info = response.docinfo;
+  if (!info) return [];
+  const actor = (owner?: string) => info.user_info?.[owner || ""]?.fullname || owner || "Frappe";
+  const entries = (info.versions ?? []).flatMap((version) => {
+    let changes: Array<[string, unknown, unknown]> = [];
+    try {
+      changes = (JSON.parse(version.data || "{}") as { changed?: typeof changes }).changed ?? [];
+    } catch {
+      return [];
+    }
+    return changes.map(([field, before, after], index) => ({
+      name: `${version.name || "version"}-${index}`,
+      action: "changed",
+      details: `${field.replaceAll("_", " ")} from ${String(before ?? "—")} to ${String(after ?? "—")}`,
+      createdBy: actor(version.owner),
+      createdAt: version.creation || ""
+    }));
+  });
+  for (const log of info.info_logs ?? [])
+    entries.push({
+      name: log.name || `log-${entries.length}`,
+      action: "edited",
+      details: (log.content || "").replace(/<[^>]*>/g, " ").trim(),
+      createdBy: actor(log.owner),
+      createdAt: log.creation || ""
+    });
+  return entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 function mapLiveEnquiry(item: RemoteEnquiry, employeeNames: Map<string, string>) {
@@ -242,7 +311,16 @@ function mapLiveEnquiry(item: RemoteEnquiry, employeeNames: Map<string, string>)
     status: item.status || null,
     statusDetails: item.status_details || null,
     createdAt: item.creation || null,
-    modifiedAt: item.modified || null
+    modifiedAt: item.modified || null,
+    creatorCode: item.user_employee || null,
+    assigneeCode: item.assigned_to_employee || null,
+    messages: (item.enquiry_messages ?? []).map((message, index) => ({
+      name: message.name || `${item.name}-message-${index + 1}`,
+      body: message.comment || "",
+      parentName: message.parent_message || null,
+      createdBy: message.owner || null,
+      createdAt: message.creation || null
+    }))
   };
 }
 

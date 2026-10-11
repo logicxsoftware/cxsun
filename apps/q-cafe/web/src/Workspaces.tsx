@@ -1,6 +1,6 @@
-import { Button } from '@codexsun/ui/components/ui/button';
+import { Button } from '@cxsun/ui/components/button';
 import { type Snapshot } from './api';
-import type { InterfaceTopologyController } from '@codexsun/devkit-ito';
+import type { InterfaceTopologyController } from './ito-bridge';
 import { ItoRegion } from './ItoRegion';
 
 export const field = 'rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';

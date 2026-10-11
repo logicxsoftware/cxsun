@@ -1,6 +1,6 @@
 import { Coffee, CookingPot, CalendarDays, Package } from 'lucide-react';
 import { money, type Snapshot } from './api';
-import type { InterfaceTopologyController } from '@codexsun/devkit-ito';
+import type { InterfaceTopologyController } from './ito-bridge';
 import { ItoRegion } from './ItoRegion';
 export function Dashboard({ data, navigate, topology }: { data: Snapshot; navigate: (page: string) => void; topology: InterfaceTopologyController }) {
   const today = new Date().toLocaleDateString();

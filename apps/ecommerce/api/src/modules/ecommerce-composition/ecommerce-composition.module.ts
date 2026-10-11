@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FrappeSettings } from "@cxsun/frappe-api";
 import { productInformationModule } from "../product-information/product-information.module.js";
 import { productVariantModule } from "../product-variant/product-variant.module.js";
 import { productImageModule } from "../product-image/product-image.module.js";
@@ -37,6 +38,7 @@ export const ecommerceModuleKeys = [
 export async function registerEcommerceStaffModules(
   app: FastifyInstance,
   encryptionSecret: string,
+  frappeSettings: FrappeSettings,
   resolveActorEmail: (request: FastifyRequest) => string
 ) {
   await productInformationModule.register(app);
@@ -49,7 +51,7 @@ export async function registerEcommerceStaffModules(
   await storefrontAnnouncementModule.register(app);
   await catalogMatchingModule.register(app);
   await storefrontProfileModule.register(app, resolveActorEmail);
-  const control = createCatalogDataSourceControl(encryptionSecret);
+  const control = createCatalogDataSourceControl(encryptionSecret, frappeSettings);
   await registerCatalogDataSourceRoutes(
     app,
     () => new CatalogDataSourceService(control),
@@ -59,9 +61,10 @@ export async function registerEcommerceStaffModules(
 
 export async function registerEcommercePublicModules(
   app: FastifyInstance,
-  encryptionSecret: string
+  encryptionSecret: string,
+  frappeSettings: FrappeSettings
 ) {
-  const control = createCatalogDataSourceControl(encryptionSecret);
+  const control = createCatalogDataSourceControl(encryptionSecret, frappeSettings);
   await registerStorefrontRoutes(
     app,
     () => new StorefrontService(new CatalogDataSourceService(control))

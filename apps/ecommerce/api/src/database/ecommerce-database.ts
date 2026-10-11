@@ -8,6 +8,7 @@ export type EcommerceDatabase = Record<string, never>;
 type EcommerceRequestScope = {
   database: Kysely<EcommerceDatabase>;
   databaseName: string | undefined;
+  frappeEnabled: boolean;
   tenantKey: string;
 };
 
@@ -17,19 +18,20 @@ export function runWithEcommerceRequestScope<T>(
   database: Kysely<EcommerceDatabase>,
   tenantKey: string,
   task: () => T,
-  databaseName?: string
+  databaseName?: string,
+  frappeEnabled = false
 ): T {
   if (!/^[a-zA-Z0-9_-]+$/u.test(tenantKey)) {
     throw AppError.validation("Invalid ecommerce tenant scope.");
   }
-  return requestScope.run({ database, databaseName, tenantKey }, task);
+  return requestScope.run({ database, databaseName, frappeEnabled, tenantKey }, task);
 }
 
 export function enterEcommerceRequestScope(database: Kysely<EcommerceDatabase>, tenantKey: string) {
   if (!/^[a-zA-Z0-9_-]+$/u.test(tenantKey)) {
     throw AppError.validation("Invalid ecommerce tenant scope.");
   }
-  requestScope.enterWith({ database, databaseName: undefined, tenantKey });
+  requestScope.enterWith({ database, databaseName: undefined, frappeEnabled: false, tenantKey });
 }
 
 export function getEcommerceDatabase(): Kysely<EcommerceDatabase> {
@@ -42,6 +44,12 @@ export function getEcommerceTenantKey(): string {
   const scope = requestScope.getStore();
   if (!scope) throw AppError.forbidden("Ecommerce tenant context is required.");
   return scope.tenantKey;
+}
+
+export function getEcommerceFrappeEnabled(): boolean {
+  const scope = requestScope.getStore();
+  if (!scope) throw AppError.forbidden("Ecommerce tenant context is required.");
+  return scope.frappeEnabled;
 }
 
 export function getEcommerceTenantDatabaseName(): string {

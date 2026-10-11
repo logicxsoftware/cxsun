@@ -4,37 +4,43 @@ import type { BrandsListFilters, BrandsRecord, BrandsSavePayload } from "./brand
 
 type BrandsRow = {
   id: number;
+  logo_alt: string;
+  logo_url: string;
   name: string;
+  show_on_storefront: number | boolean;
   status: string;
   sort_order: number;
 };
 
 export class BrandsRepository {
   async list(filters: BrandsListFilters = {}) {
-    const rows = await sql<BrandsRow>`SELECT id, name, status, sort_order FROM core_brands
+    const rows =
+      await sql<BrandsRow>`SELECT id,name,logo_url,logo_alt,show_on_storefront,status,sort_order FROM core_brands
       WHERE (${filters.search ?? ""} = '' OR LOWER(name) LIKE ${like(filters.search)})
       ORDER BY sort_order, id`.execute(getCoreDatabase());
     return rows.rows.map(toBrands);
   }
 
   async find(id: string | number) {
-    const rows = await sql<BrandsRow>`SELECT id, name, status, sort_order FROM core_brands
+    const rows =
+      await sql<BrandsRow>`SELECT id,name,logo_url,logo_alt,show_on_storefront,status,sort_order FROM core_brands
       WHERE id=${Number(id)} LIMIT 1`.execute(getCoreDatabase());
     return rows.rows[0] ? toBrands(rows.rows[0]) : null;
   }
 
   async create(input: BrandsSavePayload) {
-    const result = await sql`INSERT INTO core_brands (name, status, sort_order) VALUES
-      (${normalizeString(input.name)}, ${input.isActive === false ? "inactive" : "active"}, ${numberValue(input.sortOrder, 1000)})`.execute(
-      getCoreDatabase()
-    );
+    const result =
+      await sql`INSERT INTO core_brands (name,logo_url,logo_alt,show_on_storefront,status,sort_order) VALUES
+      (${normalizeString(input.name)},${optionalString(input.logoUrl)},${logoAlt(input)},${input.showOnStorefront === false ? 0 : 1},${input.isActive === false ? "inactive" : "active"},${numberValue(input.sortOrder, 1000)})`.execute(
+        getCoreDatabase()
+      );
     return (await this.find(String(result.insertId)))!;
   }
 
   async update(id: string | number, input: BrandsSavePayload) {
     const existing = await this.find(id);
     if (!existing || !canMutate(existing)) return null;
-    await sql`UPDATE core_brands SET name=${normalizeString(input.name)}, status=${input.isActive === false ? "inactive" : "active"},
+    await sql`UPDATE core_brands SET name=${normalizeString(input.name)},logo_url=${optionalString(input.logoUrl)},logo_alt=${logoAlt(input)},show_on_storefront=${input.showOnStorefront === false ? 0 : 1},status=${input.isActive === false ? "inactive" : "active"},
       sort_order=${numberValue(input.sortOrder, 1000)}, updated_at=CURRENT_TIMESTAMP WHERE id=${Number(id)}`.execute(
       getCoreDatabase()
     );
@@ -66,7 +72,10 @@ function canMutate(record: BrandsRecord) {
 function toBrands(row: BrandsRow): BrandsRecord {
   return {
     id: Number(row.id),
+    logoAlt: row.logo_alt,
+    logoUrl: row.logo_url,
     name: row.name,
+    showOnStorefront: Boolean(row.show_on_storefront),
     isActive: row.status === "active",
     sortOrder: Number(row.sort_order)
   };
@@ -83,4 +92,12 @@ function numberValue(value: unknown, fallback: number) {
 function normalizeString(value: unknown) {
   const normalized = String(value ?? "").trim();
   return normalized || null;
+}
+
+function optionalString(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function logoAlt(input: BrandsSavePayload) {
+  return optionalString(input.logoAlt) || `${normalizeString(input.name)} logo`;
 }

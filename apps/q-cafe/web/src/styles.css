@@ -1,8 +1,6 @@
 @import "tailwindcss";
-@import "@codexsun/ui/styles.css";
-@import "@codexsun/devkit-ito/styles.css";
+@import "@cxsun/ui/styles.css";
 @source "../../../../packages/ui/src";
-@source "../../../../packages/devkit-ito/src";
 
 @keyframes notification-ripple {
   0% {

@@ -25,6 +25,7 @@ import { logout } from "../../shared/api/platform-api";
 import { AuthGate } from "../../shared/auth/AuthGate";
 import { requiredClientEnv } from "../../shared/env/client-env";
 import { ProjectManagerWorkspaceHost } from "@cxsun/project-manager-web";
+import { zetroPageFromUrl, type SaZetroPage } from "./sa-zetro-pages";
 
 const ZunoWorkspace = lazyWorkspace(() =>
   import("@cxsun/zuno-web").then((module) => module.ZunoWorkspace)
@@ -111,7 +112,7 @@ type SaPage =
   | "project-manager-registry"
   | "project-manager-ideas"
   | "zuno"
-  | "zetro"
+  | SaZetroPage
   | "tenants"
   | "domains"
   | "plans"
@@ -137,16 +138,32 @@ export function SaDesk() {
   const location = useLocation();
   const navigate = useNavigate();
   const page = pageFromUrl(location.pathname);
+  const tenantSearch = (location.search as Record<string, unknown>).tenant;
+  const selectedZetroTenant = typeof tenantSearch === "string" ? tenantSearch : "";
   const selectedAppId: OrchestratedAppId = "platform";
 
   useEffect(() => {
     const canonicalPath = page === "overview" ? "/sa" : `/sa/${page}`;
-    if (location.pathname !== canonicalPath) void navigate({ to: canonicalPath, replace: true });
-  }, [location.pathname, navigate, page]);
+    if (location.pathname !== canonicalPath) {
+      void navigate({ to: canonicalPath, search: location.search, replace: true });
+    }
+  }, [location.pathname, location.search, navigate, page]);
 
   function selectPage(nextPage: SaPage) {
     const path = nextPage === "overview" ? "/sa" : `/sa/${nextPage}`;
-    void navigate({ to: path, search: {} });
+    void navigate({
+      to: path,
+      search:
+        nextPage.startsWith("zetro/") && selectedZetroTenant ? { tenant: selectedZetroTenant } : {}
+    });
+  }
+
+  function selectZetroTenant(tenantId: string) {
+    void navigate({
+      params: { _splat: page },
+      search: { tenant: tenantId },
+      to: "/sa/$"
+    });
   }
 
   function openTenantBackups(tenantId: number) {
@@ -209,8 +226,29 @@ export function SaDesk() {
     {
       title: "Zetro",
       icon: SparklesIcon,
-      isActive: page === "zetro",
-      onSelect: () => selectPage("zetro")
+      isActive: page.startsWith("zetro/"),
+      items: [
+        {
+          title: "Query Patterns",
+          isActive: page === "zetro/patterns",
+          onSelect: () => selectPage("zetro/patterns")
+        },
+        {
+          title: "Permissions",
+          isActive: page === "zetro/access",
+          onSelect: () => selectPage("zetro/access")
+        },
+        {
+          title: "Conversations",
+          isActive: page === "zetro/conversations",
+          onSelect: () => selectPage("zetro/conversations")
+        },
+        {
+          title: "Review Activity",
+          isActive: page === "zetro/review",
+          onSelect: () => selectPage("zetro/review")
+        }
+      ]
     },
     {
       title: "Operations",
@@ -381,7 +419,15 @@ export function SaDesk() {
             ) : null}
             {page === "task-manager" ? <TaskManagerWorkspace /> : null}
             {page === "zuno" ? <ZunoWorkspace /> : null}
-            {page === "zetro" ? <ZetroAdminWorkspace /> : null}
+            {page.startsWith("zetro/") ? (
+              <ZetroAdminWorkspace
+                page={
+                  page.slice("zetro/".length) as "patterns" | "access" | "conversations" | "review"
+                }
+                tenantId={selectedZetroTenant}
+                onTenantChange={selectZetroTenant}
+              />
+            ) : null}
             {page.startsWith("project-manager-") ? (
               <ProjectManagerWorkspaceHost workspaceId={page.slice("project-manager-".length)} />
             ) : null}
@@ -420,13 +466,14 @@ export function SaDesk() {
 }
 
 function pageFromUrl(pathname: string): SaPage {
-  const page = pathname.split("/")[2];
+  const zetroPage = zetroPageFromUrl(pathname);
+  if (zetroPage) return zetroPage;
+  const page = pathname.split("/").slice(2).join("/");
   return page === "app-operations" ||
     page === "task-manager" ||
     page === "project-manager-registry" ||
     page === "project-manager-ideas" ||
     page === "zuno" ||
-    page === "zetro" ||
     page === "tenants" ||
     page === "domains" ||
     page === "plans" ||

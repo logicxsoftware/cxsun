@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { sql, type Kysely } from "kysely";
 import { AppError } from "@cxsun/framework/errors";
 import type { ZetroConversation, ZetroDatabase, ZetroMessage } from "./chat.types.js";
+import type { ZetroRecordCapability } from "./chat.patterns.js";
 
 export type ZetroInteraction = {
   intent: ZetroDatabase["zetro_interaction_logs"]["intent"];
@@ -9,6 +10,13 @@ export type ZetroInteraction = {
   skillDecision: ZetroDatabase["zetro_interaction_logs"]["skill_decision"];
   rulesHash: string;
   patternUuid: string | null;
+};
+
+export type ZetroToolEvent = {
+  capabilityKey: ZetroRecordCapability;
+  decision: "allowed" | "denied" | "failed";
+  request: unknown;
+  result?: unknown;
 };
 
 export class ZetroChatRepository {
@@ -55,14 +63,41 @@ export class ZetroChatRepository {
   }
 
   async allowedCapabilities(conversationId: number) {
-    const events = await this.database
-      .selectFrom("zetro_tool_events")
-      .select("capability_key")
+    const [events, interactions] = await Promise.all([
+      this.database
+        .selectFrom("zetro_tool_events")
+        .select("capability_key")
+        .where("conversation_id", "=", conversationId)
+        .where("decision", "=", "allowed")
+        .distinct()
+        .execute(),
+      this.database
+        .selectFrom("zetro_interaction_logs")
+        .select("skill_key")
+        .where("conversation_id", "=", conversationId)
+        .where("skill_decision", "=", "allowed")
+        .where("skill_key", "is not", null)
+        .distinct()
+        .execute()
+    ]);
+    return [
+      ...new Set([
+        ...events.map((event) => event.capability_key),
+        ...interactions.flatMap((item) => (item.skill_key ? [item.skill_key] : []))
+      ])
+    ];
+  }
+
+  async recentUserPrompts(conversationId: number): Promise<string[]> {
+    const rows = await this.database
+      .selectFrom("zetro_messages")
+      .select("content")
       .where("conversation_id", "=", conversationId)
-      .where("decision", "=", "allowed")
-      .distinct()
+      .where("role", "=", "user")
+      .orderBy("id", "desc")
+      .limit(6)
       .execute();
-    return events.map((event) => event.capability_key);
+    return rows.reverse().map((row) => row.content.slice(0, 2_000));
   }
 
   async saveReply(
@@ -70,7 +105,8 @@ export class ZetroChatRepository {
     conversationId: number | null,
     prompt: string,
     reply: string,
-    interaction: ZetroInteraction
+    interaction: ZetroInteraction,
+    event: ZetroToolEvent | null = null
   ) {
     return this.database.transaction().execute(async (transaction) => {
       let id = conversationId;
@@ -128,6 +164,36 @@ export class ZetroChatRepository {
           pattern_uuid: interaction.patternUuid
         })
         .execute();
+      if (event) {
+        await transaction
+          .insertInto("zetro_tool_events")
+          .values({
+            uuid: randomBytes(4).toString("hex"),
+            actor_email: ownerEmail,
+            conversation_id: id,
+            capability_key: event.capabilityKey,
+            decision: event.decision,
+            request_json: JSON.stringify(event.request),
+            result_json: event.result === undefined ? null : JSON.stringify(event.result)
+          })
+          .execute();
+        if (event.decision === "denied") {
+          await transaction
+            .insertInto("zetro_approval_requests")
+            .values({
+              uuid: randomBytes(4).toString("hex"),
+              actor_email: ownerEmail,
+              conversation_id: id,
+              capability_key: event.capabilityKey,
+              status: "pending",
+              request_json: JSON.stringify(event.request),
+              decided_by: null,
+              decision_note: null,
+              decided_at: null
+            })
+            .execute();
+        }
+      }
       await transaction
         .updateTable("zetro_conversations")
         .set({ updated_at: sql`CURRENT_TIMESTAMP` })

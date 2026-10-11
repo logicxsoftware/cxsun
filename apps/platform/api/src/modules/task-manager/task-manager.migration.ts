@@ -23,7 +23,7 @@ export const taskManagerVisibilityMigration = {
 
 export const taskManagerTitleOnlyMigration = {
   key: "platform.task-manager.title-only-v3",
-  description: "Remove the description column from Task Manager todos."
+  description: "Stop using descriptions while retaining historical Task Manager todo data."
 };
 
 export const taskManagerTenantMigrationBatch: MigrationBatch<TaskManagerDatabase> = {
@@ -169,7 +169,8 @@ export async function rollbackTaskManagerVisibility<Database extends TaskManager
 export async function migrateTaskManagerTitleOnly<Database extends TaskManagerDatabase>(
   db: Kysely<Database>
 ) {
-  await sql`ALTER TABLE task_manager_todos DROP COLUMN IF EXISTS description`.execute(db);
+  void db;
+  // Existing descriptions remain available for later archival or export.
 }
 
 export async function rollbackTaskManagerTitleOnly<Database extends TaskManagerDatabase>(

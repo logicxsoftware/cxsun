@@ -118,7 +118,7 @@ export function EnquiryProperties({
             value={draft.listInId ? String(draft.listInId) : ""}
             onCreate={createMaster.listIn}
             onTextChange={() => setDraft({ listInId: null })}
-            onValueChange={(value) => setDraft({ listInId: value ? Number(value) : null })}
+            onValueChange={(value) => setDraft({ listInId: value || null })}
           />
         </EditableRow>
         <EditableRow
@@ -148,8 +148,8 @@ export function EnquiryProperties({
               }))}
             value={draft.priorityId ? String(draft.priorityId) : ""}
             onCreate={createMaster.priority}
-            onTextChange={() => setDraft({ priorityId: 0 })}
-            onValueChange={(value) => setDraft({ priorityId: Number(value) })}
+            onTextChange={() => setDraft({ priorityId: "" })}
+            onValueChange={(value) => setDraft({ priorityId: value })}
           />
         </EditableRow>
         <EditableRow
@@ -167,7 +167,7 @@ export function EnquiryProperties({
             options={users.map((user) => ({ value: String(user.id), label: user.name }))}
             placeholder="Unassigned"
             value={draft.assignedUserId ? String(draft.assignedUserId) : ""}
-            onValueChange={(value) => setDraft({ assignedUserId: value ? Number(value) : null })}
+            onValueChange={(value) => setDraft({ assignedUserId: value || null })}
           />
         </EditableRow>
         <EditableRow
@@ -212,8 +212,8 @@ export function EnquiryProperties({
                 }))}
               value={draft.statusId ? String(draft.statusId) : ""}
               onCreate={createMaster.status}
-              onTextChange={() => setDraft({ statusId: 0 })}
-              onValueChange={(value) => setDraft({ ...draft, statusId: Number(value) })}
+              onTextChange={() => setDraft({ statusId: "" })}
+              onValueChange={(value) => setDraft({ ...draft, statusId: value })}
             />
             {["won", "lost", "closed"].includes(
               statuses.find((item) => item.id === draft.statusId)?.code ?? ""

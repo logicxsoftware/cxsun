@@ -16,6 +16,7 @@ import { AppSidebar } from "@cxsun/ui/blocks/menu/sidemenu/app-sidebar";
 import type { SidemenuItem } from "@cxsun/ui/blocks/menu/sidemenu/sub/sidemenu-section";
 import { Button } from "@cxsun/ui/components/button";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@cxsun/ui/components/sidebar";
+import { TopMenuAppLauncher } from "@cxsun/ui/layouts/main-layouts/top-menu-app-launcher";
 import { useInterfaceTopology } from "@cxsun/ui/features/interface-topology";
 import { mainLayoutTopologyDesks } from "./gallery/interface-topology-fixtures";
 import { MainLayoutPage } from "./gallery/main-layout-page";
@@ -40,6 +41,9 @@ const WorkspaceGallery = lazy(() =>
 const ComponentDetailPage = lazy(() =>
   import("./gallery/component-page").then((m) => ({ default: m.ComponentPage }))
 );
+const ComponentIndexPage = lazy(() =>
+  import("./gallery/component-index-page").then((m) => ({ default: m.ComponentIndexPage }))
+);
 const InterfaceTopologyGallery = lazy(() =>
   import("./gallery/interface-topology-gallery").then((m) => ({
     default: m.InterfaceTopologyGallery
@@ -48,7 +52,7 @@ const InterfaceTopologyGallery = lazy(() =>
 
 type BaseGalleryPage =
   "main-layouts" | LayoutPart | "foundations" | "workspace" | "interface-topology";
-type GalleryPage = BaseGalleryPage | ComponentPageRoute | ImportedPage;
+type GalleryPage = BaseGalleryPage | "components" | ComponentPageRoute | ImportedPage;
 
 const pageTitles: Record<BaseGalleryPage, string> = {
   "main-layouts": "Main Layout",
@@ -64,14 +68,14 @@ const pageTitles: Record<BaseGalleryPage, string> = {
 
 function pageFromUrl(): GalleryPage {
   const requested = galleryPageFromUrl();
-  if (requested === "components") return componentPage(componentPages[0].id);
+  if (requested === "components") return "components";
   if (requested && componentFromPage(requested)) return requested as ComponentPageRoute;
   if (requested && importedFromPage(requested)) return requested as ImportedPage;
   return requested && requested in pageTitles ? (requested as BaseGalleryPage) : "main-layouts";
 }
 
 function pageTitle(page: GalleryPage) {
-  return componentFromPage(page)?.name ?? importedFromPage(page)?.name ?? pageTitles[page as BaseGalleryPage];
+  return page === "components" ? "Components" : componentFromPage(page)?.name ?? importedFromPage(page)?.name ?? pageTitles[page as BaseGalleryPage];
 }
 
 export function UiuxGallery({
@@ -186,13 +190,18 @@ export function UiuxGallery({
     {
       title: "Components",
       icon: ComponentIcon,
-      isActive: page.startsWith("components/"),
-      items: componentPages.map((component) => ({
+      isActive: page === "components" || page.startsWith("components/"),
+      items: [{
+        title: "Browse all",
+        icon: ComponentIcon,
+        isActive: page === "components",
+        onSelect: () => selectPage("components")
+      }, ...componentPages.map((component) => ({
         title: component.name,
         icon: BoxIcon,
         isActive: page === componentPage(component.id),
         onSelect: () => selectPage(componentPage(component.id))
-      }))
+      }))]
     },
     {
       title: "Design library",
@@ -260,12 +269,16 @@ export function UiuxGallery({
             <span className="truncate text-sm text-muted-foreground">{pageTitle(page)}</span>
           </div>
           {deskRoutesAvailable ? (
-            <nav aria-label="Gallery top menu">
+            <nav aria-label="Gallery top menu" className="flex items-center gap-3">
               <Button asChild size="sm" variant="ghost">
                 <a href="/sa">
                   Desk <ArrowUpRightIcon className="size-4" />
                 </a>
               </Button>
+              <TopMenuAppLauncher items={[
+                { title: "Platform", description: "Super Admin Desk", icon: LayoutTemplateIcon, url: "/sa" },
+                { title: "UIUX", description: "Shared component gallery", icon: ComponentIcon, active: true, url: "/sa/uiux?uiux=components" }
+              ]} />
             </nav>
           ) : null}
         </header>
@@ -286,6 +299,7 @@ export function UiuxGallery({
               ) : null}
               {page === "foundations" ? <FoundationsGallery /> : null}
               {page === "workspace" ? <WorkspaceGallery /> : null}
+              {page === "components" ? <ComponentIndexPage onNavigate={selectPage} /> : null}
               {selectedComponent ? (
                 <ComponentDetailPage
                   componentId={selectedComponent.id}

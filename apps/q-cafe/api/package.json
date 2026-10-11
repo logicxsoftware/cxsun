@@ -1,6 +1,6 @@
 {
-  "name": "@codexsun/q-cafe-api",
-  "version": "1.0.38",
+  "name": "@cxsun/q-cafe-api",
+  "version": "1.0.85",
   "private": true,
   "type": "module",
   "scripts": {

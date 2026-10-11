@@ -1,16 +1,33 @@
 import { sql, type Kysely } from "kysely";
+import { runMigrationBatch, type MigrationBatch } from "@cxsun/framework/db";
 import type { ZetroDatabase } from "./chat.types.js";
-import { ZETRO_QUERY_PATTERNS } from "./chat.patterns.js";
 
-export const zetroChatMigrations = [
-  { name: "zetro.chat.v1", description: "Store Zetro conversations and messages per tenant." },
-  { name: "zetro.chat.v2", description: "Retain review history and tenant capability decisions." },
-  { name: "zetro.chat.v3", description: "Record Zetro interactions and rule versions for review." },
-  { name: "zetro.chat.v4", description: "Catalog numbered Zetro query patterns per tenant." },
-  { name: "zetro.chat.v5", description: "Catalog daily, monthly, and aged sales reads." }
-];
+export const zetroChatMigrationBatch: MigrationBatch<ZetroDatabase> = {
+  batch: 1,
+  scope: "zetro.chat",
+  version: "1.0.84",
+  description: "Adopt the existing Zetro chat and review tables.",
+  steps: [
+    {
+      name: "zetro.chat.baseline-v6",
+      checksum: "zetro.chat.baseline-v6",
+      description: "Create or adopt Zetro chat, review, and query catalog tables.",
+      version: 6,
+      up: applyZetroChatSchema
+    }
+  ]
+};
+
+export const zetroChatMigrations = zetroChatMigrationBatch.steps.map(({ name, description }) => ({
+  name,
+  description
+}));
 
 export async function migrateZetroChatDatabase(database: Kysely<ZetroDatabase>) {
+  return runMigrationBatch(database, zetroChatMigrationBatch);
+}
+
+async function applyZetroChatSchema(database: Kysely<ZetroDatabase>) {
   await sql
     .raw(
       `CREATE TABLE IF NOT EXISTS zetro_conversations (
@@ -221,27 +238,6 @@ export async function migrateZetroChatDatabase(database: Kysely<ZetroDatabase>) 
   ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     )
     .execute(database);
-  for (const pattern of ZETRO_QUERY_PATTERNS) {
-    await sql`INSERT IGNORE INTO zetro_query_patterns
-      (uuid, serial_no, intent_key, question_pattern, query_pattern, limitation, extra, status)
-      VALUES (${pattern.uuid}, ${pattern.serialNo}, ${pattern.intent}, ${pattern.questionPattern},
-        ${pattern.queryPattern}, ${pattern.limitation}, ${pattern.extra}, 'active')`.execute(
-      database
-    );
-    const recorded = await sql<{
-      serial_no: number;
-      query_pattern: string;
-      status: string;
-    }>`SELECT serial_no, query_pattern, status
-      FROM zetro_query_patterns WHERE uuid=${pattern.uuid} LIMIT 1`.execute(database);
-    if (
-      Number(recorded.rows[0]?.serial_no) !== pattern.serialNo ||
-      recorded.rows[0]?.query_pattern !== pattern.queryPattern ||
-      recorded.rows[0]?.status !== "active"
-    ) {
-      throw new Error(`Zetro catalog entry #${pattern.serialNo} conflicts with a tenant pattern.`);
-    }
-  }
   await ensureColumn(database, "zetro_interaction_logs", "pattern_uuid", "CHAR(36) NULL");
 }
 
@@ -263,13 +259,6 @@ async function ensureColumn(
 }
 
 export async function rollbackZetroChatDatabase(database: Kysely<ZetroDatabase>) {
-  await sql.raw("DROP TABLE IF EXISTS zetro_query_patterns").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_interaction_logs").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_approval_requests").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_review_notes").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_tool_events").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_policy_events").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_capability_grants").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_messages").execute(database);
-  await sql.raw("DROP TABLE IF EXISTS zetro_conversations").execute(database);
+  void database;
+  throw new Error("Zetro rollback requires a reviewed, data-preserving migration plan.");
 }

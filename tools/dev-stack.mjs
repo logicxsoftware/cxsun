@@ -7,6 +7,7 @@ import { startProcessControl } from "./dev-process-control.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const env = loadDevEnv(root);
+const qCafeOnly = process.argv.includes("--q-cafe-only");
 const apiPort = requiredDevPort(
   process.env.PLATFORM_API_PORT ?? env.PLATFORM_API_PORT,
   "PLATFORM_API_PORT"
@@ -19,9 +20,59 @@ const ecommercePort = requiredDevPort(
   process.env.CXSUN_ECOMMERCE_WEB_PORT ?? env.CXSUN_ECOMMERCE_WEB_PORT,
   "CXSUN_ECOMMERCE_WEB_PORT"
 );
-const storefrontPort = requiredDevPort(process.env.CXSUN_STOREFRONT_WEB_PORT ?? env.CXSUN_STOREFRONT_WEB_PORT, "CXSUN_STOREFRONT_WEB_PORT");
-const services = {
-  "ecommerce-storefront": { color: "\x1b[33m", healthUrl: `http://127.0.0.1:${storefrontPort}/`, readyUrl: `http://127.0.0.1:${storefrontPort}/`, label: "storefront", readyTimeoutMs: 30_000 },
+const uiuxPort = requiredDevPort(
+  process.env.CXSUN_UIUX_WEB_PORT ?? env.CXSUN_UIUX_WEB_PORT,
+  "CXSUN_UIUX_WEB_PORT"
+);
+const projectManagerPort = requiredDevPort(
+  process.env.CXSUN_PROJECT_MANAGER_WEB_PORT ?? env.CXSUN_PROJECT_MANAGER_WEB_PORT,
+  "CXSUN_PROJECT_MANAGER_WEB_PORT"
+);
+const qCafeApiPort = requiredDevPort(
+  process.env.CXSUN_Q_CAFE_API_PORT ?? env.CXSUN_Q_CAFE_API_PORT,
+  "CXSUN_Q_CAFE_API_PORT"
+);
+const qCafeWebPort = requiredDevPort(
+  process.env.CXSUN_Q_CAFE_WEB_PORT ?? env.CXSUN_Q_CAFE_WEB_PORT,
+  "CXSUN_Q_CAFE_WEB_PORT"
+);
+const qCafeEnabled = (process.env.CXSUN_TENANCY_MODE ?? env.CXSUN_TENANCY_MODE) === "single";
+if (qCafeOnly && !qCafeEnabled) {
+  throw new Error("Q Cafe development requires CXSUN_TENANCY_MODE=single.");
+}
+const allServices = {
+  ...(qCafeEnabled
+    ? {
+        "q-cafe-api": {
+          color: "\x1b[33m",
+          healthUrl: `http://127.0.0.1:${qCafeApiPort}/health`,
+          readyUrl: `http://127.0.0.1:${qCafeApiPort}/health`,
+          label: "Q Cafe API",
+          readyTimeoutMs: 30_000
+        },
+        "q-cafe-web": {
+          color: "\x1b[33m",
+          healthUrl: `http://127.0.0.1:${qCafeWebPort}/q-cafe/`,
+          readyUrl: `http://127.0.0.1:${qCafeWebPort}/q-cafe/`,
+          label: "Q Cafe web",
+          readyTimeoutMs: 30_000
+        }
+      }
+    : {}),
+  "uiux-web": {
+    color: "\x1b[33m",
+    healthUrl: `http://127.0.0.1:${uiuxPort}/`,
+    readyUrl: `http://127.0.0.1:${uiuxPort}/`,
+    label: "uiux",
+    readyTimeoutMs: 30_000
+  },
+  "project-manager-web": {
+    color: "\x1b[34m",
+    healthUrl: `http://127.0.0.1:${projectManagerPort}/`,
+    readyUrl: `http://127.0.0.1:${projectManagerPort}/`,
+    label: "project manager",
+    readyTimeoutMs: 30_000
+  },
   "ecommerce-web": {
     color: "\x1b[35m",
     healthUrl: `http://127.0.0.1:${ecommercePort}/`,
@@ -44,6 +95,11 @@ const services = {
     readyTimeoutMs: 30_000
   }
 };
+const services = qCafeOnly
+  ? Object.fromEntries(
+      Object.entries(allServices).filter(([name]) => name === "q-cafe-api" || name === "q-cafe-web")
+    )
+  : allServices;
 const reset = "\x1b[0m";
 const runtimes = new Map(
   Object.keys(services).map((serviceName) => [
@@ -66,18 +122,29 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 closeControl = await startProcessControl("stack", () => void shutdown(0));
 
-console.log("\nCXSUN Platform development runtime");
+console.log(qCafeOnly ? "\nQ Cafe development runtime" : "\nCXSUN Platform development runtime");
 
 try {
-  await startAndWait("platform-api");
+  if (!qCafeOnly) await startAndWait("platform-api");
+  if (qCafeEnabled) {
+    await startAndWait("q-cafe-api");
+    await startAndWait("q-cafe-web");
+  }
   if (stopping) await shutdown(0);
-  await startAndWait("platform-web");
-  await startAndWait("ecommerce-web");
-  await startAndWait("ecommerce-storefront");
+  if (!qCafeOnly) {
+    await startAndWait("platform-web");
+    await startAndWait("ecommerce-web");
+    await startAndWait("uiux-web");
+    await startAndWait("project-manager-web");
+  }
   if (stopping) await shutdown(0);
   if (stopping) process.exit(0);
-  console.log("  ok Platform API and Web are ready");
-  console.log("  - API and Web restart independently after local changes or failures\n");
+  console.log(
+    qCafeOnly
+      ? "  ok Q Cafe API and web are ready"
+      : `  ok Platform, ${qCafeEnabled ? "Q Cafe, " : ""}Ecommerce, UIUX, and Project Manager are ready`
+  );
+  console.log("  - Each service restarts independently after local changes or failures\n");
   monitorStackHealth();
 } catch (error) {
   if (!stopping) {

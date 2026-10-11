@@ -143,6 +143,8 @@ test("live detail reloads one Frappe enquiry and resolves employee names", async
     const url = new URL(String(input));
     if (url.pathname === "/api/resource/Employee")
       return Response.json({ data: [{ name: "EMP-1", employee_name: "Vijay Anand" }] });
+    if (url.pathname === "/api/method/frappe.desk.form.load.get_docinfo")
+      return Response.json({ docinfo: { versions: [], info_logs: [] } });
     assert.equal(url.pathname, "/api/resource/Enquiry/ENQ27");
     return Response.json({
       data: {
@@ -207,6 +209,36 @@ test("live navigation count remains available to a view-all user without an empl
     assigned: { total: 0, statusCounts: [], priorityCounts: [] },
     created: { total: 0, statusCounts: [], priorityCounts: [] }
   });
+});
+
+test("mapped Frappe overview counts recent creation and updates from live records", async () => {
+  const dateFilters: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    const filters = JSON.parse(url.searchParams.get("filters") ?? "[]") as string[][];
+    for (const filter of filters)
+      if (filter[0] === "creation" || filter[0] === "modified") dateFilters.push(filter[0]);
+    const field = url.searchParams.get("group_by") === "priority" ? "priority" : "status";
+    return Response.json({ data: [{ [field]: field === "status" ? "New" : "Normal", count: 1 }] });
+  };
+  const source = new FrappeCrmEnquirySource(
+    database("frappe"),
+    defaults,
+    "test-secret",
+    true,
+    "tenant@example.com",
+    true,
+    async () => "EMP-1"
+  );
+  const summary = await source.summary("2026-10-11");
+  assert.ok("created7" in summary.assigned);
+  assert.ok("created7" in summary.created);
+  assert.equal(summary.assigned.created7, 1);
+  assert.equal(summary.assigned.updated30, 1);
+  assert.equal(summary.created.created30, 1);
+  assert.equal(summary.created.updated7, 1);
+  assert.equal(dateFilters.filter((field) => field === "creation").length, 4);
+  assert.equal(dateFilters.filter((field) => field === "modified").length, 4);
 });
 
 test("local source never makes a live Frappe request", async () => {

@@ -1,6 +1,6 @@
 import { useMemo, type KeyboardEvent, type RefObject } from 'react';
 import { Barcode, Minus, Plus, PlusCircle } from 'lucide-react';
-import { TopologyMarker } from '@codexsun/devkit-ito';
+import { TopologyMarker } from '../ito-bridge';
 import { TypeaheadDropUp, type AutocompleteOption } from './TypeaheadDropUp';
 import type { Pos1ManualEntrySectionProps } from './types';
 import type { CustomMenuItem } from '../mastersStore';

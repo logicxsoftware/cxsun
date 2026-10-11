@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Store, Receipt, Palette, Server, Check, HardDrive, FolderOpen, CheckCircle2, AlertCircle, Sparkles, Sliders, Download, RefreshCw, Printer, LogOut, ShieldCheck, CircleCheck, Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
-import type { InterfaceTopologyController } from '@codexsun/devkit-ito';
+import { Button } from '@cxsun/ui/components/button';
+import type { InterfaceTopologyController } from './ito-bridge';
 import { type Snapshot } from './api';
 import { field } from './Workspaces';
 import { ItoRegion } from './ItoRegion';

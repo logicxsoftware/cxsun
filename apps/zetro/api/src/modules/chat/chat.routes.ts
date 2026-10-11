@@ -1,11 +1,12 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Kysely } from "kysely";
 import { z } from "zod";
-import { registerContractRoute } from "@cxsun/framework/http";
+import { registerContractRoute, registerContractStreamRoute } from "@cxsun/framework/http";
 import type {} from "@cxsun/framework/api";
 import { ZetroChatRepository } from "./chat.repository.js";
 import {
   ZetroChatService,
+  type AssignedEnquiriesLookup,
   type BillingPeriodLookup,
   type CustomerOutstandingLookup,
   type LongOutstandingSalesLookup
@@ -32,6 +33,38 @@ const detailSchema = z.object({
   conversation: conversationSchema,
   messages: z.array(messageSchema)
 });
+const sendBodySchema = z
+  .object({
+    conversationId: z.number().int().positive().nullable(),
+    prompt: z.string().trim().min(1).max(8000),
+    attachment: z
+      .object({
+        name: z
+          .string()
+          .trim()
+          .min(1)
+          .max(160)
+          .regex(/\.(txt|md|csv|json)$/iu),
+        content: z
+          .string()
+          .trim()
+          .min(1)
+          .max(1024 * 1024)
+          .refine((content) => !content.includes("\0"), "The attached file must be text.")
+      })
+      .strict()
+      .optional()
+  })
+  .strict()
+  .refine(
+    (body) => !body.attachment || Buffer.byteLength(body.attachment.content, "utf8") <= 1024 * 1024,
+    "The attached file exceeds 1 MB."
+  );
+const streamEventSchema = z.discriminatedUnion("event", [
+  z.object({ event: z.literal("status"), content: z.string() }),
+  z.object({ event: z.literal("token"), content: z.string() }),
+  z.object({ event: z.literal("complete"), detail: detailSchema })
+]);
 
 export type ZetroChatContext = {
   database: Kysely<ZetroDatabase>;
@@ -40,6 +73,7 @@ export type ZetroChatContext = {
   lookupOutstanding: CustomerOutstandingLookup;
   lookupBillingPeriod: BillingPeriodLookup;
   lookupLongOutstandingSales: LongOutstandingSalesLookup;
+  lookupAssignedEnquiries: AssignedEnquiriesLookup;
   audit: (action: string, conversation: ZetroConversation) => Promise<void>;
 };
 
@@ -58,7 +92,8 @@ export function registerZetroChatRoutes(
         new ZetroPolicyRepository(scope.database),
         scope.lookupOutstanding,
         scope.lookupBillingPeriod,
-        scope.lookupLongOutstandingSales
+        scope.lookupLongOutstandingSales,
+        scope.lookupAssignedEnquiries
       )
     };
   };
@@ -86,34 +121,7 @@ export function registerZetroChatRoutes(
     url: "/zetro/messages",
     bodyLimit: 8 * 1024 * 1024,
     schemas: {
-      body: z
-        .object({
-          conversationId: z.number().int().positive().nullable(),
-          prompt: z.string().trim().min(1).max(8000),
-          attachment: z
-            .object({
-              name: z
-                .string()
-                .trim()
-                .min(1)
-                .max(160)
-                .regex(/\.(txt|md|csv|json)$/iu),
-              content: z
-                .string()
-                .trim()
-                .min(1)
-                .max(1024 * 1024)
-                .refine((content) => !content.includes("\0"), "The attached file must be text.")
-            })
-            .strict()
-            .optional()
-        })
-        .strict()
-        .refine(
-          (body) =>
-            !body.attachment || Buffer.byteLength(body.attachment.content, "utf8") <= 1024 * 1024,
-          "The attached file exceeds 1 MB."
-        ),
+      body: sendBodySchema,
       response: detailSchema
     },
     handler: async ({ body, request }) => {
@@ -121,6 +129,24 @@ export function registerZetroChatRoutes(
       const result = await chat.send(actorEmail, body.conversationId, body.prompt, body.attachment);
       await audit("message.create", result.conversation);
       return result;
+    }
+  });
+  registerContractStreamRoute(app, {
+    method: "POST",
+    url: "/zetro/messages/stream",
+    bodyLimit: 8 * 1024 * 1024,
+    schemas: { body: sendBodySchema, response: streamEventSchema },
+    handler: async ({ body, request, emit }) => {
+      const { actorEmail, audit, chat } = await service(request);
+      const result = await chat.send(
+        actorEmail,
+        body.conversationId,
+        body.prompt,
+        body.attachment,
+        emit
+      );
+      await audit("message.create", result.conversation);
+      emit({ event: "complete", detail: result });
     }
   });
   registerContractRoute(app, {

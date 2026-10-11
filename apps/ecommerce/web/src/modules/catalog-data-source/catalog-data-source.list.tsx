@@ -1,7 +1,6 @@
 import { Fragment } from "react";
-import { DatabaseIcon, ServerIcon } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@cxsun/ui/components/radio-group";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
+import { CatalogDataSourceForm } from "./catalog-data-source.form";
 import type {
   CatalogDataSourceModule,
   CatalogDataSourceProvider,
@@ -59,7 +58,7 @@ export function CatalogDataSourceList({
       </table>
       {!frappeConfigured ? (
         <p className="border-t px-4 py-3 text-sm text-muted-foreground">
-          Save and verify the Frappe connector above before selecting Frappe Live.
+          Enable and verify the connection in the Frappe app before selecting Frappe Live.
         </p>
       ) : null}
     </div>
@@ -108,42 +107,13 @@ function DataSourceRow({
       </td>
       <td className="px-4 py-4 text-muted-foreground">{item.description}</td>
       <td colSpan={2} className="px-4 py-4">
-        <RadioGroup
-          aria-label={`${item.label} data source`}
-          className="grid grid-cols-2 gap-4"
-          disabled={busy}
-          onValueChange={(provider) => onChange(item.module, provider as CatalogDataSourceProvider)}
-          value={item.provider}
-        >
-          <SourceOption icon={DatabaseIcon} label="Local" value="own" />
-          <SourceOption
-            disabled={!frappeConfigured}
-            icon={ServerIcon}
-            label="Frappe"
-            value="frappe"
-          />
-        </RadioGroup>
+        <CatalogDataSourceForm
+          busy={busy}
+          frappeConfigured={frappeConfigured}
+          item={item}
+          onChange={onChange}
+        />
       </td>
     </tr>
-  );
-}
-
-function SourceOption({
-  disabled = false,
-  icon: Icon,
-  label,
-  value
-}: {
-  disabled?: boolean;
-  icon: typeof DatabaseIcon;
-  label: string;
-  value: CatalogDataSourceProvider;
-}) {
-  return (
-    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 transition-colors hover:bg-accent/60 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-45">
-      <RadioGroupItem disabled={disabled} value={value} />
-      <Icon className="size-4" />
-      <span>{label}</span>
-    </label>
   );
 }

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Armchair, Coffee, LayoutDashboard, CookingPot, Package, CalendarDays, ReceiptText, RefreshCw, Menu, PanelLeftClose, PanelLeftOpen, Search, Bell, X, UserRound, Sun, LogOut, Settings as SettingsIcon, UtensilsCrossed, LayoutGrid, TrendingUp } from 'lucide-react';
-import { Button } from '@codexsun/ui/components/ui/button';
-import { InterfaceTopologyDrawer, TopologyInspectionControl, TopologyMarker } from '@codexsun/devkit-ito';
-import { useInterfaceTopologyOverlay } from '@codexsun/devkit-ito/use-interface-topology-overlay';
+import { Button } from '@cxsun/ui/components/button';
+import { InterfaceTopologyDrawer, TopologyInspectionControl, TopologyMarker } from './ito-bridge';
+import { useInterfaceTopologyOverlay } from './ito-bridge';
 import { request, signIn, type ActionResult, type Snapshot } from './api';
 import { Dashboard } from './Dashboard';
 import { Kitchen, Inventory, Bookings, field } from './Workspaces';
