@@ -1,3 +1,4 @@
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { GlobalLoader } from "@cxsun/ui/components/global-loader";
 import { WorkspaceShowCard } from "@cxsun/ui/workspace/show";
 import type { AuditEventDTO } from "./tenant.types";
@@ -34,6 +35,5 @@ export function TenantActivityControl({
 
 function formatDate(value: string | undefined) {
   if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return formatDateTime(value);
 }

@@ -56,6 +56,9 @@ export class EnquiryService {
   }
 
   async create(input: EnquiryInput, actor: string) {
+    if (input.capturedPhone?.trim() && !/^\d{10}$/.test(input.capturedPhone.trim())) {
+      throw AppError.validation("Enter a 10-digit mobile number.");
+    }
     const prepared = await this.prepare(input, null);
     const record = await this.repository.create(prepared, actor);
     if (!record) throw AppError.notFound("Enquiry could not be created.");

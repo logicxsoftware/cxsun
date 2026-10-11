@@ -1,3 +1,4 @@
+import { formatDate } from "@cxsun/ui/workspace";
 import { AlertCircle, Clock3, Paperclip } from "lucide-react";
 import { cn } from "@cxsun/ui/lib/utils";
 import type { MailMessage } from "./mail.types";
@@ -124,5 +125,5 @@ function relativeDate(value: string) {
       ? "Yesterday"
       : days < 7
         ? `${days} days ago`
-        : date.toLocaleDateString([], { day: "2-digit", month: "short" });
+        : formatDate(date);
 }

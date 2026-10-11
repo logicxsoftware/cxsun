@@ -37,11 +37,31 @@ export type EnquiryRecord = EnquiryInput & {
 };
 
 export type EnquiryListScope = "all" | "assigned" | "created";
+export type EnquirySearchColumn =
+  | "all"
+  | "customer"
+  | "details"
+  | "listIn"
+  | "dueDate"
+  | "priority"
+  | "creator"
+  | "assignedTo"
+  | "status";
 export type EnquiryListOptions = {
   scope: EnquiryListScope;
   page: number;
   pageSize: number;
   search: string;
+  mobile?: string | undefined;
+  contactId?: number | undefined;
+  searchCustomer?: string | undefined;
+  searchDetails?: string | undefined;
+  searchListIn?: string | undefined;
+  searchDueDate?: string | undefined;
+  searchPriority?: string | undefined;
+  searchCreator?: string | undefined;
+  searchAssignedTo?: string | undefined;
+  searchStatus?: string | undefined;
   filter: string;
   fromAt?: string | undefined;
   toAt?: string | undefined;

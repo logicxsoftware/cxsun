@@ -1,5 +1,5 @@
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { ArrowLeftIcon, DownloadIcon } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
@@ -152,9 +152,7 @@ function BackupRunHistory({
                   <td className="py-3 pr-4 capitalize">{run.operation}</td>
                   <td className="py-3 pr-4 capitalize">{run.status}</td>
                   <td className="py-3 pr-4">
-                    {run.completedAt
-                      ? formatDistanceToNow(new Date(run.completedAt), { addSuffix: true })
-                      : "Pending"}
+                    {run.completedAt ? formatDateTime(run.completedAt) : "Pending"}
                   </td>
                   <td className="py-3 text-muted-foreground">{runResult(run)}</td>
                 </tr>

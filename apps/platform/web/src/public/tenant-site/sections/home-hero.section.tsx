@@ -103,7 +103,11 @@ export function TenantHomeHeroSection() {
             exit={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 1.01 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <img src={slide.image} alt={slide.imageAlt} />
+            <img
+              src={slide.image}
+              alt={slide.imageAlt}
+              fetchPriority={activeSlide === 0 ? "high" : undefined}
+            />
             <figcaption>
               <span>
                 <BadgeCheck /> {slide.captionPrimary}

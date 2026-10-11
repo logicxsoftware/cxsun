@@ -1,5 +1,5 @@
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { Fragment, useState } from "react";
-import { formatDistanceToNow } from "date-fns";
 import {
   BanIcon,
   CheckCircle2Icon,
@@ -101,7 +101,7 @@ export function QueueManagementList({
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{job.correlationId ?? "-"}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {formatDistanceToNow(new Date(job.updatedAt), { addSuffix: true })}
+                      {formatDateTime(job.updatedAt)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">

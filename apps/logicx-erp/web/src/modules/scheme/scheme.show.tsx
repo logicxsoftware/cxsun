@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
@@ -124,7 +125,7 @@ export function LogicxErpSchemeShowPage({
                 <li className="px-4 py-3" key={entry.id}>
                   <p className="text-sm font-medium text-foreground">{entry.summary}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {entry.actorEmail} · {new Date(entry.createdAt).toLocaleString()}
+                    {entry.actorEmail} · {formatWorkspaceDateTime(entry.createdAt)}
                   </p>
                 </li>
               ))}

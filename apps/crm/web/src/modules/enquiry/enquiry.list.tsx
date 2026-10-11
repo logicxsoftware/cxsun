@@ -1,10 +1,24 @@
+import { useRef, type KeyboardEvent } from "react";
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { BellRing } from "lucide-react";
+import { Input } from "@cxsun/ui/components/input";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
 import { WorkspaceRowActions } from "@cxsun/ui/workspace/row-actions";
 import { CrmStatusBadge, prioritySwatch } from "../../crm-colors";
 import { enquiryTableText } from "./enquiry.table-text";
-import type { EnquiryLookup, EnquiryRecord } from "./enquiry.types";
+import { formatListDueDate } from "./enquiry.view-utils";
+import type { EnquiryColumnFilters, EnquiryLookup, EnquiryRecord } from "./enquiry.types";
+
+const filterColumns: Record<string, { key: keyof EnquiryColumnFilters; label: string }> = {
+  customer: { key: "customer", label: "Customer" },
+  details: { key: "details", label: "Enquiry details" },
+  listIn: { key: "listIn", label: "List in" },
+  dueDate: { key: "dueDate", label: "Due date" },
+  priority: { key: "priority", label: "Priority" },
+  creator: { key: "creator", label: "Creator" },
+  assignedTo: { key: "assignedTo", label: "Assigned to" },
+  status: { key: "status", label: "Status" }
+};
 
 export function EnquiryList({
   records,
@@ -12,6 +26,10 @@ export function EnquiryList({
   userColumnMode,
   showActions = true,
   visibleColumns,
+  showInlineFilters,
+  columnFilters,
+  onColumnFilterChange,
+  onHideInlineFilters,
   loading,
   onShow,
   onEdit,
@@ -23,6 +41,10 @@ export function EnquiryList({
   userColumnMode: "creator" | "allocatedTo" | "both";
   showActions?: boolean;
   visibleColumns: Record<string, boolean>;
+  showInlineFilters: boolean;
+  columnFilters: EnquiryColumnFilters;
+  onColumnFilterChange: (column: keyof EnquiryColumnFilters, value: string) => void;
+  onHideInlineFilters: () => void;
   loading: boolean;
   onShow: (record: EnquiryRecord) => void;
   onEdit: (record: EnquiryRecord) => void;
@@ -102,7 +124,7 @@ export function EnquiryList({
       id: "dueDate",
       accessorKey: "dueDate",
       header: "Due date",
-      cell: ({ row }) => row.original.dueDate ?? "—"
+      cell: ({ row }) => formatListDueDate(row.original.dueDate)
     },
     {
       id: "priority",
@@ -168,10 +190,68 @@ export function EnquiryList({
         return column.id === "enquiryNo" || visibleColumns[column.id ?? ""] !== false;
       })}
       data={records}
+      {...(showInlineFilters
+        ? {
+            filterRow: (columnId: string) => {
+              const filter = filterColumns[columnId];
+              return filter ? (
+                <InlineFilterInput
+                  label={filter.label}
+                  value={columnFilters[filter.key] ?? ""}
+                  onChange={(value) => onColumnFilterChange(filter.key, value)}
+                  onHide={onHideInlineFilters}
+                />
+              ) : null;
+            }
+          }
+        : {})}
       emptyState="No enquiries found."
       isLoading={loading}
       minWidth="1020px"
       onRowClick={onShow}
+    />
+  );
+}
+
+function InlineFilterInput({
+  label,
+  value,
+  onChange,
+  onHide
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onHide: () => void;
+}) {
+  const escapeStep = useRef(0);
+
+  function handleEscape(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.repeat) return;
+
+    escapeStep.current += 1;
+    if (escapeStep.current === 1) event.currentTarget.select();
+    else if (escapeStep.current === 2) onChange("");
+    else {
+      escapeStep.current = 0;
+      onHide();
+    }
+  }
+
+  return (
+    <Input
+      aria-label={`Filter ${label}`}
+      className="h-7 min-w-0 rounded-sm border-border/80 bg-white px-2 text-xs shadow-none"
+      maxLength={191}
+      value={value}
+      onChange={(event) => {
+        escapeStep.current = 0;
+        onChange(event.target.value);
+      }}
+      onKeyDown={handleEscape}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@cxsun/ui/components/button";
 import { Input } from "@cxsun/ui/components/input";
@@ -15,15 +15,25 @@ const views: Array<{ id: ReportView; label: string }> = [
   { id: "status", label: "Status wise" }
 ];
 
+const viewTitles: Record<ReportView, string> = {
+  "list-in": "List in",
+  creator: "Creator",
+  assignee: "Assignee",
+  status: "Status"
+};
+
 export function LiveReportsWorkspace({
-  onOpenEnquiries
+  onOpenEnquiries,
+  onViewChange
 }: {
   onOpenEnquiries: (filters: EnquiryReportFilters) => void;
+  onViewChange: (title: string) => void;
 }) {
   const [view, setView] = useState<ReportView>("list-in");
   const [draft, setDraft] = useState<EnquiryReportFilters>({});
   const [filters, setFilters] = useState<EnquiryReportFilters>({});
   const invalidDates = Boolean(draft.fromDate && draft.toDate && draft.fromDate > draft.toDate);
+  useEffect(() => onViewChange(viewTitles[view]), [onViewChange, view]);
   const report = useQuery({
     queryKey: ["crm", "enquiries", "frappe-report", view, filters],
     queryFn: () => {
@@ -76,10 +86,10 @@ export function LiveReportsWorkspace({
           </Button>
         </div>
         <div className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-4">
-          <label className="min-w-40 flex-1 text-sm text-muted-foreground">
+          <label className="w-44 shrink-0 text-sm text-muted-foreground">
             From date
             <Input
-              className="mt-1"
+              className="mt-1 w-44 min-w-0"
               type="date"
               value={draft.fromDate ?? ""}
               onChange={(event) =>
@@ -87,10 +97,10 @@ export function LiveReportsWorkspace({
               }
             />
           </label>
-          <label className="min-w-40 flex-1 text-sm text-muted-foreground">
+          <label className="w-44 shrink-0 text-sm text-muted-foreground">
             To date
             <Input
-              className="mt-1"
+              className="mt-1 w-44 min-w-0"
               type="date"
               value={draft.toDate ?? ""}
               onChange={(event) => setDraft({ ...draft, toDate: event.target.value || undefined })}
@@ -106,10 +116,11 @@ export function LiveReportsWorkspace({
               }
             />
           </label>
-          <Button disabled={invalidDates} onClick={() => setFilters({ ...draft })}>
+          <Button className="h-11" disabled={invalidDates} onClick={() => setFilters({ ...draft })}>
             Apply filters
           </Button>
           <Button
+            className="h-11"
             variant="outline"
             onClick={() => {
               setDraft({});

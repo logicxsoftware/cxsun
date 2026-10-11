@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { RefreshCwIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { Input } from "@cxsun/ui/components/input";
@@ -40,7 +41,7 @@ export function QueueManagementForm({
             {settings?.updatedAt ? (
               <p className="text-xs text-muted-foreground">
                 Last published by {settings.updatedBy} ·{" "}
-                {new Date(settings.updatedAt).toLocaleString()}
+                {formatWorkspaceDateTime(settings.updatedAt)}
               </p>
             ) : null}
           </div>

@@ -163,6 +163,7 @@ Passing TypeScript or lint alone does not prove module ownership. The ownership 
 - Keep the shell's `AppHeader` separate from page-level `WorkspaceHeader`; follow `packages/ui/src/layouts/main-layouts/README.md` for the composition.
 - Keep layouts clear, dense, and work-focused for business users.
 - Use the shared workspace list, table, pagination, show, upsert, banner, autocomplete, select, date, tab, toast, and status components from `@cxsun/ui`.
+- Show calendar dates as `DD-MM-YYYY` and date-times as `DD-MM-YYYY HH:mm` across every app. Keep stored values and sort keys machine-readable.
 - Use the shadcn/Radix themed design-system select (`WorkspaceSelect` or `Select` from `@cxsun/ui`) for all form selects; do not use raw native `<select>` in workspace/list/upsert screens.
 - Use the workspace lookup (`WorkspaceLookup`) for master/reference autocomplete fields. Use inline create for small common masters such as colour/label, and popup create for heavier masters such as contact/tenant.
 - Lookup/autocomplete options must come from API/database data and must refresh after creating a new option.

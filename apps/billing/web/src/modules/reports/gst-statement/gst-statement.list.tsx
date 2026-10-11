@@ -1,3 +1,4 @@
+import { formatDate as formatWorkspaceDate } from "@cxsun/ui/workspace";
 import { useEffect, useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, Printer } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
@@ -342,9 +343,5 @@ function MoneyCell({ strong, value }: { strong?: boolean; value: number }) {
 }
 
 function formatDate(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  return formatWorkspaceDate(value);
 }

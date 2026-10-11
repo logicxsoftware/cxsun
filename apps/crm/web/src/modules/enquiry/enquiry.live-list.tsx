@@ -3,6 +3,7 @@ import { WorkspaceTable } from "@cxsun/ui/workspace/table";
 import { WorkspaceRowActions } from "@cxsun/ui/workspace/row-actions";
 import { CrmStatusBadge, prioritySwatch } from "../../crm-colors";
 import { enquiryTableText } from "./enquiry.table-text";
+import { formatListDueDate } from "./enquiry.view-utils";
 import type { LiveEnquiryRecord } from "./enquiry.types";
 
 export function LiveEnquiryList({
@@ -72,7 +73,7 @@ export function LiveEnquiryList({
       id: "dueDate",
       accessorKey: "dueDate",
       header: "Due date",
-      cell: ({ row }) => row.original.dueDate ?? "—"
+      cell: ({ row }) => formatListDueDate(row.original.dueDate)
     },
     {
       id: "priority",

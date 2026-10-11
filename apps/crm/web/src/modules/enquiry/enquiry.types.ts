@@ -36,6 +36,19 @@ export type EnquiryPage = {
   total: number;
   statusCounts: Array<{ code: string; count: number }>;
 };
+
+export type EnquirySearchColumn =
+  | "all"
+  | "customer"
+  | "details"
+  | "listIn"
+  | "dueDate"
+  | "priority"
+  | "creator"
+  | "assignedTo"
+  | "status";
+
+export type EnquiryColumnFilters = Partial<Record<Exclude<EnquirySearchColumn, "all">, string>>;
 export type LiveEnquiryRecord = {
   name: string;
   title: string;

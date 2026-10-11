@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { WorkspacePrintSheet } from "@cxsun/ui/workspace/print";
 import { BillingDocumentHeader } from "../../settings";
 import {
@@ -90,7 +91,7 @@ export function SupplierStatementPrint({ statement }: { statement: SupplierState
           </tbody>
         </table>
         <footer className="flex justify-between border-x border-b border-slate-500 px-3 py-3">
-          <span>Generated {new Date().toLocaleString("en-IN")}</span>
+          <span>Generated {formatWorkspaceDateTime(new Date())}</span>
           <span className="font-semibold">For {statement.companyName}</span>
         </footer>
       </article>

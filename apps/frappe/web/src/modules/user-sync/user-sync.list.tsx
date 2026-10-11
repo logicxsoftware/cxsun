@@ -1,4 +1,5 @@
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
@@ -30,7 +31,7 @@ export function FrappeUserList({
       header: "LAST ACTIVE",
       size: 180,
       cell: ({ row }) =>
-        row.original.lastActiveAt ? new Date(row.original.lastActiveAt).toLocaleString() : "—"
+        row.original.lastActiveAt ? formatDateTime(row.original.lastActiveAt) : "—"
     },
     {
       id: "application",

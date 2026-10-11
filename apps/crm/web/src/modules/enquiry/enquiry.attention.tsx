@@ -1,3 +1,4 @@
+import { formatDate } from "@cxsun/ui/workspace";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
@@ -61,7 +62,8 @@ export function EnquiryAttention({ onOpen }: { onOpen: (id: number) => void }) {
               record.dueDate && record.dueDate < today ? "font-medium text-destructive" : ""
             }
           >
-            {record.dueDate && record.dueDate < today ? "Overdue" : "Due today"} · {record.dueDate}
+            {record.dueDate && record.dueDate < today ? "Overdue" : "Due today"} ·{" "}
+            {record.dueDate ? formatDate(record.dueDate) : "—"}
           </span>
         </div>
       ))}

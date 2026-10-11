@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { ArrowLeftIcon, DownloadIcon, RefreshCwIcon, RotateCcwIcon } from "lucide-react";
 import { GlobalLoader, StatusBadge } from "@cxsun/ui";
 import { Button } from "@cxsun/ui/components/button";
@@ -409,7 +410,7 @@ function maskDetails(value: Record<string, unknown>) {
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return `${date.toLocaleString()} (${formatDistanceToNow(date, { addSuffix: true })})`;
+  return `${formatDateTime(date)} (${formatDistanceToNow(date, { addSuffix: true })})`;
 }
 
 function formatBytes(value: number) {

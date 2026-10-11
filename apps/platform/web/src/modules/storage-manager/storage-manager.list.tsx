@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import {
   DatabaseIcon,
   DownloadIcon,
@@ -127,7 +127,7 @@ export function StorageManagerList({
                     {entry.type === "folder" ? "-" : fileSizeLabel(entry.sizeBytes)}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {formatDistanceToNow(new Date(entry.modifiedAt), { addSuffix: true })}
+                    {formatDateTime(entry.modifiedAt)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     {entry.type === "file" ? (

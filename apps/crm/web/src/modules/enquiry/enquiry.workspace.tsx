@@ -1,5 +1,6 @@
 import { useMemo, useState, useDeferredValue, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceFilters } from "@cxsun/ui/workspace/filters";
@@ -28,7 +29,12 @@ import { EnquiryAttention } from "./enquiry.attention";
 import { EnquiryShow } from "./enquiry.show";
 import { createEnquiry, openNewEnquiryCall, updateEnquiry } from "./enquiry.services";
 import { enquiryFilterOptions, type EnquiryScope } from "./enquiry.filters";
-import type { EnquiryRecord, EnquiryReportFilters, EnquirySavePayload } from "./enquiry.types";
+import type {
+  EnquiryColumnFilters,
+  EnquiryRecord,
+  EnquiryReportFilters,
+  EnquirySavePayload
+} from "./enquiry.types";
 
 const columnOptions = [
   { id: "customer", label: "Customer" },
@@ -84,14 +90,24 @@ export function EnquiryWorkspace(props: Parameters<typeof LocalEnquiryWorkspace>
 function LocalEnquiryWorkspace({
   scope = "all",
   reportFilters,
+  mobileFilter,
+  onClearMobileFilter,
+  onSeeMoreEnquiries,
+  onOpenEnquiry,
   onBackToReports,
+  initialRecordId,
   initialCreate = false,
   onCloseCreate,
   onCancelCreate
 }: {
   scope?: EnquiryScope;
   reportFilters?: EnquiryReportFilters | undefined;
+  mobileFilter?: { mobile: string; contactId: number | null } | undefined;
+  onClearMobileFilter?: () => void;
+  onSeeMoreEnquiries?: ((mobile: string, contactId: number | null) => void) | undefined;
+  onOpenEnquiry?: ((id: number, mobile: string, contactId: number | null) => void) | undefined;
   onBackToReports?: () => void;
+  initialRecordId?: number | undefined;
   currentUserEmail?: string;
   initialCreate?: boolean;
   onCloseCreate?: () => void;
@@ -101,8 +117,10 @@ function LocalEnquiryWorkspace({
   const [editing, setEditing] = useState<EnquiryRecord | null | undefined>(
     initialCreate ? null : undefined
   );
-  const [showing, setShowing] = useState<number | null>(null);
+  const [showing, setShowing] = useState<number | null>(initialRecordId ?? null);
   const [search, setSearch] = useState("");
+  const [showInlineFilters, setShowInlineFilters] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<EnquiryColumnFilters>({});
   const [status, setStatus] = useState(
     reportFilters?.filter ?? (scope === "assigned" ? "active" : "all")
   );
@@ -110,11 +128,15 @@ function LocalEnquiryWorkspace({
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({});
   const deferredSearch = useDeferredValue(search);
+  const deferredColumnFilters = useDeferredValue(columnFilters);
   const query = useEnquiryPage({
     scope,
     page,
     pageSize: rowsPerPage,
     search: deferredSearch.trim(),
+    ...(mobileFilter ? { mobile: mobileFilter.mobile } : {}),
+    ...(mobileFilter?.contactId ? { contactId: mobileFilter.contactId } : {}),
+    columnFilters: deferredColumnFilters,
     filter: status,
     reportFilters
   });
@@ -176,6 +198,7 @@ function LocalEnquiryWorkspace({
   const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
   const currentPage = Math.min(page, totalPages);
   const records = query.data?.items ?? [];
+  const activeColumnFilters = Object.values(columnFilters).filter((value) => value?.trim()).length;
   useEffect(() => {
     if (query.data && page > totalPages) setPage(totalPages);
   }, [query.data, page, totalPages]);
@@ -207,6 +230,8 @@ function LocalEnquiryWorkspace({
             setEditing(undefined);
           }
         }}
+        onSeeMoreEnquiries={onSeeMoreEnquiries}
+        onOpenEnquiry={onOpenEnquiry}
         onContactSaved={async () => {
           await Promise.all([
             client.invalidateQueries({ queryKey: enquiryContactsQueryKey }),
@@ -243,8 +268,32 @@ function LocalEnquiryWorkspace({
           </Button>
         </div>
       ) : null}
+      {mobileFilter ? (
+        <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-4 py-2 text-sm">
+          <span>Enquiries for mobile {mobileFilter.mobile}</span>
+          <Button type="button" variant="outline" onClick={onClearMobileFilter}>
+            Clear mobile filter
+          </Button>
+        </div>
+      ) : null}
       {scope === "assigned" ? <EnquiryAttention onOpen={setShowing} /> : null}
       <WorkspaceFilters
+        toolbarAction={
+          <Button
+            aria-label="Toggle column search filters"
+            aria-pressed={showInlineFilters}
+            className="h-8 min-w-8 gap-1 px-2"
+            title="Toggle column search filters"
+            type="button"
+            variant={showInlineFilters ? "default" : "outline"}
+            onClick={() => setShowInlineFilters((open) => !open)}
+          >
+            <SlidersHorizontal className="size-4" aria-hidden="true" />
+            {activeColumnFilters > 0 ? (
+              <span className="text-xs">{activeColumnFilters}</span>
+            ) : null}
+          </Button>
+        }
         columnOptions={columnOptions
           .filter(
             (column) =>
@@ -256,8 +305,17 @@ function LocalEnquiryWorkspace({
             label:
               column.id === "assignedTo" && scope === "created" ? "Allocated to" : column.label,
             checked: visibleColumns[column.id] !== false,
-            onCheckedChange: (checked) =>
-              setVisibleColumns((current) => ({ ...current, [column.id]: checked }))
+            onCheckedChange: (checked) => {
+              setVisibleColumns((current) => ({ ...current, [column.id]: checked }));
+              if (!checked) {
+                setColumnFilters((current) => {
+                  const next = { ...current };
+                  delete next[column.id as keyof EnquiryColumnFilters];
+                  return next;
+                });
+                setPage(1);
+              }
+            }
           }))}
         onShowAllColumns={() => setVisibleColumns({})}
         searchPlaceholder="Search ID, details, phone, or customer"
@@ -281,6 +339,13 @@ function LocalEnquiryWorkspace({
       ) : null}
       <EnquiryList
         records={records}
+        showInlineFilters={showInlineFilters}
+        columnFilters={columnFilters}
+        onColumnFilterChange={(column, value) => {
+          setColumnFilters((current) => ({ ...current, [column]: value }));
+          setPage(1);
+        }}
+        onHideInlineFilters={() => setShowInlineFilters(false)}
         showActions={scope !== "assigned"}
         users={users.data ?? []}
         userColumnMode={

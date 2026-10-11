@@ -11,6 +11,7 @@ type CustomerValue = Pick<EnquirySavePayload, "contactId" | "capturedName" | "ca
 
 export function EnquiryCustomerFields({
   autoFocusMobile = false,
+  strictMobile = false,
   contacts,
   loading,
   value,
@@ -20,6 +21,7 @@ export function EnquiryCustomerFields({
   onContactSaved
 }: {
   autoFocusMobile?: boolean;
+  strictMobile?: boolean;
   contacts: EnquiryLookup[];
   loading: boolean;
   value: CustomerValue;
@@ -33,8 +35,8 @@ export function EnquiryCustomerFields({
     Boolean(value.capturedName && value.capturedName !== value.capturedPhone && !value.contactId)
   );
   const matches = useMemo(
-    () => matchingContacts(contacts, value.capturedPhone),
-    [contacts, value.capturedPhone]
+    () => matchingContacts(contacts, value.capturedPhone, strictMobile),
+    [contacts, value.capturedPhone, strictMobile]
   );
 
   useEffect(() => {
@@ -51,6 +53,14 @@ export function EnquiryCustomerFields({
       ...(contact.primaryPhone ? { description: contact.primaryPhone } : {})
     }));
   const mobileDigits = enquiryPhoneKey(value.capturedPhone);
+  const mobileIsInvalid = Boolean(
+    strictMobile && value.capturedPhone && !/^\d{10}$/.test(value.capturedPhone)
+  );
+  const showMobileFormatError = Boolean(
+    mobileIsInvalid &&
+    value.capturedPhone &&
+    (value.capturedPhone.length >= 10 || /\D/.test(value.capturedPhone))
+  );
   const selectedContact = contacts.find((contact) => contact.id === value.contactId);
 
   return (
@@ -58,18 +68,19 @@ export function EnquiryCustomerFields({
       <WorkspaceFormField label="Mobile no" className="enquiry-nav-field">
         <Input
           type="tel"
+          inputMode="numeric"
           autoComplete="tel"
           autoFocus={autoFocusMobile}
-          aria-invalid={Boolean(mobileError)}
+          aria-invalid={Boolean(mobileError || showMobileFormatError)}
           className={
-            matches.length === 1 && !loading && !mobileError
+            matches.length === 1 && !loading && !mobileError && !mobileIsInvalid
               ? "border-emerald-500 ring-1 ring-emerald-500/35 focus-visible:border-emerald-600 focus-visible:ring-emerald-500/50"
               : undefined
           }
           value={value.capturedPhone ?? ""}
           onChange={(event) => {
             const mobile = event.target.value;
-            const found = matchingContacts(contacts, mobile);
+            const found = matchingContacts(contacts, mobile, strictMobile);
             if (found.length === 1) {
               setManualName(false);
               onChange({ capturedPhone: mobile, contactId: found[0]!.id, capturedName: null });
@@ -82,8 +93,12 @@ export function EnquiryCustomerFields({
             }
           }}
         />
-        {mobileError ? <p className="text-xs text-destructive">{mobileError}</p> : null}
-        {mobileDigits.length >= 7 ? (
+        {mobileError || showMobileFormatError ? (
+          <p className="text-xs text-destructive">
+            {mobileError || "Enter a 10-digit mobile number."}
+          </p>
+        ) : null}
+        {mobileDigits.length >= 7 && (!strictMobile || !mobileIsInvalid) ? (
           <p className="text-xs text-muted-foreground">
             {loading
               ? "Searching Core contacts..."
@@ -151,9 +166,9 @@ export function EnquiryCustomerFields({
   );
 }
 
-function matchingContacts(contacts: EnquiryLookup[], mobile: string | null) {
+function matchingContacts(contacts: EnquiryLookup[], mobile: string | null, strictMobile: boolean) {
   const key = enquiryPhoneKey(mobile);
-  if (key.length < 7) return [];
+  if (strictMobile ? key.length !== 10 || mobile !== key : key.length < 7) return [];
   return contacts.filter(
     (contact) =>
       contact.status === "active" &&

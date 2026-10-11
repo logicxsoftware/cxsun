@@ -1,3 +1,7 @@
+import {
+  formatDate as formatWorkspaceDate,
+  formatDateTime as formatWorkspaceDateTime
+} from "@cxsun/ui/workspace";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Printer, RefreshCw, Save } from "lucide-react";
@@ -236,7 +240,7 @@ export function GstStatementWorkspace() {
                 </div>
                 {statement?.filing.updatedAt ? (
                   <span className="text-xs text-muted-foreground">
-                    Last saved {new Date(statement.filing.updatedAt).toLocaleString("en-IN")}
+                    Last saved {formatWorkspaceDateTime(statement.filing.updatedAt)}
                   </span>
                 ) : null}
               </header>
@@ -353,9 +357,5 @@ function SummaryTotal({
 }
 
 function formatDate(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  return formatWorkspaceDate(value);
 }

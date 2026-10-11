@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { Boxes, LayoutGrid, PackageOpen, RefreshCw } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { Card } from "@cxsun/ui/components/card";
@@ -92,7 +93,7 @@ function OverviewStatus({ overview }: { overview: LogicxErpOverview }) {
   const items = [
     ["Tenant", `${overview.tenantName} (${overview.tenantCode})`],
     ["Signed in as", overview.actorEmail],
-    ["Last checked", new Date(overview.checkedAt).toLocaleString()]
+    ["Last checked", formatWorkspaceDateTime(overview.checkedAt)]
   ] as const;
 
   return (

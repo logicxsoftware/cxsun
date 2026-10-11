@@ -1,3 +1,4 @@
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import type { ZetroGrant, ZetroInteractionLog, ZetroQueryPattern } from "./admin.types";
 import { zetroCapabilityLabels } from "./admin.types";
@@ -86,7 +87,7 @@ export function ZetroInteractionList({
             <p className="mb-2 text-xs text-muted-foreground">
               #{item.pattern_uuid ? (patternNumber.get(item.pattern_uuid) ?? "?") : "?"} ·{" "}
               {item.outcome} · {item.skill_decision ?? item.intent} · {item.actor_email} ·{" "}
-              {new Date(item.created_at).toLocaleString()}
+              {formatDateTime(item.created_at)}
             </p>
             <p className="whitespace-pre-wrap break-words">
               <strong>User:</strong> {item.prompt_text}

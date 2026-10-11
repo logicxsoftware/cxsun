@@ -1,3 +1,4 @@
+import { formatDate as formatWorkspaceDate } from "@cxsun/ui/workspace";
 import {
   billingApiDelete,
   billingApiGet,
@@ -113,12 +114,7 @@ export function formatPaymentMoney(value: number) {
   return new Intl.NumberFormat("en-IN", { currency: "INR", style: "currency" }).format(value);
 }
 export function formatPaymentDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(
-        date
-      );
+  return formatWorkspaceDate(value);
 }
 
 const paymentLocationListPaths = {

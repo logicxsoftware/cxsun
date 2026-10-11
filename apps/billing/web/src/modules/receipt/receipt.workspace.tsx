@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { useEffect, useState, type SetStateAction } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "@tanstack/react-router";
@@ -407,13 +408,7 @@ function ReceiptShow({
   );
 }
 function formatActivityDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("en-IN", {
-        dateStyle: "medium",
-        timeStyle: "short"
-      }).format(date);
+  return formatWorkspaceDateTime(value);
 }
 function Summary({ label, value }: { label: string; value: string }) {
   return (

@@ -26,6 +26,16 @@ import type {
 
 export const newEnquiryFormId = "crm-new-enquiry-form";
 
+const newEnquirySchema = enquirySchema.superRefine((value, context) => {
+  if (value.capturedPhone && !/^\d{10}$/.test(value.capturedPhone)) {
+    context.addIssue({
+      code: "custom",
+      message: "Enter a 10-digit mobile number.",
+      path: ["capturedPhone"]
+    });
+  }
+});
+
 export function EnquiryForm({
   record,
   contacts,
@@ -38,6 +48,8 @@ export function EnquiryForm({
   error,
   lookupError,
   onBack,
+  onSeeMoreEnquiries,
+  onOpenEnquiry,
   onContactSaved,
   onSubmit
 }: {
@@ -52,6 +64,8 @@ export function EnquiryForm({
   error: string;
   lookupError: string;
   onBack: () => void;
+  onSeeMoreEnquiries?: ((mobile: string, contactId: number | null) => void) | undefined;
+  onOpenEnquiry?: ((id: number, mobile: string, contactId: number | null) => void) | undefined;
   onContactSaved: () => Promise<void>;
   onSubmit: (payload: EnquirySavePayload) => void;
 }) {
@@ -108,7 +122,7 @@ export function EnquiryForm({
       return;
     }
     const payload = normalize(value);
-    const result = enquirySchema.safeParse(payload);
+    const result = (record ? enquirySchema : newEnquirySchema).safeParse(payload);
     if (!result.success) {
       setIssues(
         Object.fromEntries(
@@ -232,6 +246,7 @@ export function EnquiryForm({
               >
                 <div className="space-y-5">
                   <EnquiryCustomerFields
+                    strictMobile={!record}
                     autoFocusMobile={!record}
                     contacts={contacts}
                     loading={contactsLoading}
@@ -399,6 +414,8 @@ export function EnquiryForm({
           mobile={value.capturedPhone}
           contactId={value.contactId}
           users={users}
+          onSeeMoreEnquiries={onSeeMoreEnquiries}
+          onOpenEnquiry={onOpenEnquiry}
           onSelectMobile={(mobile) =>
             setCustomer({ capturedPhone: mobile, contactId: null, capturedName: mobile })
           }

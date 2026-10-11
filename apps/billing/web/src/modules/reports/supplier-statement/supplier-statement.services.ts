@@ -1,3 +1,4 @@
+import { formatDate as formatWorkspaceDate } from "@cxsun/ui/workspace";
 import { billingApiGet } from "../../../shared/api/billing-api";
 import type { SupplierStatement, SupplierStatementFilters } from "./supplier-statement.types";
 
@@ -43,12 +44,5 @@ export function formatSupplierStatementMoney(value: number) {
 }
 
 export function formatSupplierStatementDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-      }).format(date);
+  return formatWorkspaceDate(value);
 }

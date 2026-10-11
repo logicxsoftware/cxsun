@@ -100,6 +100,10 @@ export default defineConfig(({ command, mode }) => {
           configDir,
           "../../crm/web/src/modules/enquiry/index.ts"
         ),
+        "@cxsun/crm-web/modules/reports": resolve(
+          configDir,
+          "../../crm/web/src/modules/reports/index.ts"
+        ),
         "@cxsun/zetro-web/modules/provider": resolve(
           configDir,
           "../../zetro/web/src/modules/provider/index.ts"

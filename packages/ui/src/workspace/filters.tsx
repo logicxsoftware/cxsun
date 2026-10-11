@@ -46,7 +46,7 @@ export function WorkspaceFilters({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-md border border-border/70 bg-card/95 p-2 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-3",
+        "flex flex-col gap-2 rounded-md border border-border/70 bg-card/95 p-1.5 shadow-sm sm:flex-row sm:items-center sm:justify-between",
         className
       )}
     >

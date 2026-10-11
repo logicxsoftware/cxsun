@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "../../workspace/utils";
 import { ArchiveRestoreIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../../components/button";
@@ -25,5 +26,5 @@ export function ArchivedChatWorkspace({ chats, onDelete, onDeleteAll, onOpen, on
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return formatWorkspaceDateTime(value);
 }

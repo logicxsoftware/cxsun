@@ -7,6 +7,7 @@ import { WorkspaceAnimatedTabs } from "@cxsun/ui/workspace/animated-tabs";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
 import { WorkspaceShowLayout } from "@cxsun/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { CrmColorLabel, CrmStatusBadge } from "../../crm-colors";
 import { EnquiryActivityPanel } from "./enquiry.activity";
 import { EnquiryComments } from "./enquiry.comments";
@@ -258,13 +259,7 @@ function enquiryHeading(record: EnquiryRecord, mobile: string | null) {
 }
 
 function formatCreatedAt(value: string) {
-  const date = new Date(value);
-  const calendarDate = date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  });
-  return `${calendarDate}, ${date.toLocaleTimeString("en-US")}`;
+  return formatWorkspaceDateTime(value);
 }
 
 function WhatsAppIcon() {

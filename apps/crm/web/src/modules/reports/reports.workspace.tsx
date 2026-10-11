@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { crmRequest } from "../../crm-request";
 import { Button } from "@cxsun/ui/components/button";
 import { Input } from "@cxsun/ui/components/input";
-import { WorkspaceSelect } from "@cxsun/ui/workspace/select";
+import { WorkspaceLookup } from "@cxsun/ui/workspace/lookup";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
 import { useEnquiryReport, useEnquiryUsers, type EnquiryReportFilters } from "../enquiry/index";
 import { ReportsTable } from "./reports.table";
@@ -17,10 +17,19 @@ const views: Array<{ id: ReportView; label: string }> = [
   { id: "status", label: "Status wise" }
 ];
 
+const viewTitles: Record<ReportView, string> = {
+  "list-in": "List in",
+  creator: "Creator",
+  assignee: "Assignee",
+  status: "Status"
+};
+
 export function CrmReportsWorkspace({
-  onOpenEnquiries
+  onOpenEnquiries,
+  onViewChange
 }: {
   onOpenEnquiries: (filters: EnquiryReportFilters) => void;
+  onViewChange: (title: string) => void;
 }) {
   const source = useQuery({
     queryKey: ["crm", "enquiries", "source"],
@@ -39,14 +48,16 @@ export function CrmReportsWorkspace({
       </WorkspacePage>
     );
   if (source.data?.provider === "frappe")
-    return <LiveReportsWorkspace onOpenEnquiries={onOpenEnquiries} />;
-  return <LocalReportsWorkspace onOpenEnquiries={onOpenEnquiries} />;
+    return <LiveReportsWorkspace onOpenEnquiries={onOpenEnquiries} onViewChange={onViewChange} />;
+  return <LocalReportsWorkspace onOpenEnquiries={onOpenEnquiries} onViewChange={onViewChange} />;
 }
 
 function LocalReportsWorkspace({
-  onOpenEnquiries
+  onOpenEnquiries,
+  onViewChange
 }: {
   onOpenEnquiries: (filters: EnquiryReportFilters) => void;
+  onViewChange: (title: string) => void;
 }) {
   const [view, setView] = useState<ReportView>("list-in");
   const [draft, setDraft] = useState<EnquiryReportFilters>({});
@@ -54,6 +65,7 @@ function LocalReportsWorkspace({
   const report = useEnquiryReport(filters);
   const users = useEnquiryUsers();
   const invalidDates = Boolean(draft.fromDate && draft.toDate && draft.fromDate > draft.toDate);
+  useEffect(() => onViewChange(viewTitles[view]), [onViewChange, view]);
   return (
     <WorkspacePage title="" className="pt-0 lg:pt-0" technicalName="page.crm.reports">
       <div className="space-y-4">
@@ -71,10 +83,10 @@ function LocalReportsWorkspace({
           ))}
         </div>
         <div className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-4">
-          <label className="min-w-40 flex-1 text-sm text-muted-foreground">
+          <label className="w-44 shrink-0 text-sm text-muted-foreground">
             From date
             <Input
-              className="mt-1"
+              className="mt-1 w-44 min-w-0"
               type="date"
               value={draft.fromDate ?? ""}
               onChange={(event) =>
@@ -82,10 +94,10 @@ function LocalReportsWorkspace({
               }
             />
           </label>
-          <label className="min-w-40 flex-1 text-sm text-muted-foreground">
+          <label className="w-44 shrink-0 text-sm text-muted-foreground">
             To date
             <Input
-              className="mt-1"
+              className="mt-1 w-44 min-w-0"
               type="date"
               value={draft.toDate ?? ""}
               onChange={(event) => setDraft({ ...draft, toDate: event.target.value || undefined })}
@@ -94,8 +106,13 @@ function LocalReportsWorkspace({
           <div className="min-w-52 flex-[2] text-sm text-muted-foreground">
             <span>Assigned to</span>
             <div className="mt-1">
-              <WorkspaceSelect
+              <WorkspaceLookup
                 ariaLabel="Assigned to"
+                allowTextValue={false}
+                clearable={false}
+                loading={users.isLoading}
+                placeholder="Search assignees"
+                showAllOptionsOnFocus
                 value={draft.assignedUserId ?? "all"}
                 onValueChange={(value) =>
                   setDraft({ ...draft, assignedUserId: value === "all" ? undefined : value })
@@ -111,10 +128,16 @@ function LocalReportsWorkspace({
               />
             </div>
           </div>
-          <Button type="button" disabled={invalidDates} onClick={() => setFilters({ ...draft })}>
+          <Button
+            className="h-11"
+            type="button"
+            disabled={invalidDates}
+            onClick={() => setFilters({ ...draft })}
+          >
             Apply filters
           </Button>
           <Button
+            className="h-11"
             type="button"
             variant="outline"
             onClick={() => {

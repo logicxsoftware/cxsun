@@ -38,6 +38,7 @@ export type WorkspaceLookupCreateMode = "none" | "inline" | "popup";
 
 export function WorkspaceLookup({
   allowTextValue = true,
+  ariaLabel,
   className,
   clearable = true,
   compactOptions = false,
@@ -70,6 +71,7 @@ export function WorkspaceLookup({
   value
 }: {
   allowTextValue?: boolean | undefined;
+  ariaLabel?: string | undefined;
   className?: string | undefined;
   clearable?: boolean | undefined;
   compactOptions?: boolean | undefined;
@@ -330,6 +332,7 @@ export function WorkspaceLookup({
           ) : null}
           <Input
             ref={inputRef}
+            aria-label={ariaLabel}
             aria-autocomplete="list"
             aria-expanded={isOpen}
             aria-invalid={invalid}

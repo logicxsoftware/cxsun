@@ -1,4 +1,5 @@
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
+import { formatDate, formatDateTime } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import { Checkbox } from "@cxsun/ui/components/checkbox";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
@@ -50,7 +51,12 @@ export function RemoteEnquiryList({
     },
     { accessorKey: "name", header: "FRAPPE ID", size: 120 },
     { accessorKey: "title", header: "ENQUIRY" },
-    { accessorKey: "date", header: "DATE", size: 130, cell: ({ row }) => row.original.date || "—" },
+    {
+      accessorKey: "date",
+      header: "DATE",
+      size: 130,
+      cell: ({ row }) => (row.original.date ? formatDate(row.original.date) : "—")
+    },
     { accessorKey: "status", header: "STATUS", size: 120 },
     { accessorKey: "priority", header: "PRIORITY", size: 120 },
     {
@@ -167,7 +173,7 @@ export function LocalEnquiryList({
       accessorKey: "updatedAt",
       header: "LOCAL UPDATED",
       size: 175,
-      cell: ({ row }) => new Date(row.original.updatedAt).toLocaleString()
+      cell: ({ row }) => formatDateTime(row.original.updatedAt)
     },
     {
       id: "action",

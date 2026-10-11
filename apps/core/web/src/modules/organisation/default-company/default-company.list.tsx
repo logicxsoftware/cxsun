@@ -1,3 +1,4 @@
+import { formatDate as formatWorkspaceDate } from "@cxsun/ui/workspace";
 import { Building2, CalendarDays, LayoutGrid } from "lucide-react";
 import { Button, WorkspaceStatusBadge } from "@cxsun/ui";
 import type { DefaultCompanyRecord } from "./default-company.types";
@@ -67,12 +68,7 @@ export function DefaultCompanyList({
   );
 }
 function format(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(
-        date
-      );
+  return formatWorkspaceDate(value);
 }
 function label(value: string) {
   return value

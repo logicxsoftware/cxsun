@@ -14,7 +14,8 @@ import type {
   EnquirySavePayload,
   EnquirySummary,
   EnquiryReportFilters,
-  EnquiryReportRow
+  EnquiryReportRow,
+  EnquiryColumnFilters
 } from "./enquiry.types";
 
 export async function listEnquiryPage(options: {
@@ -22,6 +23,9 @@ export async function listEnquiryPage(options: {
   page: number;
   pageSize: number;
   search: string;
+  mobile?: string;
+  contactId?: number;
+  columnFilters?: EnquiryColumnFilters;
   filter: string;
   reportFilters?: EnquiryReportFilters | undefined;
 }) {
@@ -32,6 +36,12 @@ export async function listEnquiryPage(options: {
     search: options.search,
     filter: options.filter
   });
+  if (options.mobile) query.set("mobile", options.mobile);
+  if (options.contactId) query.set("contactId", String(options.contactId));
+  for (const [column, value] of Object.entries(options.columnFilters ?? {})) {
+    if (value?.trim())
+      query.set(`search${column[0]!.toUpperCase()}${column.slice(1)}`, value.trim());
+  }
   for (const [key, value] of Object.entries(options.reportFilters ?? {})) {
     if (value && !["filter", "fromDate", "toDate"].includes(key)) query.set(key, value);
   }

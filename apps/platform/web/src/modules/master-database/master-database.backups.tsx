@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import {
   Table,
@@ -77,9 +77,7 @@ export function MasterDatabaseBackups({
                       {file.source === "uploaded" ? "Uploaded" : "Generated"}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
-                  </TableCell>
+                  <TableCell>{formatDateTime(file.createdAt)}</TableCell>
                   <TableCell>{formatBytes(file.sizeBytes)}</TableCell>
                   <TableCell>{file.available ? "File present" : "File missing"}</TableCell>
                   <TableCell className="space-x-2 text-right whitespace-nowrap">

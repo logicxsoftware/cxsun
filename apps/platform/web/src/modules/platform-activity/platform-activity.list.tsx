@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { StatusBadge } from "@cxsun/ui";
 import type { PlatformActivity } from "./platform-activity.types";
 
@@ -25,7 +25,7 @@ export function PlatformActivityList({ records }: { records: PlatformActivity[] 
               </td>
               <td className="px-4 py-3 text-muted-foreground">{record.actorEmail}</td>
               <td className="px-4 py-3 text-muted-foreground">
-                {formatDistanceToNow(new Date(record.createdAt), { addSuffix: true })}
+                {formatDateTime(record.createdAt)}
               </td>
             </tr>
           ))}

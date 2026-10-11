@@ -69,7 +69,7 @@ export function AppHeader({
           className={cn(
             "flex shrink-0 items-center gap-2",
             actionsAlignment === "workspace" &&
-              "mr-4 lg:mr-[max(2rem,calc((100%-92rem)/2+1.5rem))]",
+              "mr-4 lg:mr-[max(2rem,calc((100%-92rem)/2+0.5rem))]",
             actionsAlignment === "form" && "mr-4 lg:mr-[max(2rem,calc((100%-72rem)/2))]"
           )}
         >

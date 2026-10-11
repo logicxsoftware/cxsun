@@ -1,3 +1,4 @@
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceDetailTable } from "@cxsun/ui/workspace/show";
 import { WorkspaceUpsertDialog } from "@cxsun/ui/workspace/upsert";
@@ -27,8 +28,8 @@ export function PriorityShow({
               ["Code", record.code],
               ["Status", record.status],
               ["Sort order", record.sortOrder],
-              ["Created", new Date(record.createdAt).toLocaleString()],
-              ["Updated", new Date(record.updatedAt).toLocaleString()],
+              ["Created", formatDateTime(record.createdAt)],
+              ["Updated", formatDateTime(record.updatedAt)],
               ["Updated by", record.updatedBy]
             ]}
           />

@@ -1,3 +1,7 @@
+import {
+  formatDate as formatWorkspaceDate,
+  formatDateTime as formatWorkspaceDateTime
+} from "@cxsun/ui/workspace";
 import { WorkspacePrintSheet } from "@cxsun/ui/workspace/print";
 import { BillingDocumentHeader } from "../../settings";
 import { formatGstQuantity, formatGstStatementMoney } from "./gst-statement.services";
@@ -77,7 +81,7 @@ export function GstStatementPrint({
         ) : null}
 
         <footer className="flex justify-between border-x border-b border-slate-500 px-3 py-2">
-          <span>Generated {new Date().toLocaleString("en-IN")}</span>
+          <span>Generated {formatWorkspaceDateTime(new Date())}</span>
           <span className="font-semibold">For {statement.companyName}</span>
         </footer>
       </article>
@@ -239,11 +243,7 @@ function FiledDetail({
 }
 
 function formatDate(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  return formatWorkspaceDate(value);
 }
 
 const printStyles = `@media print { .billing-statement-print-document { break-inside: auto !important; } .billing-statement-print-document thead { display: table-header-group; } .billing-statement-print-document tr { break-inside: avoid; } }`;

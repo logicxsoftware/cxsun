@@ -49,6 +49,19 @@ const listQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(100),
   search: z.string().trim().max(191).default(""),
+  mobile: z
+    .string()
+    .regex(/^\d{7,15}$/)
+    .optional(),
+  contactId: z.coerce.number().int().positive().optional(),
+  searchCustomer: z.string().trim().max(191).optional(),
+  searchDetails: z.string().trim().max(191).optional(),
+  searchListIn: z.string().trim().max(191).optional(),
+  searchDueDate: z.string().trim().max(191).optional(),
+  searchPriority: z.string().trim().max(191).optional(),
+  searchCreator: z.string().trim().max(191).optional(),
+  searchAssignedTo: z.string().trim().max(191).optional(),
+  searchStatus: z.string().trim().max(191).optional(),
   filter: z.string().trim().max(80).default("all"),
   fromAt: z.iso.datetime({ offset: true }).optional(),
   toAt: z.iso.datetime({ offset: true }).optional(),

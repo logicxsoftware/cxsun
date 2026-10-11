@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { Card } from "@cxsun/ui/components/card";
@@ -48,7 +49,7 @@ export function EcommerceOverviewWorkspace({
             </div>
             <div>
               <dt className="text-sm text-muted-foreground">Last checked</dt>
-              <dd>{new Date(overview.data.checkedAt).toLocaleString()}</dd>
+              <dd>{formatWorkspaceDateTime(overview.data.checkedAt)}</dd>
             </div>
           </dl>
         </Card>

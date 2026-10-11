@@ -239,6 +239,10 @@ Autocomplete:
 Date:
 
 - Use `WorkspaceDatePicker`.
+- Show every calendar date in lists, tables, cards, and reports as `DD-MM-YYYY`.
+- Show a date with a time as `DD-MM-YYYY HH:mm` when the time matters.
+- Use the shared `formatDate` and `formatDateTime` helpers from `@cxsun/ui/workspace` for display.
+- Keep API values, date input values, database values, and sort keys in their existing machine-readable formats.
 - The calendar must be wide enough to read.
 - Month and year selectors must be themed.
 - Chevron navigation must sit on the right.

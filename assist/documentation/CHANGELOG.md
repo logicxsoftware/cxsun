@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.82
+Current version: 1.0.83
 
-Release tag: v-1.0.82
+Release tag: v-1.0.83
 
-Changelog label: v 1.0.82
+Changelog label: v 1.0.83
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,25 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.83
+
+### [v 1.0.83] 2026-10-11 6:38 pm - CRM enquiry, contact, and workspace refinements
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Release #83 updates all workspace packages, internal dependency ranges, the lockfile, Windows manifests, and the deployment sample to version 1.0.83.
+- CRM matches enquiry phones with captured numbers and Core contacts. The new enquiry form shows five recent matches with links to each enquiry and the full list.
+- The new enquiry form and API require a 10-digit mobile number.
+- Enquiry lists support server-backed column search and inline filters. Escape selects the input text, clears it, then closes the filter on successive presses.
+- The Enquiries breadcrumb uses its page name. The New enquiry button sits in the application header and aligns with the table.
+- Core Contacts now has status and inline column filters, column visibility controls, and a white search strip like Enquiries.
+- CRM report breadcrumbs follow the selected view. Date fields use compact widths, form controls share one height, and assignees have searchable lookup.
+- Shared workspace dates use DD-MM-YYYY. A new formatter shows local date and time in list and detail views.
 
 ## v-1.0.82
 

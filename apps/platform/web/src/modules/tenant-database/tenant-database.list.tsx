@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { Building2Icon, CheckCircle2Icon, Clock3Icon, DatabaseIcon } from "lucide-react";
 import { GlobalLoader, StatusBadge } from "@cxsun/ui";
 import type { TenantDatabaseStatus } from "./tenant-database.types";
@@ -95,7 +95,7 @@ export function TenantDatabaseList({
                           </StatusBadge>
                         </div>
                         <div className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(lastRun.createdAt), { addSuffix: true })}
+                          {formatDateTime(lastRun.createdAt)}
                         </div>
                       </>
                     ) : (

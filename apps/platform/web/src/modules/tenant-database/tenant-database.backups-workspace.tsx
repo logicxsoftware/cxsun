@@ -1,5 +1,5 @@
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { useRef, useState } from "react";
-import { formatDistanceToNow } from "date-fns";
 import { ArrowLeftIcon, DownloadIcon } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { RadioGroup, RadioGroupItem } from "@cxsun/ui/components/radio-group";
@@ -161,7 +161,7 @@ export function TenantDatabaseBackupsWorkspace({
                         {file.source === "uploaded" ? "Uploaded" : "Generated"}
                       </span>
                     </td>
-                    <td>{formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}</td>
+                    <td>{formatDateTime(file.createdAt)}</td>
                     <td>{formatBytes(file.sizeBytes)}</td>
                     <td>{file.available ? "File present" : "File missing"}</td>
                     <td className="space-x-2 text-right">
@@ -385,7 +385,7 @@ export function TenantDatabaseBackupsWorkspace({
                   <tr className="border-b" key={run.uuid}>
                     <td className="py-3 capitalize">{run.operation}</td>
                     <td className="capitalize">{run.status}</td>
-                    <td>{formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}</td>
+                    <td>{formatDateTime(run.createdAt)}</td>
                     <td>
                       {typeof run.details.error === "string"
                         ? run.details.error

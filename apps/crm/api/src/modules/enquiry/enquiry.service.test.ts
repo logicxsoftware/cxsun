@@ -52,6 +52,29 @@ const relations: EnquiryRelations = {
   priority: async () => ({ name: "Normal" })
 };
 
+test("new enquiries accept only ten-digit mobile numbers when provided", async () => {
+  let created = 0;
+  const repository = {
+    create: async (input: EnquiryInput) => {
+      created += 1;
+      return { ...record(), ...input } as EnquiryRecord;
+    }
+  } as unknown as EnquiryRepository;
+  const service = new EnquiryService(repository, relations, {
+    actorEmail: "creator@example.com",
+    actorUserId: 2,
+    canViewAll: false
+  });
+
+  await assert.rejects(
+    service.create({ ...record(), capturedPhone: "9858545855225" }, "creator@example.com"),
+    /10-digit mobile number/i
+  );
+  assert.equal(created, 0);
+  await service.create({ ...record(), capturedPhone: "9976222059" }, "creator@example.com");
+  assert.equal(created, 1);
+});
+
 test("list scope and detail access use the server actor", async () => {
   let options: EnquiryListOptions | undefined;
   const repository = {

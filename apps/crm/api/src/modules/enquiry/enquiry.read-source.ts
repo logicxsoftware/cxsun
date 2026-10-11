@@ -101,8 +101,16 @@ export class EnquiryReadService {
         throw AppError.validation("Frappe report filters cannot filter Local enquiries.");
       return { source: "local" as const, ...(await this.local.listPage(query)) };
     }
-    if (query.listInId || query.createdBy || query.assignedUserId || query.fromAt || query.toAt) {
-      throw AppError.validation("Local report IDs cannot filter Frappe enquiries.");
+    if (
+      query.listInId ||
+      query.createdBy ||
+      query.assignedUserId ||
+      query.fromAt ||
+      query.toAt ||
+      query.mobile ||
+      query.contactId
+    ) {
+      throw AppError.validation("Local enquiry filters cannot filter Frappe enquiries.");
     }
     return this.remote.list({
       scope: query.scope,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Plus, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceFilters } from "@cxsun/ui/workspace/filters";
@@ -15,7 +15,7 @@ import {
   useContactLookups,
   useContacts
 } from "./contact.hooks";
-import { ContactList } from "./contact.list";
+import { ContactList, type ContactColumnFilters } from "./contact.list";
 import {
   createContact,
   createAddressTypeLookup,
@@ -49,6 +49,14 @@ const emptyLookups: ContactLookups = {
   cities: [],
   pincodes: []
 };
+const contactColumns = [
+  { id: "contact", label: "Contact" },
+  { id: "code", label: "Code" },
+  { id: "phone", label: "Phone" },
+  { id: "email", label: "Email" },
+  { id: "status", label: "Status" }
+] as const;
+
 export function ContactWorkspace({
   basePath = "/app/core/master/contact",
   hideSinglePagePagination = false,
@@ -62,6 +70,10 @@ export function ContactWorkspace({
     [search, setSearch] = useState(""),
     [page, setPage] = useState(1),
     [rowsPerPage, setRowsPerPage] = useState(100),
+    [statusFilter, setStatusFilter] = useState("all"),
+    [showInlineFilters, setShowInlineFilters] = useState(false),
+    [columnFilters, setColumnFilters] = useState<ContactColumnFilters>({}),
+    [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({}),
     [editing, setLocalEditing] = useState<ContactRecord | null | undefined>(undefined),
     query = useContacts(search),
     lookupsQuery = useContactLookups(),
@@ -100,9 +112,34 @@ export function ContactWorkspace({
       current && record && current.id === record.id ? current : record
     );
   }, [basePath, location.pathname, query.data]);
-  const totalPages = Math.max(1, Math.ceil(records.length / rowsPerPage));
+  const filteredRecords = records.filter((record) => {
+    if (statusFilter === "active" && !record.isActive) return false;
+    if (statusFilter === "inactive" && record.isActive) return false;
+    return contactColumns.every(({ id }) => {
+      const value = columnFilters[id as keyof ContactColumnFilters]?.trim().toLowerCase();
+      if (!value) return true;
+      const text =
+        id === "contact"
+          ? record.name
+          : id === "code"
+            ? record.code
+            : id === "phone"
+              ? record.primaryPhone
+              : id === "email"
+                ? record.primaryEmail
+                : record.isActive
+                  ? "active"
+                  : "inactive";
+      return (text ?? "").toLowerCase().includes(value);
+    });
+  });
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / rowsPerPage));
   const currentPage = Math.min(page, totalPages);
-  const visibleRecords = records.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const visibleRecords = filteredRecords.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+  const activeColumnFilters = Object.values(columnFilters).filter((value) => value?.trim()).length;
   const save = useMutation({
     mutationFn: (payload: ContactSavePayload) =>
       editing ? updateContact(editing.id, payload) : createContact(payload),
@@ -175,16 +212,77 @@ export function ContactWorkspace({
         : { className: "pt-0 lg:pt-0" })}
     >
       <WorkspaceFilters
+        toolbarAction={
+          <Button
+            aria-label="Toggle column search filters"
+            aria-pressed={showInlineFilters}
+            className="h-8 min-w-8 gap-1 px-2"
+            title="Toggle column search filters"
+            type="button"
+            variant={showInlineFilters ? "default" : "outline"}
+            onClick={() => setShowInlineFilters((open) => !open)}
+          >
+            <SlidersHorizontal className="size-4" aria-hidden="true" />
+            {activeColumnFilters > 0 ? (
+              <span className="text-xs">{activeColumnFilters}</span>
+            ) : null}
+          </Button>
+        }
+        columnOptions={contactColumns.map((column) => ({
+          ...column,
+          checked: visibleColumns[column.id] !== false,
+          disabled: column.id === "contact",
+          onCheckedChange: (checked) => {
+            setVisibleColumns((current) => ({ ...current, [column.id]: checked }));
+            if (!checked) {
+              setColumnFilters((current) => ({ ...current, [column.id]: "" }));
+              setPage(1);
+            }
+          }
+        }))}
+        onShowAllColumns={() => setVisibleColumns({})}
         searchPlaceholder="Search code, contact, phone, or email"
         searchValue={search}
         onSearchValueChange={(value) => {
           setSearch(value);
           setPage(1);
         }}
+        filterValue={statusFilter}
+        showSelectedFilterChip
+        onFilterValueChange={(value) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}
+        filterOptions={[
+          { id: "all", label: "All contacts", count: records.length },
+          {
+            id: "active",
+            label: "Active",
+            count: records.filter((record) => record.isActive).length
+          },
+          {
+            id: "inactive",
+            label: "Inactive",
+            count: records.filter((record) => !record.isActive).length
+          }
+        ]}
       />
+      {query.error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {query.error.message}
+        </p>
+      ) : null}
       <ContactList
         loading={query.isFetching && !query.data}
         records={visibleRecords}
+        visibleColumns={visibleColumns}
+        showInlineFilters={showInlineFilters}
+        columnFilters={columnFilters}
+        onColumnFilterChange={(column, value) => {
+          setColumnFilters((current) => ({ ...current, [column]: value }));
+          setPage(1);
+        }}
+        onHideInlineFilters={() => setShowInlineFilters(false)}
         onEdit={setEditing}
         onForceDelete={(record) => {
           if (confirm(`Force delete ${record.name}?`)) action.mutate({ record, type: "delete" });
@@ -195,9 +293,9 @@ export function ContactWorkspace({
         <WorkspacePagination
           page={currentPage}
           rowsPerPage={rowsPerPage}
-          showingLabel={buildShowingLabel(currentPage, rowsPerPage, records.length)}
+          showingLabel={buildShowingLabel(currentPage, rowsPerPage, filteredRecords.length)}
           singularLabel="contact"
-          totalCount={records.length}
+          totalCount={filteredRecords.length}
           totalPages={totalPages}
           onNextPage={() => setPage((value) => Math.min(totalPages, value + 1))}
           onPageChange={setPage}

@@ -1,3 +1,4 @@
+import { formatDate } from "@cxsun/ui/workspace";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -65,7 +66,7 @@ export function ContactLifecycleSection({ parentId, onSaved }: Contact360LeafPro
                 {item.previousStatus ?? "Start"} → {item.newStatus}
               </span>
               <span className="text-xs text-muted-foreground">
-                {item.effectiveAt ?? item.createdAt.slice(0, 10)} · {item.reason ?? "No reason"}
+                {formatDate(item.effectiveAt ?? item.createdAt)} · {item.reason ?? "No reason"}
               </span>
             </div>
           ))}

@@ -7,7 +7,7 @@ export const shadcnVariant: DesignSystemVariant = {
   marker: "cx-design-shadcn",
   radius: "7px",
   density: "Comfortable",
-  palette: ["#fafafa", "#171717", "#737373", "#e5e5e5"]
+  palette: ["#ffffff", "#171717", "#606067", "#c9c9cc"]
 };
 
 export const neutralVariant: DesignSystemVariant = {
@@ -17,7 +17,7 @@ export const neutralVariant: DesignSystemVariant = {
   marker: "cx-design-neutral",
   radius: "7px",
   density: "Balanced",
-  palette: ["#f8fafc", "#0f172a", "#64748b", "#e2e8f0"]
+  palette: ["#ffffff", "#0f172a", "#526170", "#b7c2ce"]
 };
 
 export const orangeVariant: DesignSystemVariant = {

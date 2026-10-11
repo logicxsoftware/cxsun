@@ -1,3 +1,4 @@
+import { formatDate as formatWorkspaceDate } from "@cxsun/ui/workspace";
 import type {
   LogicxErpSchemeActivity,
   LogicxErpSchemeFilters,
@@ -67,10 +68,7 @@ export function createLogicxErpSchemeGateway(
 }
 
 export function formatSchemeDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return formatWorkspaceDate(value);
 }
 
 export function formatSchemeAmount(value: number | null) {

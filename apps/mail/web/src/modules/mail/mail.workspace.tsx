@@ -1,3 +1,4 @@
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
@@ -211,7 +212,7 @@ export function MailWorkspace({ mailbox }: { mailbox: Mailbox }) {
                       </p>
                     </div>
                     <time className="text-xs text-muted-foreground">
-                      {new Date(selected.sentAt ?? selected.createdAt).toLocaleString()}
+                      {formatWorkspaceDateTime(selected.sentAt ?? selected.createdAt)}
                     </time>
                   </div>
                 </header>

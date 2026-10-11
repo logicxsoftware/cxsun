@@ -1,3 +1,7 @@
+import {
+  formatDate as formatWorkspaceDate,
+  formatDateTime as formatWorkspaceDateTime
+} from "@cxsun/ui/workspace";
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { CheckCircle2, Trash2 } from "lucide-react";
 import { WorkspaceRowActions, WorkspaceStatusBadge, WorkspaceTable } from "@cxsun/ui";
@@ -112,18 +116,8 @@ export function FinancialYearList({
   );
 }
 function formatDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(
-        date
-      );
+  return formatWorkspaceDate(value);
 }
 function formatDateTime(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(
-        date
-      );
+  return formatWorkspaceDateTime(value);
 }

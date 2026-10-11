@@ -1,15 +1,24 @@
+import {
+  formatDate as formatWorkspaceDate,
+  formatDateTime as formatWorkspaceDateTime
+} from "@cxsun/ui/workspace";
+
 export function formatDate(value: string | null) {
-  return value ? new Date(value).toLocaleDateString() : "—";
+  return value ? formatWorkspaceDate(value) : "—";
 }
 
 export function formatScheduleDate(value: string | null) {
   if (!value) return "—";
-  const [year, month, day] = value.split("-");
-  return `${day}/${month}/${year}`;
+  return formatWorkspaceDate(value);
+}
+
+export function formatListDueDate(value: string | null) {
+  if (!value) return "—";
+  return formatWorkspaceDate(value);
 }
 
 export function formatDateTime(value: string) {
-  return new Date(value).toLocaleString();
+  return formatWorkspaceDateTime(value);
 }
 
 export function formatCommentByline(author: string, createdAt: string, now = Date.now()) {
@@ -18,13 +27,7 @@ export function formatCommentByline(author: string, createdAt: string, now = Dat
   const date = new Date(createdAt);
   if (Number.isNaN(date.getTime())) return name;
 
-  const parts = new Intl.DateTimeFormat("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric"
-  }).formatToParts(date);
-  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "";
-  const calendarDate = `${part("month")}-${part("day")}-${part("year")}`;
+  const calendarDate = formatWorkspaceDate(date);
   const minutes = Math.trunc((now - date.getTime()) / 60_000);
   return `${name} · (${calendarDate}) . ${formatRelativeAge(minutes)}`;
 }

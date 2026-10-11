@@ -1,3 +1,4 @@
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { WorkspaceSelect } from "@cxsun/ui/workspace/select";
 import { Card } from "@cxsun/ui/components/card";
 import type { StoreQuote } from "./storefront.types";
@@ -25,9 +26,7 @@ export function StorefrontList({
               <p className="text-sm">
                 {quote.email} · {quote.phone}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(quote.createdAt).toLocaleString()}
-              </p>
+              <p className="text-xs text-muted-foreground">{formatDateTime(quote.createdAt)}</p>
             </div>
             <WorkspaceSelect
               ariaLabel={`Status for ${quote.uuid}`}

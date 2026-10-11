@@ -1,3 +1,4 @@
+import { formatDate } from "@cxsun/ui/workspace";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FilePlus2 } from "lucide-react";
@@ -69,7 +70,7 @@ export function EnquiryEstimates({
             {estimates.map((estimate) => (
               <tr className="border-t border-border/70" key={estimate.id}>
                 <td className="px-3 py-2 font-medium">#{estimate.id}</td>
-                <td className="px-3 py-2">{estimate.date}</td>
+                <td className="px-3 py-2">{formatDate(estimate.date)}</td>
                 <td className="px-3 py-2">{estimate.itemName}</td>
                 <td className="px-3 py-2">{estimate.supplierName}</td>
                 <td className="px-3 py-2">₹{estimate.price.toFixed(2)}</td>

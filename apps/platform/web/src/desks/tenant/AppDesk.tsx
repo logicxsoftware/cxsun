@@ -545,8 +545,12 @@ export function AppDesk() {
   const signedInUser = signedInTenantUser();
   const routePage = pageFromUrl(null, location.pathname);
   const crmCounts = useCrmNavigationCounts(signedInUser.email, routePage.startsWith("crm."));
-  const [pendingListPage, setPendingListPage] = useState<AppPage | null>(null);
+  const [pendingListPage, setPendingListPage] = useState<{
+    page: AppPage;
+    search?: Record<string, string>;
+  } | null>(null);
   const [crmListRevision, setCrmListRevision] = useState(0);
+  const [crmReportTitle, setCrmReportTitle] = useState("List in");
   const dirtyFormsRef = useRef<Set<Element>>(new Set());
   const [shouldResolveLandingPath, setShouldResolveLandingPath] = useState(() =>
     isAppRootPath(location.pathname)
@@ -642,7 +646,12 @@ export function AppDesk() {
                             ? pageForApp(landingApp)
                             : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
-  const activePageTitle = titleForPage(safePage);
+  const activePageTitle =
+    safePage === "crm.reports"
+      ? crmReportTitle
+      : safePage === "crm.enquiries"
+        ? "Enquiries"
+        : titleForPage(safePage);
   const accountingYear = selectedFinancialYear?.name ?? "Accounting year";
   const defaultSelectionMutation = useMutation({
     mutationFn: saveDefaultCompany,
@@ -746,30 +755,49 @@ export function AppDesk() {
     setPlatformDocumentTitle(titleForPage(allowedPage));
   }
 
-  function navigatePage(nextPage: AppPage, replace = false) {
+  function navigatePage(nextPage: AppPage, replace = false, search: Record<string, string> = {}) {
     void navigate({
       params: { _splat: nextPage.replaceAll(".", "/") },
       replace,
-      search: {},
+      search,
       to: "/app/$"
     });
   }
 
-  function completeListNavigation(nextPage: AppPage, replaceHistory = false) {
+  function completeListNavigation(
+    nextPage: AppPage,
+    replaceHistory = false,
+    search?: Record<string, string>
+  ) {
     const allowedPage = resolveBillingFeaturePage(nextPage, billingSettingsQuery.data?.features);
     dirtyFormsRef.current.clear();
     setPendingListPage(null);
     if (isCrmListPage(allowedPage)) setCrmListRevision((revision) => revision + 1);
-    navigatePage(allowedPage, replaceHistory);
+    navigatePage(allowedPage, replaceHistory, search);
     setPlatformDocumentTitle(titleForPage(allowedPage));
   }
 
-  function requestListNavigation(nextPage: AppPage) {
+  function requestListNavigation(nextPage: AppPage, search?: Record<string, string>) {
     if (Array.from(dirtyFormsRef.current).some((form) => form.isConnected)) {
-      setPendingListPage(nextPage);
+      setPendingListPage({ page: nextPage, ...(search ? { search } : {}) });
       return;
     }
-    completeListNavigation(nextPage);
+    completeListNavigation(nextPage, false, search);
+  }
+
+  function openMobileEnquiries(mobile: string, contactId: number | null) {
+    requestListNavigation("crm.enquiries", {
+      mobile,
+      ...(contactId ? { contactId: String(contactId) } : {})
+    });
+  }
+
+  function openMobileEnquiry(id: number, mobile: string, contactId: number | null) {
+    requestListNavigation("crm.enquiries", {
+      record: String(id),
+      mobile,
+      ...(contactId ? { contactId: String(contactId) } : {})
+    });
   }
 
   function openNewContact() {
@@ -932,7 +960,8 @@ export function AppDesk() {
         headerActionsAlignment={
           safePage === "crm.enquiries.new"
             ? "form"
-            : safePage === "crm.contacts" && location.pathname === "/app/crm/contacts"
+            : safePage === "crm.enquiries" ||
+                (safePage === "crm.contacts" && location.pathname === "/app/crm/contacts")
               ? "workspace"
               : "edge"
         }
@@ -985,6 +1014,19 @@ export function AppDesk() {
                 Ctrl C
               </kbd>
             </Button>
+          ) : safePage === "crm.enquiries" ? (
+            <Button
+              size="sm"
+              className="h-7 px-3"
+              aria-keyshortcuts="Control+E"
+              onClick={() => requestListNavigation("crm.enquiries.new")}
+            >
+              <PlusIcon className="size-4" />
+              New enquiry
+              <kbd className="ml-1 rounded bg-background/15 px-1.5 py-0.5 text-[10px] font-medium text-background/75">
+                Ctrl E
+              </kbd>
+            </Button>
           ) : safePage === "crm.enquiries.new" ? (
             <Button
               size="sm"
@@ -1004,16 +1046,6 @@ export function AppDesk() {
         homeHref={appRootUrl(activeApp)}
         menuItems={menuItems}
         omitWorkspaceBreadcrumb={activeApp === "crm"}
-        {...(activeApp === "crm"
-          ? {
-              sidebarPrimaryAction: {
-                icon: PlusIcon,
-                label: "New enquiry",
-                shortcut: "Ctrl E",
-                onSelect: () => requestListNavigation("crm.enquiries.new")
-              }
-            }
-          : {})}
         onLogout={handleLogout}
         onOpenSettings={() => requestListNavigation("application.settings")}
         settingsActive={safePage === "application.settings"}
@@ -1099,7 +1131,10 @@ export function AppDesk() {
               />
             ) : null}
             {safePage === "crm.reports" ? (
-              <CrmReportsWorkspace onOpenEnquiries={openReportEnquiries} />
+              <CrmReportsWorkspace
+                onOpenEnquiries={openReportEnquiries}
+                onViewChange={setCrmReportTitle}
+              />
             ) : null}
             {safePage === "crm.contacts" ? (
               <ContactWorkspace
@@ -1115,6 +1150,9 @@ export function AppDesk() {
                 key={`${safePage}:${location.href}:${crmListRevision}`}
                 currentUserEmail={signedInUser.email}
                 reportFilters={reportFiltersFromLocation()}
+                mobileFilter={mobileFilterFromLocation(location.href)}
+                initialRecordId={enquiryRecordIdFromLocation(location.href)}
+                onClearMobileFilter={() => requestListNavigation("crm.enquiries")}
                 onBackToReports={() => requestListNavigation("crm.reports")}
               />
             ) : null}
@@ -1123,6 +1161,8 @@ export function AppDesk() {
                 key={safePage}
                 currentUserEmail={signedInUser.email}
                 initialCreate
+                onSeeMoreEnquiries={openMobileEnquiries}
+                onOpenEnquiry={openMobileEnquiry}
                 onCloseCreate={() => completeListNavigation("crm.enquiries", true)}
                 onCancelCreate={() => requestListNavigation("crm.enquiries")}
               />
@@ -1266,7 +1306,8 @@ export function AppDesk() {
               <Button
                 variant="destructive"
                 onClick={() => {
-                  if (pendingListPage) completeListNavigation(pendingListPage);
+                  if (pendingListPage)
+                    completeListNavigation(pendingListPage.page, false, pendingListPage.search);
                 }}
               >
                 Discard changes
@@ -1908,6 +1949,25 @@ function reportFiltersFromLocation(): EnquiryReportFilters | undefined {
   return filters;
 }
 
+function mobileFilterFromLocation(href: string) {
+  const search = new URL(href, window.location.origin).searchParams;
+  const mobile = search.get("mobile");
+  if (!mobile || !/^\d{7,15}$/.test(mobile)) return undefined;
+  const contactIdValue = search.get("contactId");
+  const parsedContactId =
+    contactIdValue && /^[1-9]\d*$/.test(contactIdValue) ? Number(contactIdValue) : null;
+  const contactId =
+    parsedContactId && Number.isSafeInteger(parsedContactId) ? parsedContactId : null;
+  return { mobile, contactId };
+}
+
+function enquiryRecordIdFromLocation(href: string) {
+  const value = new URL(href, window.location.origin).searchParams.get("record");
+  if (!value || !/^[1-9]\d*$/.test(value)) return undefined;
+  const id = Number(value);
+  return Number.isSafeInteger(id) ? id : undefined;
+}
+
 function recordIdFromUrl() {
   return new URLSearchParams(window.location.search).get("record") || undefined;
 }
@@ -2006,7 +2066,7 @@ function titleForPage(page: AppPage) {
     "logicx-erp.overview": "Overview",
     "logicx-erp.schemes": "Schemes",
     "crm.overview": "Overview",
-    "crm.reports": "Reports",
+    "crm.reports": "List in",
     "crm.enquiries": "All Enquiries",
     "crm.enquiries.new": "New enquiry",
     "crm.my-job": "My Job",

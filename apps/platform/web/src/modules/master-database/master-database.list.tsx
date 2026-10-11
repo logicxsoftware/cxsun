@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from "date-fns";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { DatabaseIcon, RotateCcwIcon, ServerIcon, ShieldCheckIcon } from "lucide-react";
 import { GlobalLoader, StatusBadge } from "@cxsun/ui";
 import type { MasterDatabaseStatus } from "./master-database.types";
@@ -96,7 +96,7 @@ export function MasterDatabaseList({ record }: { record: MasterDatabaseStatus | 
                 <tr className="border-t" key={migration.name}>
                   <td className="px-4 py-3 font-medium">{migration.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {formatDistanceToNow(new Date(migration.appliedAt), { addSuffix: true })}
+                    {formatDateTime(migration.appliedAt)}
                   </td>
                 </tr>
               ))}
@@ -151,9 +151,7 @@ export function MasterDatabaseList({ record }: { record: MasterDatabaseStatus | 
                   </StatusBadge>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{run.databaseName}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {formatDistanceToNow(new Date(run.createdAt), { addSuffix: true })}
-                </td>
+                <td className="px-4 py-3 text-muted-foreground">{formatDateTime(run.createdAt)}</td>
               </tr>
             ))}
           </tbody>

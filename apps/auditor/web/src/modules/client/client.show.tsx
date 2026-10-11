@@ -1,4 +1,5 @@
 import { ArrowLeft, Pencil } from "lucide-react";
+import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import { GlobalLoader } from "@cxsun/ui/components/global-loader";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
@@ -95,6 +96,5 @@ function Detail({ label, value }: { label: string; value: string | null }) {
 }
 
 function formatDateTime(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return formatWorkspaceDateTime(value);
 }

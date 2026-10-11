@@ -1,6 +1,6 @@
 {
   "name": "cxsun",
-  "version": "1.0.82",
+  "version": "1.0.83",
   "private": true,
   "packageManager": "npm@12.2.0",
   "description": "CODEXSUN",
@@ -66,6 +66,7 @@
     "test:e2e:composed-runtime": "tsx tools/e2e/composed-platform-runtime.e2e.ts",
     "test:e2e:tenant-session": "tsx tools/e2e/tenant-session-access.e2e.ts",
     "test:e2e:contact-360": "tsx tools/e2e/contact-360.e2e.ts",
+    "test:e2e:crm-enquiry-list-in": "tsx --test tools/e2e/crm-enquiry-list-in.e2e.ts",
     "test:e2e:project-manager": "tsx tools/e2e/project-manager-isolation.e2e.ts",
     "test:e2e:project-manager-ideas": "tsx tools/e2e/project-manager-ideas.e2e.ts",
     "test:e2e:persistence": "tsx tools/e2e/organisation-billing-persistence.e2e.ts",

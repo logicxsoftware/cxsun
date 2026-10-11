@@ -1,4 +1,5 @@
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
+import { formatDateTime } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
@@ -47,14 +48,13 @@ export function FrappeRecordList({
       id: "updatedAt",
       header: "LOCAL UPDATED",
       size: 180,
-      cell: ({ row }) => new Date(row.original.updatedAt).toLocaleString()
+      cell: ({ row }) => formatDateTime(row.original.updatedAt)
     },
     {
       id: "syncedAt",
       header: "LAST POST",
       size: 180,
-      cell: ({ row }) =>
-        row.original.syncedAt ? new Date(row.original.syncedAt).toLocaleString() : "—"
+      cell: ({ row }) => (row.original.syncedAt ? formatDateTime(row.original.syncedAt) : "—")
     },
     {
       id: "action",

@@ -1,3 +1,4 @@
+import { formatDate as formatWorkspaceDate } from "@cxsun/ui/workspace";
 import {
   accountsApiDelete,
   accountsApiGet,
@@ -192,13 +193,7 @@ export function formatMoney(value: number) {
 
 export function formatDate(value: string) {
   if (!value) return "Not set";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(date);
+  return formatWorkspaceDate(value);
 }
 
 export function journalToPayload(journal: JournalEntry): JournalSavePayload {

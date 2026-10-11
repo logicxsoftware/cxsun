@@ -1,5 +1,6 @@
 import { Trash2 } from "lucide-react";
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
+import { formatDate } from "@cxsun/ui/workspace";
 import { WorkspaceRowActions } from "@cxsun/ui/workspace/row-actions";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
@@ -40,8 +41,16 @@ export function MonthsList({
       ),
       header: "Name"
     },
-    { accessorKey: "startDate", header: "Start date" },
-    { accessorKey: "endDate", header: "End date" },
+    {
+      accessorKey: "startDate",
+      header: "Start date",
+      cell: ({ row }) => formatDate(row.original.startDate)
+    },
+    {
+      accessorKey: "endDate",
+      header: "End date",
+      cell: ({ row }) => formatDate(row.original.endDate)
+    },
     {
       accessorKey: "isActive",
       cell: ({ row }) => (

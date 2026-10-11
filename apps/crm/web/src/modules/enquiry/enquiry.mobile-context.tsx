@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock3, Phone } from "lucide-react";
+import { ArrowRight, Clock3, HardHat, PenLine, Phone } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { Card } from "@cxsun/ui/components/card";
+import { formatDate } from "@cxsun/ui/workspace";
+import { CrmStatusBadge, prioritySwatch } from "../../crm-colors";
 import { listEnquiryPage } from "./enquiry.services";
 import { enquiryPhoneKey } from "./enquiry.phone";
 import { enquiryTableText } from "./enquiry.table-text";
@@ -14,24 +16,31 @@ export function EnquiryMobileContext({
   mobile,
   contactId,
   users,
-  onSelectMobile
+  onSelectMobile,
+  onSeeMoreEnquiries,
+  onOpenEnquiry
 }: {
   mobile: string | null;
   contactId: number | null;
   users: EnquiryLookup[];
   onSelectMobile: (mobile: string) => void;
+  onSeeMoreEnquiries?: ((mobile: string, contactId: number | null) => void) | undefined;
+  onOpenEnquiry?: ((id: number, mobile: string, contactId: number | null) => void) | undefined;
 }) {
   const [recent, setRecent] = useState<string[]>(readRecentMobiles);
   const [search, setSearch] = useState("");
   const key = enquiryPhoneKey(mobile);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSearch(key.length >= 7 ? key : ""), 350);
+    const timer = window.setTimeout(
+      () => setSearch(mobile === key && key.length === 10 ? key : ""),
+      350
+    );
     return () => window.clearTimeout(timer);
   }, [key]);
 
   useEffect(() => {
-    if (key.length < 7 || !mobile?.trim()) return;
+    if (key.length !== 10 || mobile !== key) return;
     const timer = window.setTimeout(() => {
       setRecent((current) => {
         const next = [
@@ -46,25 +55,37 @@ export function EnquiryMobileContext({
   }, [key, mobile]);
 
   const enquiries = useQuery({
-    queryKey: ["crm", "enquiries", "mobile-context", search],
-    queryFn: () => listEnquiryPage({ scope: "all", page: 1, pageSize: 100, search, filter: "" }),
-    enabled: search.length >= 7
+    queryKey: ["crm", "enquiries", "mobile-context", search, contactId],
+    queryFn: () =>
+      listEnquiryPage({
+        scope: "all",
+        page: 1,
+        pageSize: 5,
+        search: "",
+        mobile: search,
+        ...(contactId ? { contactId } : {}),
+        filter: "all"
+      }),
+    enabled: search.length === 10
   });
-  const matches = (enquiries.data?.items ?? [])
-    .filter(
-      (item) =>
-        enquiryPhoneKey(item.capturedPhone) === search ||
-        (contactId !== null && item.contactId === contactId)
-    )
-    .slice(0, 5);
+  const matches = enquiries.data?.items ?? [];
 
   return (
     <aside className="min-w-0 space-y-4" aria-label="Mobile enquiry context">
       <Card className="rounded-md shadow-sm">
-        <div className="border-b px-4 py-3 text-sm font-semibold">Existing enquiries</div>
-        <div className="divide-y px-4">
-          {search.length < 7 ? (
-            <ContextMessage>Enter a mobile number to see matching enquiries.</ContextMessage>
+        <div className="flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
+          <span>Existing enquiries</span>
+          {enquiries.data && search === key && enquiries.data.total > 0 ? (
+            <span className="text-xs font-normal text-muted-foreground">
+              {enquiries.data.total} found
+            </span>
+          ) : null}
+        </div>
+        <div className="space-y-2 px-4 py-2">
+          {search.length !== 10 ? (
+            <ContextMessage>
+              Enter a 10-digit mobile number to see matching enquiries.
+            </ContextMessage>
           ) : enquiries.isPending || search !== key ? (
             <ContextMessage>Searching enquiries...</ContextMessage>
           ) : enquiries.isError ? (
@@ -72,9 +93,30 @@ export function EnquiryMobileContext({
           ) : matches.length === 0 ? (
             <ContextMessage>No existing enquiries for this mobile number.</ContextMessage>
           ) : (
-            matches.map((item) => <EnquiryContextRow key={item.id} item={item} users={users} />)
+            matches.map((item) => (
+              <EnquiryContextRow
+                key={item.id}
+                item={item}
+                users={users}
+                onOpen={onOpenEnquiry ? () => onOpenEnquiry(item.id, search, contactId) : undefined}
+              />
+            ))
           )}
         </div>
+        {onSeeMoreEnquiries && enquiries.data && search === key && enquiries.data.total > 0 ? (
+          <div className="border-t px-4 py-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-between"
+              onClick={() => onSeeMoreEnquiries(search, contactId)}
+            >
+              See more in All Enquiries
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
+        ) : null}
       </Card>
       <Card className="rounded-md shadow-sm">
         <div className="flex items-center justify-between border-b px-4 py-3">
@@ -119,23 +161,55 @@ export function EnquiryMobileContext({
   );
 }
 
-function EnquiryContextRow({ item, users }: { item: EnquiryRecord; users: EnquiryLookup[] }) {
+function EnquiryContextRow({
+  item,
+  users,
+  onOpen
+}: {
+  item: EnquiryRecord;
+  users: EnquiryLookup[];
+  onOpen?: (() => void) | undefined;
+}) {
   const assignedTo = users.find((user) => user.id === item.assignedUserId)?.name;
-  const title = enquiryTableText(item.title || item.description) || "Untitled enquiry";
+  const creator =
+    users.find((user) => user.email?.toLowerCase() === item.createdBy.toLowerCase())?.name ??
+    item.createdBy;
+  const message = enquiryTableText(item.description || item.title) || "Untitled enquiry";
+  const date = formatDate(item.createdAt);
   return (
-    <div className="space-y-1.5 py-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">#{item.enquiryNo}</span>
-        <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-          {item.statusName}
-        </span>
+    <button
+      type="button"
+      className="block w-full space-y-3 rounded-sm border-b px-1 py-3 text-left text-sm last:border-b-0 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default"
+      aria-label={`Open enquiry #${item.enquiryNo}`}
+      disabled={!onOpen}
+      onClick={onOpen}
+    >
+      <div className="flex items-start gap-2 font-medium">
+        <span
+          aria-hidden="true"
+          className={`mt-1 size-2.5 shrink-0 rounded-full ${prioritySwatch(item.priority)}`}
+        />
+        <span className="shrink-0">#{item.enquiryNo}</span>
+        <span className="min-w-0 line-clamp-2 break-words">{message}</span>
       </div>
-      <p className="line-clamp-2 break-words font-medium">{title}</p>
-      <p className="text-xs text-muted-foreground">
-        {new Date(item.createdAt).toLocaleDateString()}
-        {assignedTo ? ` · Assigned to ${assignedTo}` : ""}
-      </p>
-    </div>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1" title={`Creator: ${creator}`}>
+          <PenLine className="size-3.5" aria-hidden="true" />
+          {creator}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>{date}</span>
+        <span aria-hidden="true">·</span>
+        <span
+          className="inline-flex items-center gap-1"
+          title={`Assigned to: ${assignedTo ?? "Unassigned"}`}
+        >
+          <HardHat className="size-3.5" aria-hidden="true" />
+          {assignedTo ?? "—"}
+        </span>
+        <CrmStatusBadge code={item.status} label={item.statusName} />
+      </div>
+    </button>
   );
 }
 

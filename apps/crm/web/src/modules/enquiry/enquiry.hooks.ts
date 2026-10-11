@@ -14,7 +14,7 @@ import {
   listEnquiryJobs,
   listTenantUsers
 } from "./enquiry.services";
-import type { EnquiryReportFilters } from "./enquiry.types";
+import type { EnquiryColumnFilters, EnquiryReportFilters } from "./enquiry.types";
 
 export const enquiriesQueryKey = ["crm", "enquiries"] as const;
 export const enquiryAttentionQueryKey = ["crm", "enquiries", "attention"] as const;
@@ -40,6 +40,9 @@ export const useEnquiryPage = (options: {
   page: number;
   pageSize: number;
   search: string;
+  mobile?: string;
+  contactId?: number;
+  columnFilters?: EnquiryColumnFilters;
   filter: string;
   reportFilters?: EnquiryReportFilters | undefined;
 }) =>
@@ -51,6 +54,9 @@ export const useEnquiryPage = (options: {
       options.page,
       options.pageSize,
       options.search,
+      options.mobile,
+      options.contactId,
+      options.columnFilters,
       options.filter,
       options.reportFilters
     ],
@@ -89,9 +95,10 @@ export function useCrmNavigationCounts(_email: string, enabled: boolean) {
     enabled
   });
   const summary = useQuery({
-    queryKey: source.data?.provider === "frappe"
-      ? ["crm", "enquiries", "frappe-summary", new Date().toISOString().slice(0, 10)]
-      : ["crm", "enquiries", "navigation-summary", "local"],
+    queryKey:
+      source.data?.provider === "frappe"
+        ? ["crm", "enquiries", "frappe-summary", new Date().toISOString().slice(0, 10)]
+        : ["crm", "enquiries", "navigation-summary", "local"],
     queryFn: () =>
       source.data?.provider === "frappe"
         ? crmRequest<{ allCount: number; assigned: { total: number }; created: { total: number } }>(

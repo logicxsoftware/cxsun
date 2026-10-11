@@ -52,7 +52,13 @@ export {
   arrayMove
 } from "./drag-drop";
 export { AnimatePresence, motion } from "./motion";
-export { buildShowingLabel, buildPaginationItems, formatMoney, formatDate } from "./utils";
+export {
+  buildShowingLabel,
+  buildPaginationItems,
+  formatMoney,
+  formatDate,
+  formatDateTime
+} from "./utils";
 export type {
   WorkspaceStatusTone,
   WorkspaceListViewState,

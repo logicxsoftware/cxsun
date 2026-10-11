@@ -1,3 +1,4 @@
+import { formatDate as formatWorkspaceDate } from "@cxsun/ui/workspace";
 import {
   billingApiDelete,
   billingApiGet,
@@ -438,13 +439,7 @@ export function formatMoney(value: number) {
 
 export function formatDate(value: string) {
   if (!value) return "Not set";
-  const issuedOn = new Date(value);
-  if (Number.isNaN(issuedOn.getTime())) return value;
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(issuedOn);
+  return formatWorkspaceDate(value);
 }
 
 export function totalPurchaseQuantity(purchase: Purchase) {

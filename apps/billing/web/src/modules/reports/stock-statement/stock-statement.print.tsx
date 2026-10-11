@@ -1,3 +1,7 @@
+import {
+  formatDate as formatWorkspaceDate,
+  formatDateTime as formatWorkspaceDateTime
+} from "@cxsun/ui/workspace";
 import { WorkspacePrintSheet } from "@cxsun/ui/workspace/print";
 import { BillingDocumentHeader } from "../../settings";
 import { formatStockQuantity, formatStockStatementMoney } from "./stock-statement.services";
@@ -93,7 +97,7 @@ export function StockStatementPrint({ statement }: { statement: StockStatement }
         </table>
         <footer className="flex justify-between border-x border-b border-slate-500 px-3 py-3">
           <span>
-            Products: {statement.total} · Generated {new Date().toLocaleString("en-IN")}
+            Products: {statement.total} · Generated {formatWorkspaceDateTime(new Date())}
           </span>
           <span className="font-semibold">For {statement.companyName}</span>
         </footer>
@@ -112,11 +116,7 @@ function PrintTotal({ label, strong, value }: { label: string; strong?: boolean;
 }
 
 function formatDate(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  return formatWorkspaceDate(value);
 }
 
 const printStyles = `@media print { .billing-statement-print-document { break-inside: auto !important; } .billing-statement-print-document thead { display: table-header-group; } .billing-statement-print-document tr { break-inside: avoid; } }`;

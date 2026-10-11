@@ -1,27 +1,17 @@
-import { useDeferredValue, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { Card } from "@cxsun/ui/components/card";
-import { WorkspaceFilters } from "@cxsun/ui/workspace/filters";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
-import { WorkspacePagination } from "@cxsun/ui/workspace/pagination";
-import { buildShowingLabel } from "@cxsun/ui/workspace/utils";
-import { FrappeRecordList } from "./overview.list";
-import { frappeOverviewKey, useFrappeConnection, useFrappeOverview } from "./overview.hooks";
-import { syncFrappeEnquiry, verifyFrappeConnection } from "./overview.services";
-import type { FrappeRecord } from "./overview.types";
+import { useFrappeConnection, useFrappeOverview } from "./overview.hooks";
+import { verifyFrappeConnection } from "./overview.services";
 
 export function FrappeOverviewWorkspace() {
-  const client = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [search, setSearch] = useState("");
   const [verifiedUser, setVerifiedUser] = useState<string | null>(null);
-  const deferredSearch = useDeferredValue(search);
   const connection = useFrappeConnection();
-  const overview = useFrappeOverview(page, pageSize, deferredSearch);
+  const overview = useFrappeOverview(1, 1, "");
   const verify = useMutation({
     mutationFn: verifyFrappeConnection,
     onSuccess: (result) => {
@@ -30,17 +20,8 @@ export function FrappeOverviewWorkspace() {
     },
     onError: (error) => toast.error("Connection check failed", { description: error.message })
   });
-  const sync = useMutation({
-    mutationFn: (record: FrappeRecord) => syncFrappeEnquiry(record.id),
-    onSuccess: async (result) => {
-      await client.invalidateQueries({ queryKey: frappeOverviewKey });
-      toast.success("Enquiry synced", { description: result.remoteName });
-    },
-    onError: (error) => toast.error("Enquiry sync failed", { description: error.message })
-  });
   const configured = connection.data?.configured && connection.data.enabled;
   const counts = overview.data?.counts;
-  const totalPages = Math.max(1, Math.ceil((overview.data?.total ?? 0) / pageSize));
 
   return (
     <WorkspacePage
@@ -98,37 +79,6 @@ export function FrappeOverviewWorkspace() {
         <CountCard label="Posted" value={counts?.synced} />
         <CountCard label="Not posted" value={counts?.pending} />
       </div>
-      <WorkspaceFilters
-        searchValue={search}
-        searchPlaceholder="Search local enquiries"
-        onSearchValueChange={(value) => {
-          setSearch(value);
-          setPage(1);
-        }}
-      />
-      <FrappeRecordList
-        records={overview.data?.items ?? []}
-        loading={overview.isLoading}
-        canSync={Boolean(configured)}
-        syncingId={sync.isPending ? (sync.variables?.id ?? null) : null}
-        onSync={(record) => sync.mutate(record)}
-      />
-      <WorkspacePagination
-        page={page}
-        rowsPerPage={pageSize}
-        rowsPerPageOptions={[10, 20, 50, 100]}
-        showingLabel={buildShowingLabel(page, pageSize, overview.data?.total ?? 0)}
-        singularLabel="enquiry"
-        totalCount={overview.data?.total ?? 0}
-        totalPages={totalPages}
-        onNextPage={() => setPage((value) => Math.min(totalPages, value + 1))}
-        onPageChange={setPage}
-        onPreviousPage={() => setPage((value) => Math.max(1, value - 1))}
-        onRowsPerPageChange={(value) => {
-          setPageSize(value);
-          setPage(1);
-        }}
-      />
     </WorkspacePage>
   );
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, Clock3 } from "lucide-react";
 import { cn } from "@cxsun/ui/lib/utils";
+import { formatDate } from "@cxsun/ui/workspace";
 import type {
   DashboardKind,
   DashboardMetric,
@@ -432,11 +433,7 @@ function money(value: number) {
   }).format(value);
 }
 function date(value: string) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  return formatDate(value);
 }
 function kindDot(kind: DashboardRecent["kind"]) {
   return kind === "sales" || kind === "export-sales"

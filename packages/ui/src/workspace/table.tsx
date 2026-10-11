@@ -27,6 +27,7 @@ export function WorkspaceTable<T extends RowData>({
   columns,
   data,
   emptyState,
+  filterRow,
   isLoading,
   minWidth = "640px",
   onRowClick
@@ -34,6 +35,7 @@ export function WorkspaceTable<T extends RowData>({
   columns: LegacyColumnDef<T>[];
   data: T[];
   emptyState?: ReactNode;
+  filterRow?: (columnId: string) => ReactNode;
   isLoading?: boolean;
   minWidth?: string;
   onRowClick?: (row: T) => void;
@@ -85,6 +87,15 @@ export function WorkspaceTable<T extends RowData>({
             ))}
           </thead>
           <tbody>
+            {filterRow ? (
+              <tr className={workspaceTableRowClass}>
+                {table.getVisibleLeafColumns().map((column) => (
+                  <td key={column.id} className={workspaceTableCellClass}>
+                    {filterRow(column.id)}
+                  </td>
+                ))}
+              </tr>
+            ) : null}
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}

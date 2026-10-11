@@ -1,3 +1,4 @@
+import { formatDate } from "@cxsun/ui/workspace";
 import { useMemo, useState } from "react";
 import { Save, X } from "lucide-react";
 import { toast } from "sonner";
@@ -279,7 +280,7 @@ export function PaymentForm({
               {candidates.map((candidate) => (
                 <tr className="border-b last:border-0" key={candidate.purchaseId}>
                   <td className="px-4 py-3 font-medium">{candidate.documentNo}</td>
-                  <td className="px-4 py-3">{candidate.documentDate}</td>
+                  <td className="px-4 py-3">{formatDate(candidate.documentDate)}</td>
                   <td className="px-4 py-3">{formatPaymentMoney(candidate.documentTotal)}</td>
                   <td className="px-4 py-3">{formatPaymentMoney(candidate.outstandingAmount)}</td>
                   <td className="px-4 py-3">

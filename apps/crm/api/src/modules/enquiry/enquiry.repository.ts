@@ -12,7 +12,8 @@ import type {
   EnquiryScopeSummary,
   EnquirySummary,
   EnquiryRecord,
-  EnquiryRow
+  EnquiryRow,
+  EnquirySearchColumn
 } from "./enquiry.types.js";
 import { sanitizeCommentHtml } from "./enquiry.comment-html.js";
 
@@ -29,39 +30,25 @@ export class EnquiryRepository {
 
   async listPage(options: EnquiryListOptions): Promise<EnquiryPage> {
     let query = this.scopedQuery(options);
-    if (options.search) {
-      const term = `%${options.search.replace(/[\\%_]/g, "\\$&")}%`;
-      const reference = options.search.trim().replace(/^#/u, "");
-      const enquiryNo = /^\d+$/u.test(reference) ? Number(reference) : null;
-      query = query.where((expression) =>
-        expression.or([
-          expression("enquiry.title", "like", term),
-          expression("enquiry.description", "like", term),
-          expression("enquiry.captured_name", "like", term),
-          expression("enquiry.captured_email", "like", term),
-          expression("enquiry.captured_phone", "like", term),
-          sql<boolean>`EXISTS (
-            SELECT 1 FROM core_contacts contact
-            WHERE contact.id = enquiry.contact_id
-              AND (
-                contact.name LIKE ${term}
-                OR contact.primary_phone LIKE ${term}
-                OR EXISTS (
-                  SELECT 1 FROM core_contacts_phones phone
-                  WHERE phone.parent_id = contact.id AND phone.phone LIKE ${term}
-                )
-              )
-          )`,
-          ...(enquiryNo !== null && Number.isSafeInteger(enquiryNo)
-            ? [expression("enquiry.enquiry_no", "=", enquiryNo)]
-            : [])
-        ])
-      );
+    if (options.search) query = this.withSearchFilter(query, options.search, "all");
+    const columnTerms: Array<[EnquirySearchColumn, string | undefined]> = [
+      ["customer", options.searchCustomer],
+      ["details", options.searchDetails],
+      ["listIn", options.searchListIn],
+      ["dueDate", options.searchDueDate],
+      ["priority", options.searchPriority],
+      ["creator", options.searchCreator],
+      ["assignedTo", options.searchAssignedTo],
+      ["status", options.searchStatus]
+    ];
+    for (const [column, value] of columnTerms) {
+      if (value?.trim()) query = this.withSearchFilter(query, value.trim(), column);
     }
     query = this.withStatusFilter(query, options.filter);
     const [rows, total, counts] = await Promise.all([
       query
-        .orderBy("enquiry.enquiry_no", "desc")
+        .orderBy(options.mobile ? "enquiry.created_at" : "enquiry.enquiry_no", "desc")
+        .orderBy("enquiry.id", "desc")
         .limit(options.pageSize)
         .offset((options.page - 1) * options.pageSize)
         .execute(),
@@ -204,6 +191,22 @@ export class EnquiryRepository {
         ])
       );
     }
+    if (options.mobile) {
+      const digits = options.mobile.replace(/\D/g, "");
+      const mobile =
+        digits.length === 12 && digits.startsWith("91")
+          ? digits.slice(2)
+          : digits.length === 11 && digits.startsWith("0")
+            ? digits.slice(1)
+            : digits;
+      const alternatives = mobile.length === 10 ? [mobile, `91${mobile}`, `0${mobile}`] : [mobile];
+      query = query.where((expression) =>
+        expression.or([
+          ...(options.contactId ? [expression("enquiry.contact_id", "=", options.contactId)] : []),
+          sql<boolean>`REGEXP_REPLACE(COALESCE(enquiry.captured_phone, ''), '[^0-9]', '') IN (${sql.join(alternatives)})`
+        ])
+      );
+    }
     if (options.fromAt)
       query = query.where("enquiry.enquired_at", ">=", utcDateTime(options.fromAt));
     if (options.toAt) query = query.where("enquiry.enquired_at", "<", utcDateTime(options.toAt));
@@ -221,6 +224,80 @@ export class EnquiryRepository {
           : query.where("enquiry.assigned_user_id", "=", Number(options.assignedUserId));
     }
     return query;
+  }
+
+  private withSearchFilter(
+    query: ReturnType<EnquiryRepository["scopedQuery"]>,
+    search: string,
+    column: EnquirySearchColumn
+  ) {
+    const term = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+    const reference = search.trim().replace(/^#/u, "");
+    const number = /^\d+$/u.test(reference) ? Number(reference) : -1;
+    const enquiryNo = Number.isSafeInteger(number) ? number : -1;
+    return query.where((expression) => {
+      const id = expression("enquiry.enquiry_no", "=", enquiryNo);
+      const details = [
+        expression("enquiry.title", "like", term),
+        expression("enquiry.description", "like", term)
+      ];
+      const customer = [
+        expression("enquiry.captured_name", "like", term),
+        expression("enquiry.captured_email", "like", term),
+        expression("enquiry.captured_phone", "like", term),
+        sql<boolean>`EXISTS (
+          SELECT 1 FROM core_contacts contact
+          WHERE contact.id = enquiry.contact_id
+            AND (
+              contact.name LIKE ${term}
+              OR contact.primary_phone LIKE ${term}
+              OR EXISTS (
+                SELECT 1 FROM core_contacts_phones phone
+                WHERE phone.parent_id = contact.id AND phone.phone LIKE ${term}
+              )
+            )
+        )`
+      ];
+      const listIn = expression("list.name", "like", term);
+      const dueDate = sql<boolean>`(CAST(enquiry.due_date AS CHAR) LIKE ${term} OR DATE_FORMAT(enquiry.due_date, '%d-%m-%Y') LIKE ${term})`;
+      const priority = expression.or([
+        expression("priority_master.name", "like", term),
+        expression("priority_master.code", "like", term)
+      ]);
+      const creator = sql<boolean>`(enquiry.created_by LIKE ${term} OR EXISTS (
+        SELECT 1 FROM app_users creator_user
+        WHERE creator_user.email = enquiry.created_by AND creator_user.name LIKE ${term}
+      ))`;
+      const assignedTo = sql<boolean>`EXISTS (
+        SELECT 1 FROM app_users assigned_user
+        WHERE assigned_user.id = enquiry.assigned_user_id
+          AND (assigned_user.name LIKE ${term} OR assigned_user.email LIKE ${term})
+      )`;
+      const status = expression.or([
+        expression("status_master.name", "like", term),
+        expression("status_master.code", "like", term)
+      ]);
+      switch (column) {
+        case "customer":
+          return expression.or(customer);
+        case "details":
+          return expression.or(details);
+        case "listIn":
+          return listIn;
+        case "dueDate":
+          return dueDate;
+        case "priority":
+          return priority;
+        case "creator":
+          return creator;
+        case "assignedTo":
+          return assignedTo;
+        case "status":
+          return status;
+        default:
+          return expression.or([...details, ...customer, ...(enquiryNo >= 0 ? [id] : [])]);
+      }
+    });
   }
 
   private withStatusFilter(query: ReturnType<EnquiryRepository["scopedQuery"]>, filter: string) {

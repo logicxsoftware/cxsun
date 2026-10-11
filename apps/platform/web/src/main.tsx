@@ -5,12 +5,16 @@ import "./styles.css";
 import { loadRuntimeConfig } from "./startup-config";
 
 const root = createRoot(document.getElementById("root") as HTMLElement);
+const hasPublicHomeShell = window.location.pathname === "/";
 
 async function start() {
-  root.render(<GlobalLoader />);
+  if (!hasPublicHomeShell) root.render(<GlobalLoader />);
   try {
     window.__CXSUN_RUNTIME_CONFIG__ = Object.freeze(await loadRuntimeConfig());
-    const { PlatformWebApp } = await import("./app/PlatformWebApp");
+    const [{ PlatformWebApp }] = await Promise.all([
+      import("./app/PlatformWebApp"),
+      hasPublicHomeShell ? import("./public/tenant-home") : Promise.resolve()
+    ]);
     root.render(<PlatformWebApp />);
   } catch {
     root.render(

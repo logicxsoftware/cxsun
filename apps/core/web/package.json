@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/core-web",
-  "version": "1.0.82",
+  "version": "1.0.83",
   "private": true,
   "type": "module",
   "exports": {
@@ -24,7 +24,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.82",
+    "@cxsun/ui": "^1.0.83",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "@tanstack/react-table": "^9.2.6",
