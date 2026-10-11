@@ -6,6 +6,7 @@ import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceMinimalEditor } from "@cxsun/ui/workspace/minimal-editor";
 import { createEnquiryComment } from "./enquiry.services";
 import { enquiryActivityQueryKey, enquiryCommentsQueryKey } from "./enquiry.hooks";
+import { enquiryTableText } from "./enquiry.table-text";
 import { formatCommentByline } from "./enquiry.view-utils";
 import type { EnquiryComment } from "./enquiry.types";
 
@@ -71,16 +72,9 @@ export function EnquiryComments({
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                {comment.bodyFormat === "html" ? (
-                  <div
-                    className="prose prose-sm max-w-none break-words rounded-md bg-muted/25 px-3 py-2 text-sm [&_p]:my-0 [&_p+p]:mt-2"
-                    dangerouslySetInnerHTML={{ __html: comment.body }}
-                  />
-                ) : (
-                  <p className="whitespace-pre-wrap break-words rounded-md bg-muted/25 px-3 py-2 text-sm">
-                    {comment.body}
-                  </p>
-                )}
+                <p className="whitespace-pre-wrap break-words rounded-md bg-muted/25 px-3 py-2 text-sm">
+                  {enquiryTableText(comment.body)}
+                </p>
                 <div className="mt-1 flex flex-wrap items-center justify-end gap-4 text-xs text-muted-foreground">
                   {comment.id === latestCommentId ? (
                     <Button

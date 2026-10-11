@@ -23,7 +23,8 @@ import {
 import { EnquiryJobs } from "./enquiry.jobs";
 import { EnquiryProperties } from "./enquiry.properties";
 import { startEnquiryJob, stopEnquiryJob } from "./enquiry.services";
-import { formatDateTime, whatsappUrl } from "./enquiry.view-utils";
+import { enquiryTableText } from "./enquiry.table-text";
+import { whatsappUrl } from "./enquiry.view-utils";
 import type { EnquiryLookup, EnquiryMasterLookup, EnquiryRecord } from "./enquiry.types";
 
 type EnquiryTab = "comments" | "jobs" | "estimate" | "activity";
@@ -175,7 +176,7 @@ export function EnquiryShow({
         !error && <p className="text-sm text-muted-foreground">Loading enquiry…</p>
       ) : (
         <>
-          <EnquirySummary record={record} />
+          <EnquirySummary record={record} users={users} />
           <WorkspaceShowLayout className="xl:grid-cols-[minmax(0,1fr)_24rem]">
             <div className="min-w-0 overflow-hidden rounded-md border border-border/70 bg-card/95 shadow-sm">
               <WorkspaceAnimatedTabs
@@ -193,10 +194,6 @@ export function EnquiryShow({
               listOptions={listOptions}
               statuses={statuses}
               priorities={priorities}
-              jobs={jobs.data ?? []}
-              jobLoading={jobAction.isPending}
-              onStartJob={() => jobAction.mutate(null)}
-              onStopJob={(jobId) => jobAction.mutate(jobId)}
             />
           </WorkspaceShowLayout>
         </>
@@ -205,13 +202,20 @@ export function EnquiryShow({
   );
 }
 
-function EnquirySummary({ record }: { record: EnquiryRecord }) {
+function EnquirySummary({ record, users }: { record: EnquiryRecord; users: EnquiryLookup[] }) {
+  const creatorName =
+    users.find((user) => user.email?.toLowerCase() === record.createdBy.toLowerCase())?.name ??
+    record.createdBy;
+  const message = enquiryTableText(record.description);
+  const title = enquiryTableText(record.title);
   return (
     <section className="rounded-md border border-border/70 bg-card/95 px-4 py-3 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <span className="text-xs text-muted-foreground">#{record.enquiryNo}</span>
-          <h2 className="mt-1 break-words text-lg font-semibold">{record.title}</h2>
+          <h2 className="break-words text-lg font-semibold">{message || title}</h2>
+          {message && title && message !== title ? (
+            <p className="mt-1 break-words text-sm text-muted-foreground">{title}</p>
+          ) : null}
         </div>
         <div className="flex flex-col items-start gap-2 sm:items-end">
           <div className="flex flex-wrap gap-2">
@@ -226,7 +230,7 @@ function EnquirySummary({ record }: { record: EnquiryRecord }) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Created by {record.createdBy} · {formatDateTime(record.createdAt)}
+            Created by {creatorName} · {formatCreatedAt(record.createdAt)}
           </p>
         </div>
       </div>
@@ -251,6 +255,16 @@ function enquiryHeading(record: EnquiryRecord, mobile: string | null) {
   return [`#${record.enquiryNo}`, mobile, customer !== mobile ? customer : null]
     .filter(Boolean)
     .join(" · ");
+}
+
+function formatCreatedAt(value: string) {
+  const date = new Date(value);
+  const calendarDate = date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  return `${calendarDate}, ${date.toLocaleTimeString("en-US")}`;
 }
 
 function WhatsAppIcon() {

@@ -2,7 +2,7 @@
 
 import { execFileSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { watch } from "node:fs";
+import { existsSync, readFileSync, watch } from "node:fs";
 import { rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -18,7 +18,14 @@ const root = resolve(import.meta.dirname, "..");
 const app = process.argv[2];
 
 const apps = {
-  "ecommerce-storefront": { displayName: "public storefront", cwd: "apps/ecommerce/storefront", envKey: "CXSUN_STOREFRONT_WEB_PORT", host: "127.0.0.1", command: process.execPath, args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"] },
+  "ecommerce-storefront": {
+    displayName: "public storefront",
+    cwd: "apps/ecommerce/storefront",
+    envKey: "CXSUN_STOREFRONT_WEB_PORT",
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"]
+  },
   "ecommerce-web": {
     displayName: "ecommerce web",
     cwd: "apps/ecommerce/web",
@@ -85,6 +92,7 @@ if (process.send) process.once("disconnect", () => void shutdown("SIGTERM"));
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, () => void shutdown(signal));
 }
+ensureWorkspaceLinks();
 closeProcessControl = await startProcessControl("preflight", () => void shutdown("SIGTERM"));
 
 await freePort(port, host);
@@ -262,6 +270,19 @@ async function waitForApiReady(target) {
 function ensurePlatformApiDependencies() {
   console.log("  - Checking API package builds");
   buildWorkspacePackage("@cxsun/framework", "startup contract");
+}
+
+function ensureWorkspaceLinks() {
+  const packagePath = resolve(root, config.cwd, "package.json");
+  const dependencies = Object.keys(JSON.parse(readFileSync(packagePath, "utf8")).dependencies);
+  const missing = dependencies.filter(
+    (name) =>
+      name.startsWith("@cxsun/") && !existsSync(resolve(root, "node_modules", name, "package.json"))
+  );
+  if (!missing.length) return;
+  console.error(`  x Missing root workspace links: ${missing.join(", ")}`);
+  console.error("  - Run npm install from the repository root, then start the app again.");
+  process.exit(1);
 }
 
 function buildWorkspacePackage(workspaceName, reason) {

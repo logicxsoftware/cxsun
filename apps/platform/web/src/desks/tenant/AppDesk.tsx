@@ -545,9 +545,9 @@ export function AppDesk() {
   const signedInUser = signedInTenantUser();
   const routePage = pageFromUrl(null, location.pathname);
   const crmCounts = useCrmNavigationCounts(signedInUser.email, routePage.startsWith("crm."));
-  const [hasUnsavedFormChanges, setHasUnsavedFormChanges] = useState(false);
   const [pendingListPage, setPendingListPage] = useState<AppPage | null>(null);
-  const workspaceContentRef = useRef<HTMLElement | null>(null);
+  const [crmListRevision, setCrmListRevision] = useState(0);
+  const dirtyFormsRef = useRef<Set<Element>>(new Set());
   const [shouldResolveLandingPath, setShouldResolveLandingPath] = useState(() =>
     isAppRootPath(location.pathname)
   );
@@ -669,7 +669,7 @@ export function AppDesk() {
   }, [defaultCompanyQuery.isFetched, location.pathname, runtime, safePage]);
 
   useEffect(() => {
-    setHasUnsavedFormChanges(false);
+    dirtyFormsRef.current.clear();
     setPendingListPage(null);
   }, [location.href]);
 
@@ -757,17 +757,15 @@ export function AppDesk() {
 
   function completeListNavigation(nextPage: AppPage, replaceHistory = false) {
     const allowedPage = resolveBillingFeaturePage(nextPage, billingSettingsQuery.data?.features);
-    setHasUnsavedFormChanges(false);
+    dirtyFormsRef.current.clear();
     setPendingListPage(null);
+    if (isCrmListPage(allowedPage)) setCrmListRevision((revision) => revision + 1);
     navigatePage(allowedPage, replaceHistory);
     setPlatformDocumentTitle(titleForPage(allowedPage));
   }
 
   function requestListNavigation(nextPage: AppPage) {
-    const hasActiveDraftForm = Boolean(
-      workspaceContentRef.current?.querySelector("form, [data-cxsun-draft-form]")
-    );
-    if (hasUnsavedFormChanges && hasActiveDraftForm) {
+    if (Array.from(dirtyFormsRef.current).some((form) => form.isConnected)) {
       setPendingListPage(nextPage);
       return;
     }
@@ -824,9 +822,8 @@ export function AppDesk() {
   function markUnsavedFormChanges(event: FormEvent<HTMLElement>) {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    if (target.closest("form, [data-cxsun-draft-form]")) {
-      setHasUnsavedFormChanges(true);
-    }
+    const form = target.closest("form, [data-cxsun-draft-form]");
+    if (form) dirtyFormsRef.current.add(form);
   }
 
   function selectBillingRecord(nextPage: AppPage, recordId: string) {
@@ -1035,9 +1032,9 @@ export function AppDesk() {
         }
       >
         <main
-          ref={workspaceContentRef}
           className="mx-auto w-[calc(100%-2rem)] max-w-[92rem] space-y-5 py-4 lg:w-[calc(100%-3rem)] lg:py-5"
           onChangeCapture={markUnsavedFormChanges}
+          onInputCapture={markUnsavedFormChanges}
         >
           <Suspense
             key={
@@ -1106,7 +1103,7 @@ export function AppDesk() {
             ) : null}
             {safePage === "crm.contacts" ? (
               <ContactWorkspace
-                key={safePage}
+                key={`${safePage}:${crmListRevision}`}
                 basePath="/app/crm/contacts"
                 hideSinglePagePagination
                 showListHeader={false}
@@ -1115,7 +1112,7 @@ export function AppDesk() {
             {safePage === "crm.contact-360" ? <Contact360Workspace key={safePage} /> : null}
             {safePage === "crm.enquiries" ? (
               <EnquiryWorkspace
-                key={`${safePage}:${location.href}`}
+                key={`${safePage}:${location.href}:${crmListRevision}`}
                 currentUserEmail={signedInUser.email}
                 reportFilters={reportFiltersFromLocation()}
                 onBackToReports={() => requestListNavigation("crm.reports")}
@@ -1144,7 +1141,9 @@ export function AppDesk() {
                 currentUserEmail={signedInUser.email}
               />
             ) : null}
-            {safePage === "crm.list-in" ? <ListInWorkspace key={safePage} /> : null}
+            {safePage === "crm.list-in" ? (
+              <ListInWorkspace key={`${safePage}:${crmListRevision}`} />
+            ) : null}
             {safePage === "crm.status" ? <StatusWorkspace key={safePage} /> : null}
             {safePage === "crm.priority" ? <PriorityWorkspace key={safePage} /> : null}
             {safePage === "application.overview" ? (
@@ -1257,21 +1256,20 @@ export function AppDesk() {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+              <AlertDialogTitle>Keep or discard changes?</AlertDialogTitle>
               <AlertDialogDescription>
-                Your form changes have not been saved. Stay here to continue editing, or discard
-                them and open the list page.
+                Your changes have not been saved. Keep editing, or discard them and open the list.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Stay here</AlertDialogCancel>
+              <AlertDialogCancel>Keep editing</AlertDialogCancel>
               <Button
                 variant="destructive"
                 onClick={() => {
                   if (pendingListPage) completeListNavigation(pendingListPage);
                 }}
               >
-                Discard and open list
+                Discard changes
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -1306,6 +1304,10 @@ function landingAppOptions(apps: PlatformAppId[]): LandingAppOption[] {
 
 function uniqueApps(apps: PlatformAppId[]) {
   return Array.from(new Set(["application" as PlatformAppId, ...apps]));
+}
+
+function isCrmListPage(page: AppPage) {
+  return page === "crm.contacts" || page === "crm.enquiries" || page === "crm.list-in";
 }
 
 function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPage {

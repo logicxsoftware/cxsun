@@ -2,6 +2,12 @@ export function formatDate(value: string | null) {
   return value ? new Date(value).toLocaleDateString() : "—";
 }
 
+export function formatScheduleDate(value: string | null) {
+  if (!value) return "—";
+  const [year, month, day] = value.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 export function formatDateTime(value: string) {
   return new Date(value).toLocaleString();
 }

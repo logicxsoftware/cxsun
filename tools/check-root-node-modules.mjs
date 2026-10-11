@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -8,6 +8,11 @@ const workspaceRoots = ["apps", "devkits", "packages", "tools"].map((directory) 
   join(root, directory)
 );
 const nestedDependencyTrees = [];
+const lockfile = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8"));
+const missingWorkspaceLinks = Object.entries(lockfile.packages)
+  .filter(([path, metadata]) => path.startsWith("node_modules/") && metadata.link)
+  .map(([path]) => path)
+  .filter((path) => !existsSync(join(root, path, "package.json")));
 
 function findNestedDependencyTrees(directory) {
   if (!existsSync(directory)) {
@@ -40,6 +45,13 @@ if (nestedDependencyTrees.length > 0) {
     console.error(`- ${directory}`);
   }
   console.error("Run npm run dependencies:clean from the repository root.");
+  process.exit(1);
+}
+
+if (missingWorkspaceLinks.length > 0) {
+  console.error("Root workspace links are missing:");
+  for (const path of missingWorkspaceLinks) console.error(`- ${path}`);
+  console.error("Run npm install from the repository root.");
   process.exit(1);
 }
 

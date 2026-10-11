@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Pencil, Timer, X } from "lucide-react";
+import { Check, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { Textarea } from "@cxsun/ui/components/textarea";
@@ -16,9 +16,8 @@ import {
 } from "./enquiry.hooks";
 import { useEnquiryMasterCreate } from "./enquiry.master-create";
 import { updateEnquiryProperties } from "./enquiry.services";
-import { formatDate, formatDateTime } from "./enquiry.view-utils";
+import { formatDate, formatDateTime, formatScheduleDate } from "./enquiry.view-utils";
 import type {
-  EnquiryJob,
   EnquiryLookup,
   EnquiryMasterLookup,
   EnquiryPropertyPatch,
@@ -33,11 +32,7 @@ export function EnquiryProperties({
   users,
   listOptions,
   statuses,
-  priorities,
-  jobs,
-  jobLoading,
-  onStartJob,
-  onStopJob
+  priorities
 }: {
   record: EnquiryRecord;
   mobile: string | null;
@@ -45,16 +40,11 @@ export function EnquiryProperties({
   listOptions: EnquiryMasterLookup[];
   statuses: EnquiryMasterLookup[];
   priorities: EnquiryMasterLookup[];
-  jobs: EnquiryJob[];
-  jobLoading: boolean;
-  onStartJob: () => void;
-  onStopJob: (id: number) => void;
 }) {
   const client = useQueryClient();
   const createMaster = useEnquiryMasterCreate();
   const [editing, setEditing] = useState<EditableKey | null>(null);
   const [draft, setDraft] = useState<EnquiryPropertyPatch>({});
-  const running = jobs.find((job) => job.status === "running");
   const update = useMutation({
     mutationFn: (patch: EnquiryPropertyPatch) => updateEnquiryProperties(record.id, patch),
     onSuccess: async () => {
@@ -182,7 +172,7 @@ export function EnquiryProperties({
         </EditableRow>
         <EditableRow
           label="Schedule date"
-          value={formatDate(record.dueDate)}
+          value={formatScheduleDate(record.dueDate)}
           editing={editing === "dueDate"}
           loading={update.isPending}
           onEdit={() => edit("dueDate")}
@@ -196,18 +186,6 @@ export function EnquiryProperties({
             onValueChange={(value) => setDraft({ dueDate: value || null })}
           />
         </EditableRow>
-        <div className="border-b border-border/70 p-3">
-          <Button
-            className="w-full"
-            disabled={jobLoading}
-            type="button"
-            variant="secondary"
-            onClick={() => (running ? onStopJob(running.id) : onStartJob())}
-          >
-            <Timer className="size-4" />{" "}
-            {running ? `Stop job · ${elapsed(running.startAt)}` : "Start job"}
-          </Button>
-        </div>
         <EditableRow
           label="Status"
           value={<CrmColorLabel kind="status" code={record.status} label={record.statusName} />}
@@ -262,7 +240,7 @@ export function EnquiryProperties({
             ["Customer", record.contactName ?? record.capturedName ?? "—"],
             ["Mobile", mobile || "—"],
             ["Enquiry date", formatDate(record.enquiredAt)],
-            ["Schedule date", formatDate(record.dueDate)]
+            ["Schedule date", formatScheduleDate(record.dueDate)]
           ]}
         />
       </WorkspaceShowCard>
@@ -339,9 +317,4 @@ function EditableRow({
       </div>
     </div>
   );
-}
-
-function elapsed(startAt: string) {
-  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(startAt)) / 1000));
-  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
