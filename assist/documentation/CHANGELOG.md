@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.86
+Current version: 1.0.87
 
-Release tag: v-1.0.86
+Release tag: v-1.0.87
 
-Changelog label: v 1.0.86
+Changelog label: v 1.0.87
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,24 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.87
+
+### [v 1.0.87] 2026-10-12 8:17 am - Align app desk access and CRM data sources
+
+#### Database Changes
+
+- Database update: No. App access and desk behavior use existing tenant settings and permissions; no schema, migration, seed, or data backfill is required.
+
+#### App Codebase Changes
+
+- Bumped root, workspace, lockfile, Windows manifest, and deployment sample versions to 1.0.87.
+- Landing Desk now reads each enabled app's name, description, color, and icon from the Platform app registry, fixing repeated generic Application cards for HRMS, Docs, Himsx, Zetro, and Auditor while keeping Zetro's logo.
+- LogicX ERP hides Schemes and redirects direct Schemes URLs to its overview when Billing is disabled; the existing API check remains the authority for Schemes access.
+- Normalized the legacy `accounts.accounting` entitlement to `accounts.overview` in the tenant desk, matching backend tenant and app registry handling.
+- Split CRM Data Source into a table list and a real provider form with strict local/Frappe validation. The CRM module now satisfies the frontend ownership boundary check without placeholder files.
+- Added focused tests for app card identity, LogicX menu access, Accounts entitlement compatibility, and CRM provider validation.
+- Verified focused tests, the full `npm run check` gate, dependency layout, lockstep versions, changed-file formatting, and the production Platform web build. The repository-wide format check reports many unrelated existing files; the Platform web build succeeds with large-chunk and ineffective-dynamic-import warnings.
 
 ## v-1.0.86
 

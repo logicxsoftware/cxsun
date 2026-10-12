@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/q-cafe-web",
-  "version": "1.0.86",
+  "version": "1.0.87",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.86",
+    "@cxsun/ui": "^1.0.87",
     "@tauri-apps/api": "^2.10.0",
     "lucide-react": "^1.52.0",
     "react": "^19.2.4",

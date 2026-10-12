@@ -25,16 +25,8 @@ import {
   type FormEvent
 } from "react";
 import {
-  BoxesIcon,
   Building2Icon,
-  CreditCardIcon,
-  ContactRoundIcon,
-  CoffeeIcon,
-  LayersIcon,
   LayoutDashboardIcon,
-  ListChecksIcon,
-  MailIcon,
-  RefreshCwIcon,
   PlusIcon,
   RocketIcon,
   Settings2Icon,
@@ -92,6 +84,7 @@ import { publishAccountingYear, publishCompanyContext } from "../../shared/tenan
 import { blogEditorHost } from "../../modules/blog/blog-host";
 import { useCrmNavigationCounts } from "@cxsun/crm-web/modules/enquiry/hooks";
 import { ZetroLogo } from "@cxsun/zetro-web/logo";
+import { landingAppChoices } from "./landing-app-choices";
 import { newEnquiryFormId, type EnquiryReportFilters } from "@cxsun/crm-web/modules/enquiry";
 import { auditorClientGateway } from "../../modules/auditor/auditor-host";
 import {
@@ -661,28 +654,30 @@ export function AppDesk() {
                   ? pageForApp(landingApp)
                   : page.startsWith("logicx-erp") && !switchableApps.includes("logicx-erp")
                     ? pageForApp(landingApp)
-                    : page.startsWith("zetro") && !switchableApps.includes("zetro")
-                      ? pageForApp(landingApp)
-                      : page.startsWith("frappe") && !switchableApps.includes("frappe")
+                    : page.startsWith("logicx-erp.schemes") && !enabledApps.includes("billing")
+                      ? "logicx-erp.overview"
+                      : page.startsWith("zetro") && !switchableApps.includes("zetro")
                         ? pageForApp(landingApp)
-                        : page.startsWith("task-manager") &&
-                            !switchableApps.includes("task-manager")
+                        : page.startsWith("frappe") && !switchableApps.includes("frappe")
                           ? pageForApp(landingApp)
-                          : page.startsWith("mail") && !switchableApps.includes("mail")
+                          : page.startsWith("task-manager") &&
+                              !switchableApps.includes("task-manager")
                             ? pageForApp(landingApp)
-                            : page.startsWith("crm") && !switchableApps.includes("crm")
+                            : page.startsWith("mail") && !switchableApps.includes("mail")
                               ? pageForApp(landingApp)
-                              : page.startsWith("blog") && !switchableApps.includes("blog")
+                              : page.startsWith("crm") && !switchableApps.includes("crm")
                                 ? pageForApp(landingApp)
-                                : page.startsWith("accounts") &&
-                                    !switchableApps.includes("accounts")
+                                : page.startsWith("blog") && !switchableApps.includes("blog")
                                   ? pageForApp(landingApp)
-                                  : (page.startsWith("billing") ||
-                                        (page.startsWith("core") &&
-                                          !page.startsWith("core.organisation"))) &&
-                                      !switchableApps.includes("billing")
+                                  : page.startsWith("accounts") &&
+                                      !switchableApps.includes("accounts")
                                     ? pageForApp(landingApp)
-                                    : page;
+                                    : (page.startsWith("billing") ||
+                                          (page.startsWith("core") &&
+                                            !page.startsWith("core.organisation"))) &&
+                                        !switchableApps.includes("billing")
+                                      ? pageForApp(landingApp)
+                                      : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle =
     safePage === "crm.reports"
@@ -955,7 +950,8 @@ export function AppDesk() {
     safePage === "crm.enquiries.new" ? "crm.enquiries" : safePage,
     (nextPage) => requestListNavigation(nextPage as AppPage),
     billingSettingsQuery.data?.features,
-    crmCounts
+    crmCounts,
+    enabledApps.includes("billing")
   );
   const workspaceItems = appWorkspaceItems(switchableApps, activeApp).map((item) => ({
     ...item,
@@ -1696,99 +1692,7 @@ function LandingDesk({
     setDraftLandingApp(landingApp);
   }, [landingApp]);
 
-  const choices = enabledApps.map((appId) => ({
-    description:
-      appId === "q-cafe"
-        ? "Restaurant operations with a separate Q Cafe PIN login."
-        : appId === "ecommerce"
-          ? "Tenant ecommerce operations workspace."
-          : appId === "logicx-erp"
-            ? "LogicX ERP operations workspace for the tenant desk."
-            : appId === "billing"
-              ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
-              : appId === "crm"
-                ? "Customer relationships and sales opportunities."
-                : appId === "zetro"
-                  ? "AI coworker with private conversation history."
-                  : appId === "frappe"
-                    ? "Frappe connection and manual CRM enquiry sync."
-                    : appId === "accounts"
-                      ? "Chart of accounts, ledger groups, ledgers, journal, and accounting overview."
-                      : appId === "mail"
-                        ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
-                        : "Shared workspace, company setup, roles, and cross-app launch desk.",
-    icon:
-      appId === "q-cafe"
-        ? CoffeeIcon
-        : appId === "ecommerce"
-          ? BoxesIcon
-          : appId === "logicx-erp"
-            ? BoxesIcon
-            : appId === "billing"
-              ? CreditCardIcon
-              : appId === "crm"
-                ? ContactRoundIcon
-                : appId === "zetro"
-                  ? ZetroLogo
-                  : appId === "frappe"
-                    ? RefreshCwIcon
-                    : appId === "accounts"
-                      ? LayersIcon
-                      : appId === "mail"
-                        ? MailIcon
-                        : appId === "task-manager"
-                          ? ListChecksIcon
-                          : LayoutDashboardIcon,
-    iconClass:
-      appId === "q-cafe"
-        ? "bg-amber-700 text-white"
-        : appId === "ecommerce"
-          ? "bg-indigo-600 text-white"
-          : appId === "logicx-erp"
-            ? "bg-orange-600 text-white"
-            : appId === "billing"
-              ? "bg-emerald-600 text-white"
-              : appId === "crm"
-                ? "bg-rose-600 text-white"
-                : appId === "zetro"
-                  ? "border border-border bg-white"
-                  : appId === "frappe"
-                    ? "bg-teal-600 text-white"
-                    : appId === "accounts"
-                      ? "bg-cyan-600 text-white"
-                      : appId === "mail"
-                        ? "bg-sky-600 text-white"
-                        : appId === "task-manager"
-                          ? "bg-violet-600 text-white"
-                          : "bg-slate-950 text-white",
-    id: appId,
-    label:
-      appId === "q-cafe"
-        ? "Q Cafe"
-        : appId === "ecommerce"
-          ? "Ecommerce"
-          : appId === "logicx-erp"
-            ? "LogicX ERP"
-            : appId === "billing"
-              ? "Billing"
-              : appId === "crm"
-                ? "CRM"
-                : appId === "frappe"
-                  ? "Frappe"
-                  : appId === "accounts"
-                    ? "Accounts"
-                    : appId === "mail"
-                      ? "Mail"
-                      : appId === "task-manager"
-                        ? "Task Manager"
-                        : "Application"
-  })) satisfies Array<{
-    description: string;
-    icon: ComponentType<{ className?: string }>;
-    iconClass: string;
-    id: PlatformAppId;
-    label: string;
-  }>;
+  const choices = landingAppChoices(enabledApps);
 
   return (
     <section className="space-y-5">
@@ -1827,7 +1731,7 @@ function LandingDesk({
           className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
         >
           {choices.map((choice) => {
-            const Icon = choice.icon;
+            const Icon = choice.id === "zetro" ? ZetroLogo : choice.icon;
             const selected = draftLandingApp === choice.id;
 
             return (

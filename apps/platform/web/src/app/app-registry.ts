@@ -339,7 +339,11 @@ export function normalizeModuleKeys(moduleKeys: string[]) {
   return Array.from(
     new Set([
       "platform.application",
-      ...moduleKeys.map((key) => (key === "platform.tenant" ? "platform.application" : key))
+      ...moduleKeys.map((key) => {
+        if (key === "platform.tenant") return "platform.application";
+        if (key === "accounts.accounting") return "accounts.overview";
+        return key;
+      })
     ])
   );
 }
@@ -395,7 +399,8 @@ export function appMenuFor(
   activePage: string,
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures,
-  crmCounts?: CrmNavigationCounts
+  crmCounts?: CrmNavigationCounts,
+  billingEnabled = false
 ): SidemenuItem {
   if (appId === "hrms")
     return {
@@ -484,11 +489,15 @@ export function appMenuFor(
           isActive: activePage === "logicx-erp.overview",
           onSelect: () => onSelect("logicx-erp.overview")
         },
-        {
-          title: "Schemes",
-          isActive: activePage === "logicx-erp.schemes",
-          onSelect: () => onSelect("logicx-erp.schemes")
-        }
+        ...(billingEnabled
+          ? [
+              {
+                title: "Schemes",
+                isActive: activePage === "logicx-erp.schemes",
+                onSelect: () => onSelect("logicx-erp.schemes")
+              }
+            ]
+          : [])
       ]
     };
   }
@@ -881,7 +890,8 @@ export function appMenuItemsFor(
   activePage: string,
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures,
-  crmCounts?: CrmNavigationCounts
+  crmCounts?: CrmNavigationCounts,
+  billingEnabled = false
 ): SidemenuItem[] {
   if (appId === "hrms")
     return [
@@ -949,12 +959,16 @@ export function appMenuItemsFor(
         onSelect: () => onSelect("logicx-erp.overview"),
         title: "Overview"
       },
-      {
-        icon: BadgePercentIcon,
-        isActive: activePage === "logicx-erp.schemes",
-        onSelect: () => onSelect("logicx-erp.schemes"),
-        title: "Schemes"
-      }
+      ...(billingEnabled
+        ? [
+            {
+              icon: BadgePercentIcon,
+              isActive: activePage === "logicx-erp.schemes",
+              onSelect: () => onSelect("logicx-erp.schemes"),
+              title: "Schemes"
+            }
+          ]
+        : [])
     ];
   }
   if (appId === "zetro") {

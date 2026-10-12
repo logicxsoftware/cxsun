@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/hostinger-deploy",
-  "version": "1.0.86",
+  "version": "1.0.87",
   "private": true,
   "type": "module",
   "bin": {

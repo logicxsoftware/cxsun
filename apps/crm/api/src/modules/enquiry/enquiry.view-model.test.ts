@@ -27,6 +27,15 @@ test("Frappe timestamps use India time instead of the API server time zone", () 
   assert.equal(view.updatedAt, "2026-10-11T19:00:00.000Z");
 });
 
+test("Frappe enquiry numbers omit the ENQ prefix without changing record identity", () => {
+  const view = remoteViewRecord({ ...record, name: "ENQ1807" });
+  assert.equal(view.enquiryNo, "1807");
+  assert.equal(view.id, "ENQ1807");
+  assert.equal(view.uuid, "ENQ1807");
+  assert.equal(remoteViewRecord({ ...record, name: "ENQ-1808" }).enquiryNo, "1808");
+  assert.equal(remoteViewRecord({ ...record, name: "CUSTOM-1" }).enquiryNo, "CUSTOM-1");
+});
+
 test("overnight job uses its own creation date instead of the enquiry date", () => {
   const options: LiveEnquiryOptions = {
     groups: [],

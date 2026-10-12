@@ -1,7 +1,6 @@
 import { Fragment } from "react";
-import { DatabaseIcon, ServerIcon } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@cxsun/ui/components/radio-group";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
+import { CrmDataSourceForm } from "./data-source.form";
 import type { CrmDataSourceProvider } from "./data-source.types";
 
 const moduleGroups = [
@@ -11,7 +10,8 @@ const moduleGroups = [
       {
         key: "enquiries",
         label: "Enquiries",
-        description: "Enquiry lists, details, My Job, My Calls, overview counts, reports, comments, jobs and estimates.",
+        description:
+          "Enquiry lists, details, My Job, My Calls, overview counts, reports, comments, jobs and estimates.",
         frappeAvailable: true
       }
     ]
@@ -72,7 +72,10 @@ export function CrmDataSourceList({
           {moduleGroups.map((group) => (
             <Fragment key={group.label}>
               <tr className="border-b bg-muted/20">
-                <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground" colSpan={4}>
+                <th
+                  className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  colSpan={4}
+                >
                   {group.label}
                 </th>
               </tr>
@@ -82,34 +85,25 @@ export function CrmDataSourceList({
                     <strong className="font-medium">{module.label}</strong>
                     <div className="pt-1">
                       <WorkspaceStatusBadge
-                        label={module.frappeAvailable && provider === "frappe" ? "Live from Frappe" : "Local"}
+                        label={
+                          module.frappeAvailable && provider === "frappe"
+                            ? "Live from Frappe"
+                            : "Local"
+                        }
                         tone={module.frappeAvailable && provider === "frappe" ? "info" : "success"}
                       />
                     </div>
                   </td>
                   <td className="px-4 py-4 text-muted-foreground">{module.description}</td>
                   <td colSpan={2} className="px-4 py-4">
-                    {module.frappeAvailable ? (
-                      <RadioGroup
-                        aria-label={`${module.label} data source`}
-                        className="grid grid-cols-2 gap-4"
-                        disabled={busy || provider === null}
-                        onValueChange={(value) => onChange(value as CrmDataSourceProvider)}
-                        value={provider ?? "local"}
-                      >
-                        <SourceOption icon={DatabaseIcon} label="Local" value="local" />
-                        <SourceOption disabled={!frappeReady} icon={ServerIcon} label="Frappe" value="frappe" />
-                      </RadioGroup>
-                    ) : (
-                      <RadioGroup
-                        aria-label={`${module.label} data source`}
-                        className="grid grid-cols-2 gap-4"
-                        value="local"
-                      >
-                        <SourceOption icon={DatabaseIcon} label="Local" value="local" />
-                        <SourceOption disabled icon={ServerIcon} label="Frappe" value="frappe" />
-                      </RadioGroup>
-                    )}
+                    <CrmDataSourceForm
+                      busy={busy}
+                      frappeAvailable={module.frappeAvailable}
+                      frappeReady={frappeReady}
+                      label={module.label}
+                      onChange={onChange}
+                      provider={provider}
+                    />
                   </td>
                 </tr>
               ))}
@@ -118,25 +112,5 @@ export function CrmDataSourceList({
         </tbody>
       </table>
     </div>
-  );
-}
-
-function SourceOption({
-  disabled = false,
-  icon: Icon,
-  label,
-  value
-}: {
-  disabled?: boolean;
-  icon: typeof DatabaseIcon;
-  label: string;
-  value: CrmDataSourceProvider;
-}) {
-  return (
-    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 transition-colors hover:bg-accent/60 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-45">
-      <RadioGroupItem disabled={disabled} value={value} />
-      <Icon className="size-4" />
-      <span>{label}</span>
-    </label>
   );
 }

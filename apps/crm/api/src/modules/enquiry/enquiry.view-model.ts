@@ -52,6 +52,10 @@ export function indiaDate(value: string) {
 export const statusCode = (value: string | null) =>
   (value ?? "new").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
+function enquiryDisplayNumber(name: string) {
+  return /^ENQ-?(\d+)$/i.exec(name)?.[1] ?? name;
+}
+
 export function localViewRecord(record: EnquiryRecord): EnquiryViewRecord {
   return {
     ...record,
@@ -75,7 +79,7 @@ export function remoteViewRecord(
   const assignee = record.assigneeCode ?? record.assignee;
   return {
     id: record.name,
-    enquiryNo: record.name,
+    enquiryNo: enquiryDisplayNumber(record.name),
     uuid: record.name,
     title: record.title || record.details.slice(0, 100) || "New call",
     description: record.details,
