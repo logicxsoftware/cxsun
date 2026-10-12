@@ -14,7 +14,7 @@ export function DocsOverviewWorkspace({
 }: {
   gateway: DocsOverviewGateway;
   guide?: boolean;
-  onNavigate?: (page: "docs.overview" | "docs.guide") => void;
+  onNavigate?: (page: "docs.overview" | "docs.guide" | "docs.library") => void;
 }) {
   const overview = useDocsOverview(gateway);
   return (
@@ -23,9 +23,12 @@ export function DocsOverviewWorkspace({
         <div>
           <h1 className="text-2xl font-semibold">{guide ? "Getting Started" : "Docs Desk"}</h1>
           <p className="text-sm text-muted-foreground">
-            Documentation · Documentation and knowledge management.
+            Developer documentation · Application business, modules and workflows.
           </p>
         </div>
+        {onNavigate && (
+          <Button onClick={() => onNavigate("docs.library")}>Open developer library</Button>
+        )}
         {onNavigate && (
           <Button
             variant="outline"
@@ -75,8 +78,8 @@ export function DocsOverviewWorkspace({
               <ol className="list-decimal pl-5 space-y-2 text-sm">
                 <li>Enable Docs through Plan Access and confirm effective tenant Entitlements.</li>
                 <li>
-                  Run tenant seeding to register docs.overview.view, then assign access through
-                  tenant roles.
+                  Run tenant migrations and seeding to register Docs overview, knowledge view and
+                  edit permissions, then assign access through tenant roles.
                 </li>
                 <li>
                   Open Docs from the app launcher. Use Overview to confirm the active tenant and
@@ -85,8 +88,9 @@ export function DocsOverviewWorkspace({
               </ol>
               <h2 className="font-semibold">Next modules</h2>
               <p className="text-sm text-muted-foreground">
-                Spaces, pages, revision history, review and publishing. These workflows are not
-                included in this app foundation.
+                The Developer Library supports reviewed Markdown/MDX sources, tenant Markdown
+                overrides and audit. General knowledge spaces, collection management and
+                review/publishing workflows remain planned.
               </p>
             </Card>
           ) : (

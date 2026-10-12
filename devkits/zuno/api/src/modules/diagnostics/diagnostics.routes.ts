@@ -6,6 +6,15 @@ import { DiagnosticsService } from "./diagnostics.service.js";
 export function registerDiagnosticsRoutes(app: FastifyInstance, service: DiagnosticsService) {
   registerContractRoute(app, {
     method: "GET",
+    url: "/developer-docs",
+    schemas: {
+      querystring: z.object({ query: z.string().trim().min(2).max(160) }).strict(),
+      response: z.array(z.object({ source: z.string(), content: z.string() }))
+    },
+    handler: ({ query }) => service.documentation(query.query)
+  });
+  registerContractRoute(app, {
+    method: "GET",
     url: "/status",
     schemas: {
       response: z.object({

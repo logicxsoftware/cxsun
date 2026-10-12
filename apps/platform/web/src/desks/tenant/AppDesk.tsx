@@ -1,3 +1,9 @@
+import {
+  DocsKnowledgeWorkspace,
+  useKnowledgeCatalog,
+  buildKnowledgeMenu
+} from "@cxsun/docs-web/modules/knowledge";
+import { docsKnowledgeGateway } from "../../modules/docs/docs-host";
 import { HrmsOverviewWorkspace } from "@cxsun/hrms-web/modules/overview";
 import { hrmsOverviewGateway } from "../../modules/hrms/hrms-host";
 import { DocsOverviewWorkspace } from "@cxsun/docs-web/modules/overview";
@@ -484,6 +490,7 @@ type AppPage =
   | "hrms.guide"
   | "docs.overview"
   | "docs.guide"
+  | "docs.library"
   | "himsx.overview"
   | "himsx.guide"
   | "logicx-erp.overview"
@@ -945,14 +952,24 @@ export function AppDesk() {
 
   const activeWorkspaceTitle =
     platformAppRegistry.find((app) => app.id === activeApp)?.label ?? "Application";
-  const menuItems = appMenuItemsFor(
-    activeApp,
-    safePage === "crm.enquiries.new" ? "crm.enquiries" : safePage,
-    (nextPage) => requestListNavigation(nextPage as AppPage),
-    billingSettingsQuery.data?.features,
-    crmCounts,
-    enabledApps.includes("billing")
-  );
+  const docsCatalog = useKnowledgeCatalog(docsKnowledgeGateway, activeApp === "docs");
+  const selectedDocKey = new URLSearchParams(location.searchStr).get("page") ?? "";
+  const openDocPage = (page: string) => {
+    void navigate({ to: "/app/$", params: { _splat: "docs/library" }, search: { page } });
+  };
+  const menuItems = [
+    ...appMenuItemsFor(
+      activeApp,
+      safePage === "crm.enquiries.new" ? "crm.enquiries" : safePage,
+      (nextPage) => requestListNavigation(nextPage as AppPage),
+      billingSettingsQuery.data?.features,
+      crmCounts,
+      enabledApps.includes("billing")
+    ),
+    ...(activeApp === "docs"
+      ? buildKnowledgeMenu(docsCatalog.data?.pages ?? [], selectedDocKey, openDocPage)
+      : [])
+  ];
   const workspaceItems = appWorkspaceItems(switchableApps, activeApp).map((item) => ({
     ...item,
     onSelect: () =>
@@ -1161,6 +1178,13 @@ export function AppDesk() {
                 gateway={hrmsOverviewGateway}
                 guide={safePage === "hrms.guide"}
                 onNavigate={requestListNavigation}
+              />
+            ) : null}
+            {safePage === "docs.library" ? (
+              <DocsKnowledgeWorkspace
+                gateway={docsKnowledgeGateway}
+                selectedKey={selectedDocKey}
+                onSelect={openDocPage}
               />
             ) : null}
             {safePage === "docs.overview" || safePage === "docs.guide" ? (
@@ -1523,6 +1547,7 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "hrms.guide" ||
     key === "docs.overview" ||
     key === "docs.guide" ||
+    key === "docs.library" ||
     key === "himsx.overview" ||
     key === "himsx.guide" ||
     key === "zetro.chat" ||
@@ -2093,6 +2118,7 @@ function titleForPage(page: AppPage) {
     "hrms.guide": "Getting Started",
     "docs.overview": "Docs",
     "docs.guide": "Getting Started",
+    "docs.library": "Developer documentation",
     "himsx.overview": "Himsx",
     "himsx.guide": "Getting Started",
     "q-cafe.overview": "Q Cafe",

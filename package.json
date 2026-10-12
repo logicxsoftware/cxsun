@@ -1,6 +1,6 @@
 {
   "name": "cxsun",
-  "version": "1.0.87",
+  "version": "1.0.88",
   "private": true,
   "packageManager": "npm@12.2.0",
   "description": "CODEXSUN",
@@ -42,7 +42,7 @@
     "postinstall": "node tools/check-root-node-modules.mjs",
     "dependencies:clean": "node tools/clean-workspace-artifacts.mjs",
     "dependencies:check": "node tools/check-root-node-modules.mjs",
-    "build": "node tools/clean-root-dist.mjs && node tools/clean-workspace-artifacts.mjs && node tools/run-turbo-clean.mjs build && node tools/collect-dist.mjs && node tools/clean-workspace-artifacts.mjs",
+    "build": "node tools/clean-root-dist.mjs && node tools/clean-workspace-artifacts.mjs && node tools/run-turbo-clean.mjs build --force && node tools/collect-dist.mjs && node tools/clean-workspace-artifacts.mjs",
     "typecheck": "node tools/run-turbo-clean.mjs typecheck",
     "lint": "node tools/run-turbo-clean.mjs lint",
     "format": "prettier . --write",
@@ -113,7 +113,11 @@
     "dev:project-manager": "node tools/preflight.mjs project-manager-web",
     "test:e2e:ecommerce-modules": "tsx tools/e2e/ecommerce-modules.e2e.ts",
     "test:tenant-app-foundations": "node --import tsx --test apps/platform/web/src/app/tenant-app-foundations.test.ts tools/e2e/tenant-app-foundations.test.ts",
-    "test:e2e:tenant-app-foundations": "tsx tools/e2e/tenant-app-foundations.e2e.ts"
+    "test:e2e:tenant-app-foundations": "tsx tools/e2e/tenant-app-foundations.e2e.ts",
+    "docs:check": "node tools/check-docs-content.mjs",
+    "docs:catalog": "node tools/check-docs-content.mjs --refresh-hashes",
+    "test:docs": "node --import tsx --test apps/docs/api/src/modules/knowledge/knowledge.content.test.ts apps/zetro/api/src/modules/chat/chat.docs.test.ts devkits/zuno/api/src/modules/diagnostics/diagnostics.docs.test.ts",
+    "test:e2e:docs": "tsx tools/e2e/docs-knowledge.e2e.ts"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

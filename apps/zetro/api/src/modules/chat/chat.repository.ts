@@ -13,7 +13,7 @@ export type ZetroInteraction = {
 };
 
 export type ZetroToolEvent = {
-  capabilityKey: ZetroRecordCapability;
+  capabilityKey: ZetroRecordCapability | "docs.developer.read";
   decision: "allowed" | "denied" | "failed";
   request: unknown;
   result?: unknown;

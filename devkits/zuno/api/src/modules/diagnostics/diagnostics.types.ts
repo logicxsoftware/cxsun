@@ -14,3 +14,5 @@ export type ZunoStatus = {
 
 export type ZunoEvidence = { source: string; content: string };
 export type ZunoDiagnosis = { answer: string; evidence: ZunoEvidence[] };
+
+export type DeveloperDocsRead = (query: string) => Promise<ZunoEvidence[]>;

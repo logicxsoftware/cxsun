@@ -27,18 +27,19 @@ File content never selects a Billing query or grants access to a business record
 
 `skills.md` lists the live catalog using six fields: UUID, Serial #, Question
 pattern, Query pattern, Limitation, and Extra. The tenant database mirrors the
-seven live entries and 28 review drafts in `zetro_query_patterns`. The UUID stays stable across
+eight live entries and 28 review drafts in `zetro_query_patterns`. The UUID stays stable across
 tenants. The serial number gives reviewers a short reference.
 
-| UUID                                   | Serial # | Question pattern                       | Query pattern                       | Limitation                            | Extra                           |
-| -------------------------------------- | -------: | -------------------------------------- | ----------------------------------- | ------------------------------------- | ------------------------------- |
-| `010f0000-0000-4000-8000-000000000001` |        1 | Business help from user-provided facts | `business_chat`                     | No company record access              | Drafts and suggestions only     |
-| `010f0000-0000-4000-8000-000000000002` |        2 | Exact customer outstanding             | `billing.customer-outstanding.read` | Grant and Billing permission required | Billing Customer Summary source |
-| `010f0000-0000-4000-8000-000000000003` |        3 | Off-topic request                      | `none`                              | No data query                         | Short scope reply               |
-| `010f0000-0000-4000-8000-000000000004` |        4 | Today's business report                | `billing.daily-summary.read`        | Grant and Billing permission required | Four dated totals               |
-| `010f0000-0000-4000-8000-000000000005` |        5 | This month's transaction totals        | `billing.monthly-summary.read`      | Grant and Billing permission required | One category or all four        |
-| `010f0000-0000-4000-8000-000000000006` |        6 | Long outstanding sales                 | `billing.aged-sales.read`           | Grant and Billing permission required | Ten oldest open invoices        |
-| `010f0000-0000-4000-8000-000000000007` |        7 | My assigned Local CRM enquiries        | `crm.assigned-enquiries.read`       | Grant and CRM enquiry view required   | Assigned scope only             |
+| UUID                                   | Serial # | Question pattern                       | Query pattern                       | Limitation                                | Extra                               |
+| -------------------------------------- | -------: | -------------------------------------- | ----------------------------------- | ----------------------------------------- | ----------------------------------- |
+| `010f0000-0000-4000-8000-000000000001` |        1 | Business help from user-provided facts | `business_chat`                     | No company record access                  | Drafts and suggestions only         |
+| `010f0000-0000-4000-8000-000000000002` |        2 | Exact customer outstanding             | `billing.customer-outstanding.read` | Grant and Billing permission required     | Billing Customer Summary source     |
+| `010f0000-0000-4000-8000-000000000003` |        3 | Off-topic request                      | `none`                              | No data query                             | Short scope reply                   |
+| `010f0000-0000-4000-8000-000000000004` |        4 | Today's business report                | `billing.daily-summary.read`        | Grant and Billing permission required     | Four dated totals                   |
+| `010f0000-0000-4000-8000-000000000005` |        5 | This month's transaction totals        | `billing.monthly-summary.read`      | Grant and Billing permission required     | One category or all four            |
+| `010f0000-0000-4000-8000-000000000006` |        6 | Long outstanding sales                 | `billing.aged-sales.read`           | Grant and Billing permission required     | Ten oldest open invoices            |
+| `010f0000-0000-4000-8000-000000000007` |        7 | My assigned Local CRM enquiries        | `crm.assigned-enquiries.read`       | Grant and CRM enquiry view required       | Assigned scope only                 |
+| `010f0000-0000-4000-8000-000000000036` |       36 | Explicit `/docs` developer reference   | `docs.developer.read`               | Active Docs and knowledge view permission | Bounded cited file/tenant reference |
 
 Super Admin reviews Zetro from the grouped side menu: query patterns at
 `/sa/zetro/patterns`, role permissions at `/sa/zetro/access`, conversations
@@ -103,3 +104,7 @@ or activate a skill from chat content or a review note.
 The tenant database stores conversation data and capability grants. The file
 stores product rules. Future tenant business profiles may add approved terms,
 but they cannot override these rules or backend permissions.
+
+## Developer documentation
+
+Use `/docs billing workflow` (or an application/module name) in the authenticated chat. This fixed, read-only connection uses current Docs activation and `docs.knowledge.view`, returns bounded citations and records the lookup in the normal chat interaction/tool audit. It requires no AI provider call for exact lookup. Pattern #36 is live; draft patterns #8–35 remain non-executable. Historical doc answers are masked when Docs access is revoked. See `apps/docs/README.md` for hybrid source/override rules.

@@ -164,7 +164,11 @@ test("logs a review-only query without executing a record skill", async () => {
 
 test("live and review patterns have unique serials and UUIDs", () => {
   const patterns = [...ZETRO_QUERY_PATTERNS, ...ZETRO_REVIEW_PATTERNS];
-  assert.equal(patterns.length, 35);
+  assert.equal(patterns.length, 36);
+  assert.equal(
+    ZETRO_QUERY_PATTERNS.find((pattern) => pattern.serialNo === 36)?.queryPattern,
+    "docs.developer.read"
+  );
   assert.equal(new Set(patterns.map((pattern) => pattern.serialNo)).size, patterns.length);
   assert.equal(new Set(patterns.map((pattern) => pattern.uuid)).size, patterns.length);
 });

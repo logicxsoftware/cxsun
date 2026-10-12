@@ -6,6 +6,7 @@ import type {} from "@cxsun/framework/api";
 import { ZetroChatRepository } from "./chat.repository.js";
 import {
   ZetroChatService,
+  type DeveloperDocsLookup,
   type AssignedEnquiriesLookup,
   type BillingPeriodLookup,
   type CustomerOutstandingLookup,
@@ -74,6 +75,7 @@ export type ZetroChatContext = {
   lookupBillingPeriod: BillingPeriodLookup;
   lookupLongOutstandingSales: LongOutstandingSalesLookup;
   lookupAssignedEnquiries: AssignedEnquiriesLookup;
+  lookupDeveloperDocs?: DeveloperDocsLookup;
   audit: (action: string, conversation: ZetroConversation) => Promise<void>;
 };
 
@@ -93,7 +95,8 @@ export function registerZetroChatRoutes(
         scope.lookupOutstanding,
         scope.lookupBillingPeriod,
         scope.lookupLongOutstandingSales,
-        scope.lookupAssignedEnquiries
+        scope.lookupAssignedEnquiries,
+        scope.lookupDeveloperDocs
       )
     };
   };

@@ -1,3 +1,4 @@
+import type { DeveloperDocsRead } from "../diagnostics/diagnostics.types.js";
 import { AppError } from "@cxsun/framework/errors";
 import { DiagnosticsRepository } from "../diagnostics/diagnostics.repository.js";
 import { DiagnosticsService } from "../diagnostics/diagnostics.service.js";
@@ -16,12 +17,16 @@ export class ConversationsService {
   constructor(
     context: ZunoCaseContext,
     config: ZunoConfig,
-    loadWatchSnapshot: () => Promise<RawWatchSnapshot>
+    loadWatchSnapshot: () => Promise<RawWatchSnapshot>,
+    readDocs?: DeveloperDocsRead
   ) {
     this.repository = new ConversationsRepository(context.database, context.actorEmail);
     const watch = new WatchService(new WatchRepository(config), loadWatchSnapshot);
-    this.diagnostics = new DiagnosticsService(new DiagnosticsRepository(config), config, () =>
-      watch.snapshot()
+    this.diagnostics = new DiagnosticsService(
+      new DiagnosticsRepository(config),
+      config,
+      () => watch.snapshot(),
+      readDocs
     );
   }
 

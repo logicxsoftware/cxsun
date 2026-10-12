@@ -1,3 +1,4 @@
+import type { DeveloperDocsRead } from "../diagnostics/diagnostics.types.js";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { registerContractRoute } from "@cxsun/framework/http";
@@ -34,6 +35,7 @@ export function registerConversationsRoutes(
   app: FastifyInstance,
   options: {
     config: ZunoConfig;
+    readDocs?: DeveloperDocsRead;
     loadWatchSnapshot(): Promise<RawWatchSnapshot>;
     resolveContext(request: FastifyRequest): Promise<ZunoCaseContext> | ZunoCaseContext;
   }
@@ -42,7 +44,8 @@ export function registerConversationsRoutes(
     new ConversationsService(
       await options.resolveContext(request),
       options.config,
-      options.loadWatchSnapshot
+      options.loadWatchSnapshot,
+      options.readDocs
     );
   registerContractRoute(app, {
     method: "GET",

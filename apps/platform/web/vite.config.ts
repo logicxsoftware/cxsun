@@ -1,3 +1,8 @@
+import mdx from "@mdx-js/rollup";
+import remarkGfm from "remark-gfm";
+import rehypeSlug from "rehype-slug";
+import rehypeAutolink from "rehype-autolink-headings";
+import rehypeHighlight from "rehype-highlight";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, loadEnv } from "vite";
@@ -38,9 +43,19 @@ export default defineConfig(({ command, mode }) => {
         "@cxsun/core-web",
         "@cxsun/crm-web",
         "@cxsun/frappe-web",
-        "@cxsun/zetro-web"
+        "@cxsun/zetro-web",
+        "@cxsun/docs-web"
       ],
       include: [
+        "react-markdown",
+        "remark-gfm",
+        "rehype-highlight",
+        "rehype-slug",
+        "rehype-autolink-headings",
+        "lowlight",
+        "style-to-js",
+        "style-to-object",
+        "@mdx-js/react",
         "react-is",
         "use-sync-external-store/shim",
         "use-sync-external-store/shim/index.js",
@@ -48,9 +63,33 @@ export default defineConfig(({ command, mode }) => {
         "use-sync-external-store/shim/with-selector.js"
       ]
     },
-    plugins: [tailwindcss(), react()],
+    plugins: [
+      {
+        enforce: "pre",
+        ...mdx({
+          providerImportSource: "@mdx-js/react",
+          remarkPlugins: [remarkGfm],
+          rehypePlugins: [rehypeSlug, [rehypeAutolink, { behavior: "wrap" }], rehypeHighlight]
+        })
+      },
+      tailwindcss(),
+      react({ include: /\.(jsx|tsx|md|mdx)$/ })
+    ],
     resolve: {
       alias: {
+        "@cxsun/docs-web/modules/overview/gateway": resolve(
+          configDir,
+          "../../docs/web/src/modules/overview/overview.services.ts"
+        ),
+        "@cxsun/docs-web/modules/overview": resolve(
+          configDir,
+          "../../docs/web/src/modules/overview/index.ts"
+        ),
+        "@cxsun/docs-web/modules/knowledge": resolve(
+          configDir,
+          "../../docs/web/src/modules/knowledge/index.ts"
+        ),
+        "@cxsun/docs-content": resolve(configDir, "../../docs/content"),
         "@cxsun/core-web/modules/master/contact/workspace": resolve(
           configDir,
           "../../core/web/src/modules/master/contact/contact.workspace.tsx"

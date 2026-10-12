@@ -436,6 +436,12 @@ export function appMenuFor(
         },
         {
           icon: FileTextIcon,
+          title: "Developer Library",
+          isActive: activePage === "docs.library",
+          onSelect: () => onSelect("docs.library")
+        },
+        {
+          icon: FileTextIcon,
           title: "Getting Started",
           isActive: activePage === "docs.guide",
           onSelect: () => onSelect("docs.guide")
@@ -915,6 +921,12 @@ export function appMenuItemsFor(
         title: "Overview",
         isActive: activePage === "docs.overview",
         onSelect: () => onSelect("docs.overview")
+      },
+      {
+        icon: FileTextIcon,
+        title: "Developer Library",
+        isActive: activePage === "docs.library",
+        onSelect: () => onSelect("docs.library")
       },
       {
         icon: FileTextIcon,

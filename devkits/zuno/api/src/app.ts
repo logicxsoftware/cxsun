@@ -1,3 +1,4 @@
+import type { DeveloperDocsRead } from "./modules/diagnostics/diagnostics.types.js";
 import "@cxsun/framework/api";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { diagnosticsModule, type ZunoConfig } from "./modules/diagnostics/index.js";
@@ -19,22 +20,31 @@ export async function registerZunoApi(
     resolveCaseContext(request: FastifyRequest): Promise<ZunoCaseContext> | ZunoCaseContext;
     loadWatchSnapshot(): Promise<RawWatchSnapshot>;
     config: ZunoConfig;
+    readDocs?: DeveloperDocsRead;
   }
 ) {
   await app.register(
     async (zuno) => {
-      zuno.addHook("preHandler", options.authorize);
-      await diagnosticsModule.register({ app: zuno, config: options.config });
+      zuno.addHook("preHandler", async (request) => {
+        await options.authorize(request);
+      });
+      await diagnosticsModule.register({
+        app: zuno,
+        config: options.config,
+        ...(options.readDocs ? { readDocs: options.readDocs } : {})
+      });
       casesModule.register({ app: zuno, resolveContext: options.resolveCaseContext });
       conversationsModule.register({
         app: zuno,
         config: options.config,
+        ...(options.readDocs ? { readDocs: options.readDocs } : {}),
         resolveContext: options.resolveCaseContext,
         loadWatchSnapshot: options.loadWatchSnapshot
       });
       watchModule.register({
         app: zuno,
         config: options.config,
+        ...(options.readDocs ? { readDocs: options.readDocs } : {}),
         loadSnapshot: options.loadWatchSnapshot
       });
     },

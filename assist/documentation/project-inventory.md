@@ -294,3 +294,10 @@ against this inventory before treating them as current implementation state.
 - Launcher/default landing contracts and tenant desk routes recognise `hrms`, `docs`, and `himsx`. Each app sidebar offers Overview and Getting Started using the existing authenticated Main Layout.
 - No new business tables or altered Core schemas are introduced. Provisioning seeds the three view permissions only for enabled apps; disabled permission/role statuses survive reseeding. Existing tenants need registry/activation/permission seeding before use.
 - App-local READMEs document implementation scope, planned modules, ownership, API URLs, activation and verification. App foundations do not implement employee/payroll CRUD, document authoring or patient/clinical workflows.
+
+## Developer reference library
+
+- Docs `knowledge` owns source metadata, tenant Markdown overrides and activity in new `docs_knowledge_pages`/`docs_knowledge_activity` tables, with an immutable `docs.knowledge` migration and permission seeds. No Core schema is changed.
+- `apps/docs/content` contains 231 Markdown/MDX pages across 19 app/devkit/external integration groups and 154 module/workspace references. Its checked catalog records stable page keys, app/group headings, module identities and SHA-256 source hashes.
+- Platform Web compiles reviewed MDX to lazy React chunks with GFM, heading anchors, highlighted fenced code, Callout/Workflow components and table of contents. Docs groups pages in the real app sidebar. Tenant Markdown overrides use a safe non-executable renderer, revision conflicts and transactional audit; file precedence and deployment assets are documented in `apps/docs/README.md`.
+- Zetro's explicit `/docs` reference read checks current tenant Docs activation/view permission and masks stored reference answers after revocation. Zuno's named developer tool/endpoint is restricted by its Super Admin host and reads repository baseline pages only. Neither connection grants business record authority or writes code from prose.

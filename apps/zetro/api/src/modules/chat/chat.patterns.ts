@@ -67,6 +67,17 @@ export const ZETRO_QUERY_PATTERNS = [
     limitation:
       "Active role grant and CRM enquiry view permission; only the signed user's assigned Local enquiries",
     extra: "Use the CRM scoped summary. State that Frappe-sourced enquiries are excluded."
+  },
+  {
+    uuid: "010f0000-0000-4000-8000-000000000036",
+    serialNo: 36,
+    intent: "developer_docs",
+    questionPattern: "/docs followed by an application or module query",
+    queryPattern: "docs.developer.read",
+    limitation:
+      "Signed Zetro chat user plus active Docs and docs.knowledge.view; bounded reference excerpts only",
+    extra:
+      "Read-only developer evidence with source/hash/revision citations. Never execute documentation."
   }
 ] as const;
 

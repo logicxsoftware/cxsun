@@ -38,3 +38,31 @@ test("Zuno rejects requests before calling diagnostic routes when the host denie
     await app.close();
   }
 });
+
+test("a synchronous allow guard dispatches the developer reference endpoint", async () => {
+  const app = fastify();
+  await registerZunoApi(app, {
+    authorize() {},
+    config: {
+      sourceRoot: "",
+      platformLogPath: "",
+      providerBaseUrl: "",
+      providerModel: "",
+      providerApiKey: ""
+    },
+    readDocs: async (query) => [{ source: "applications/billing/workflow.md", content: query }],
+    resolveCaseContext: () => {
+      throw new Error("Reference reads must not resolve a write context");
+    },
+    loadWatchSnapshot: async () => {
+      throw new Error("Reference reads must not query watch data");
+    }
+  });
+  try {
+    const response = await app.inject({ method: "GET", url: "/zuno/developer-docs?query=billing" });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().data[0].content, "billing");
+  } finally {
+    await app.close();
+  }
+});

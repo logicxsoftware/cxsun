@@ -1,3 +1,4 @@
+import type { DeveloperDocsRead } from "../diagnostics/diagnostics.types.js";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { ZunoCaseContext } from "../cases/cases.types.js";
 import type { ZunoConfig } from "../diagnostics/diagnostics.types.js";
@@ -9,6 +10,7 @@ export const conversationsModule = {
   register(options: {
     app: FastifyInstance;
     config: ZunoConfig;
+    readDocs?: DeveloperDocsRead;
     loadWatchSnapshot(): Promise<RawWatchSnapshot>;
     resolveContext(request: FastifyRequest): Promise<ZunoCaseContext> | ZunoCaseContext;
   }) {

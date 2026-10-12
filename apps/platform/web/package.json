@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/platform-web",
-  "version": "1.0.87",
+  "version": "1.0.88",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,19 +9,24 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/accounts-web": "^1.0.87",
-    "@cxsun/billing-web": "^1.0.87",
-    "@cxsun/core-web": "^1.0.87",
-    "@cxsun/crm-web": "^1.0.87",
-    "@cxsun/frappe-web": "^1.0.87",
-    "@cxsun/zetro-web": "^1.0.87",
-    "@cxsun/project-manager-web": "^1.0.87",
-    "@cxsun/zuno-web": "^1.0.87",
-    "@cxsun/uiux": "^1.0.87",
-    "@cxsun/mail-web": "^1.0.87",
-    "@cxsun/auditor-web": "^1.0.87",
-    "@cxsun/logicx-erp-web": "^1.0.87",
-    "@cxsun/ui": "^1.0.87",
+    "@codexsun/blog": "1.0.16",
+    "@cxsun/accounts-web": "^1.0.88",
+    "@cxsun/auditor-web": "^1.0.88",
+    "@cxsun/billing-web": "^1.0.88",
+    "@cxsun/core-web": "^1.0.88",
+    "@cxsun/crm-web": "^1.0.88",
+    "@cxsun/docs-web": "^1.0.88",
+    "@cxsun/ecommerce-web": "^1.0.88",
+    "@cxsun/frappe-web": "^1.0.88",
+    "@cxsun/himsx-web": "^1.0.88",
+    "@cxsun/hrms-web": "^1.0.88",
+    "@cxsun/logicx-erp-web": "^1.0.88",
+    "@cxsun/mail-web": "^1.0.88",
+    "@cxsun/project-manager-web": "^1.0.88",
+    "@cxsun/ui": "^1.0.88",
+    "@cxsun/uiux": "^1.0.88",
+    "@cxsun/zetro-web": "^1.0.88",
+    "@cxsun/zuno-web": "^1.0.88",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
@@ -37,11 +42,13 @@
     "react-is": "^19.3.0",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
-    "zod": "^4.6.5",
-    "@codexsun/blog": "1.0.16",
-    "@cxsun/ecommerce-web": "^1.0.87",
-    "@cxsun/hrms-web": "^1.0.87",
-    "@cxsun/docs-web": "^1.0.87",
-    "@cxsun/himsx-web": "^1.0.87"
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@mdx-js/rollup": "^3.1.1",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1"
   }
 }

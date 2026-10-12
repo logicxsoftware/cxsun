@@ -207,3 +207,7 @@ Use `web/src/shared` only for cross-module web code; module-specific screens sta
 ### New tenant desks
 
 [HRMS](apps/hrms/README.md), [Docs](apps/docs/README.md), and [Himsx](apps/himsx/README.md) are separate tenant apps composed into Platform Web/API. Enable their app keys through Plan Access and tenant Entitlements, seed their permissions, then open them from the launcher. Each owns an Overview and Getting Started side menu. These are app foundations; workforce CRUD, document editing and clinical workflows are planned modules.
+
+Developer reference: open **Docs → Developer Library** or see [Docs authoring and hybrid storage](apps/docs/README.md). Reviewed Markdown/MDX covers 19 application groups; `npm run docs:check` verifies source hashes and module coverage. Zetro `/docs` and Super Admin Zuno developer tools consume bounded, cited read contracts.
+
+The root production build runs Turbo with `--force`: current workspace outputs share the root `dist` tree, so restoring broad cached snapshots can overwrite another app's compiled output. A fresh root build keeps compiled Docs code, copied content hashes and frontend MDX chunks aligned. TypeScript/lint caching remains available.

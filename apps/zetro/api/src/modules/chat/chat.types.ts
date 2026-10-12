@@ -90,6 +90,7 @@ export type ZetroDatabase = {
       | "month_report"
       | "long_outstanding_sales"
       | "assigned_enquiries"
+      | "developer_docs"
       | "draft_query"
       | "off_topic";
     skill_key: string | null;

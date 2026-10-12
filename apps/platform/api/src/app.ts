@@ -1,5 +1,10 @@
 import { hrmsOverviewModule } from "@cxsun/hrms-api";
-import { docsOverviewModule } from "@cxsun/docs-api";
+import {
+  docsKnowledgeModule,
+  KnowledgeService,
+  type KnowledgeDatabase,
+  docsOverviewModule
+} from "@cxsun/docs-api";
 import { himsxOverviewModule } from "@cxsun/himsx-api";
 import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxsun/framework/api";
 import { randomBytes } from "node:crypto";
@@ -191,6 +196,7 @@ export async function createApp() {
             ecommerceOverviewModule.key,
             hrmsOverviewModule.key,
             docsOverviewModule.key,
+            docsKnowledgeModule.key,
             himsxOverviewModule.key,
 
             ...ecommerceModuleKeys,
@@ -299,6 +305,21 @@ export async function createApp() {
         context.tenantId,
         zetroFallbackProvider
       ).resolve(),
+      lookupDeveloperDocs: async (query: string) => {
+        const enabled = await context.database
+          .selectFrom("app_module_settings")
+          .select("id")
+          .where("module_key", "=", "docs")
+          .where("enabled", "=", true)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        if (!enabled) throw AppError.forbidden("Docs is not enabled for this tenant.");
+        return new KnowledgeService({
+          database: context.database as unknown as import("kysely").Kysely<KnowledgeDatabase>,
+          actorEmail: context.actorEmail,
+          authorize: context.authorize
+        }).references(query);
+      },
       lookupOutstanding: async (contact: string) =>
         lookupCustomerOutstanding({ ...(await billingLookupScope()), contact }),
       lookupBillingPeriod: async (period: "today" | "month") =>
@@ -1061,6 +1082,22 @@ export async function createApp() {
       actorEmail: context.actorEmail,
       authorize: context.authorize,
       tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
+  });
+  await docsKnowledgeModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "docs")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("Docs is not enabled for this tenant.");
+    return {
+      database: context.database as unknown as import("kysely").Kysely<KnowledgeDatabase>,
+      actorEmail: context.actorEmail,
+      authorize: context.authorize
     };
   });
   await docsOverviewModule.register(app, async (request) => {

@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.87
+Current version: 1.0.88
 
-Release tag: v-1.0.87
+Release tag: v-1.0.88
 
-Changelog label: v 1.0.87
+Changelog label: v 1.0.88
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,27 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.88
+
+### [v 1.0.88] 2026-10-12 11:15 am - Developer documentation, hybrid MDX library and assistant references
+
+#### Database Changes
+
+- Database update: Yes. Apply the Docs-owned `docs.knowledge` migration and repeatable tenant seeds when enabling Docs on another deployment.
+- Added `docs_knowledge_pages` and `docs_knowledge_activity` for source metadata, tenant Markdown overrides, optimistic revisions and audited edits/restores. Seeds register view/edit permissions and preserve tenant overrides and inactive grants.
+- Core tables and historical migrations remain unchanged. The already-applied Docs migration identity and checksum remain stable.
+
+#### App Codebase Changes
+
+- Bumped root, workspace, lockfile, Windows manifest and deployment sample versions to 1.0.88.
+- Added 231 developer Markdown/MDX pages across 19 application groups, covering 154 module/workspace references, application business purpose, workflows, source boundaries and documented implementation limits.
+- Added source/hash/module coverage validation and production content copying. Wired React MDX compilation, app-grouped sidebar submenus, search, source view, heading links, table of contents and bookmarkable Docs Library pages.
+- Added permission-protected hybrid file/database editing, optimistic conflict detection, activity history and repository restore. Git sources compile to React; database overrides render safe Markdown without executing MDX or JavaScript.
+- Connected Zetro's explicit `/docs` command to bounded, cited tenant-authorized references with audited tool events and access-revocation checks. Added Super Admin Zuno repository documentation search through `search_developer_docs` and a read-only API.
+- Fixed Zuno's synchronous host authorization adapter so allowed requests dispatch correctly. Forced fresh production builds to prevent overlapping root-dist cache snapshots from restoring stale compiled application output.
+- Updated Docs authoring/setup documentation, repository inventory and assistant runtime guidance.
+- Verified full repository checks, lockstep versions, dependency layout, fresh production builds, Docs source coverage, focused assistant/foundation regressions, database and composed API E2E, desktop/mobile browser editing and restore, safe overrides, live assistant reference reads and compiled production asset resolution.
 
 ## v-1.0.87
 

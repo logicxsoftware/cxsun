@@ -104,6 +104,7 @@ const crmContact360Leaves = [
   "contact-documents"
 ];
 const capabilityBackendRoles = new Map([
+  ["docs-api/knowledge",reducedBackendRoles],
   ["hrms-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["docs-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["himsx-api/overview", ["module", "service", "routes", "seed", "types"]],

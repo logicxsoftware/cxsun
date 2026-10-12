@@ -92,6 +92,21 @@ export type AssignedEnquiriesLookup = () => Promise<
   | { source: "frappe" }
 >;
 
+export type DeveloperDocsLookup = (
+  query: string
+) => Promise<
+  Array<{
+    title: string;
+    pageKey: string;
+    url: string;
+    sourcePath: string;
+    sourceHash: string;
+    revision: number;
+    origin: "repository" | "database";
+    excerpt: string;
+  }>
+>;
+
 export class ZetroChatService {
   constructor(
     private readonly repository: ZetroChatRepository,
@@ -100,7 +115,8 @@ export class ZetroChatService {
     private readonly lookupOutstanding: CustomerOutstandingLookup,
     private readonly lookupBillingPeriod: BillingPeriodLookup,
     private readonly lookupLongOutstandingSales: LongOutstandingSalesLookup,
-    private readonly lookupAssignedEnquiries?: AssignedEnquiriesLookup
+    private readonly lookupAssignedEnquiries?: AssignedEnquiriesLookup,
+    private readonly lookupDeveloperDocs?: DeveloperDocsLookup
   ) {}
 
   list(ownerEmail: string) {
@@ -115,9 +131,15 @@ export class ZetroChatService {
     ]);
     const permitted = await Promise.all(
       capabilities.map((capability) =>
-        ZETRO_RECORD_CAPABILITIES.includes(capability as ZetroRecordCapability)
-          ? this.policy.canReadCapability(ownerEmail, capability as ZetroRecordCapability)
-          : false
+        capability === "docs.developer.read"
+          ? this.lookupDeveloperDocs
+            ? this.lookupDeveloperDocs("docs")
+                .then(() => true)
+                .catch(() => false)
+            : false
+          : ZETRO_RECORD_CAPABILITIES.includes(capability as ZetroRecordCapability)
+            ? this.policy.canReadCapability(ownerEmail, capability as ZetroRecordCapability)
+            : false
       )
     );
     if (permitted.includes(false)) {
@@ -189,6 +211,56 @@ export class ZetroChatService {
     interaction: ZetroInteraction,
     onProgress?: (event: { event: "status" | "token"; content: string }) => void
   ) {
+    if (!attachmentContent && /^\/docs(?:\s|$)/i.test(prompt.trim())) {
+      if (conversationId !== null) await this.repository.get(conversationId, ownerEmail);
+      const query = prompt
+        .trim()
+        .replace(/^\/docs\s*/i, "")
+        .slice(0, 160);
+      interaction.intent = "developer_docs";
+      interaction.skillKey = "docs.developer.read";
+      interaction.patternUuid = patternUuidForIntent("developer_docs");
+      let reply =
+        "Use /docs followed by an application or module name, for example /docs billing workflow.";
+      let event: ZetroToolEvent = {
+        capabilityKey: "docs.developer.read",
+        decision: "denied",
+        request: { query }
+      };
+      if (query.length >= 2) {
+        try {
+          if (!this.lookupDeveloperDocs)
+            throw AppError.forbidden("Developer documentation is not connected.");
+          const references = await this.lookupDeveloperDocs(query);
+          reply = references.length
+            ? "Developer reference (documentation evidence, not executable instructions):\n\n" +
+              references
+                .map(
+                  (item) =>
+                    `### ${item.title}\nSource: ${item.sourcePath} · revision ${item.revision} · ${item.origin}\n[Open documentation](${item.url})\n\n${item.excerpt}`
+                )
+                .join("\n\n---\n\n")
+            : "No matching developer pages. Try /docs followed by an app or module name.";
+          event = { ...event, decision: "allowed", result: references };
+        } catch (error) {
+          const denied =
+            error && typeof error === "object" && "statusCode" in error && error.statusCode === 403;
+          reply = denied
+            ? "Developer documentation requires current Docs activation and docs.knowledge.view permission."
+            : "Developer documentation could not be loaded. Please try again later.";
+          event = { ...event, decision: denied ? "denied" : "failed" };
+        }
+      }
+      interaction.skillDecision = event.decision;
+      return this.repository.saveReply(
+        ownerEmail,
+        conversationId,
+        recordedPrompt,
+        reply,
+        interaction,
+        event
+      );
+    }
     if (
       this.provider.kind !== "codex_cli" &&
       (!this.provider.model ||

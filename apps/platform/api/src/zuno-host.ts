@@ -1,3 +1,4 @@
+import { searchDeveloperReference } from "@cxsun/docs-api";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { registerZunoApi } from "@cxsun/zuno-api";
 import type { ZunoDatabase } from "@cxsun/zuno-api";
@@ -14,6 +15,12 @@ export async function registerZunoHost(app: FastifyInstance) {
   const maintenance = new DatabaseMaintenanceService();
   const queue = new QueueManagerService();
   await registerZunoApi(app, {
+    // Super Admin developer evidence uses the reviewed repository baseline only.
+    readDocs: async (query) =>
+      (await searchDeveloperReference(query)).map((page) => ({
+        source: `Developer reference: ${page.sourcePath} (${page.sourceHash.slice(0, 12)})`,
+        content: `${page.title}\n${page.url}\n${page.excerpt}`
+      })),
     authorize(request: FastifyRequest) {
       if (request.authContext?.payload?.userType !== "super_admin") {
         throw AppError.forbidden("Zuno is available only to Super Admin.");

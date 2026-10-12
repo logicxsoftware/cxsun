@@ -1,5 +1,13 @@
 import { seedHrmsOverviewPermissions, type HrmsPermissionDatabase } from "@cxsun/hrms-api";
-import { seedDocsOverviewPermissions, type DocsPermissionDatabase } from "@cxsun/docs-api";
+import {
+  migrateKnowledgeDatabase,
+  rollbackKnowledgeDatabase,
+  knowledgeMigrations,
+  seedKnowledgeDatabase,
+  type KnowledgeDatabase,
+  seedDocsOverviewPermissions,
+  type DocsPermissionDatabase
+} from "@cxsun/docs-api";
 import { seedHimsxOverviewPermissions, type HimsxPermissionDatabase } from "@cxsun/himsx-api";
 import {
   seedEcommerceOverviewPermissions,
@@ -160,6 +168,10 @@ export function tenantDatabaseMigrationsFor(_tenant: Tenant) {
       ...migration,
       statements: [`RUN ${migration.name}`]
     })),
+    ...knowledgeMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
     ...accountsTenantMigrations.map((migration) => ({
       ...migration,
       statements: [`RUN ${migration.name}`]
@@ -185,6 +197,10 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   const provisionedApps = ["application"];
 
   await migrateCoreTenantDatabase(tenant.dbName);
+  if (tenant.enabledModuleKeys.includes("docs")) {
+    await migrateKnowledgeDatabase(database as unknown as Kysely<KnowledgeDatabase>);
+    provisionedApps.push("docs");
+  }
   await migrateProjectManagerDatabase(database as never);
   await migrateEcommerceTenantDatabase(database as unknown as Kysely<EcommerceDatabase>);
   provisionedApps.push("ecommerce");
@@ -226,6 +242,7 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
   }
   if (enabled.has("docs")) {
     await seedDocsOverviewPermissions(database as unknown as Kysely<DocsPermissionDatabase>);
+    await seedKnowledgeDatabase(database as unknown as Kysely<KnowledgeDatabase>);
     seededApps.push("docs");
   }
   if (enabled.has("himsx")) {
@@ -298,6 +315,8 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
 
 export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
   const enabled = new Set(tenant.enabledModuleKeys);
+  if (enabled.has("docs"))
+    await rollbackKnowledgeDatabase(database as unknown as Kysely<KnowledgeDatabase>);
   if (enabled.has("platform.task-manager"))
     await rollbackTaskManagerTenantModule(database as never);
   if (enabled.has("mail")) await rollbackMailModule(database as never);
