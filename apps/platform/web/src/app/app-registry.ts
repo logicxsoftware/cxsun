@@ -49,7 +49,10 @@ export type PlatformAppId =
   | "zetro"
   | "logicx-erp"
   | "ecommerce"
-  | "q-cafe";
+  | "q-cafe"
+  | "hrms"
+  | "docs"
+  | "himsx";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -65,7 +68,10 @@ export type PlatformAppRootPage =
   | "zetro.chat"
   | "logicx-erp.overview"
   | "ecommerce.overview"
-  | "q-cafe.overview";
+  | "q-cafe.overview"
+  | "hrms.overview"
+  | "docs.overview"
+  | "himsx.overview";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -98,7 +104,10 @@ export type PlatformAppDefinition = {
     | "zetro"
     | "logicx-erp"
     | "ecommerce"
-    | "q-cafe";
+    | "q-cafe"
+    | "hrms"
+    | "docs"
+    | "himsx";
 };
 
 export const defaultTenantModuleKeys = [
@@ -113,10 +122,48 @@ export const defaultTenantModuleKeys = [
   "zetro",
   "logicx-erp",
   "ecommerce",
-  "q-cafe"
+  "q-cafe",
+  "hrms",
+  "docs",
+  "himsx"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    id: "hrms",
+    label: "HRMS",
+    moduleKey: "hrms",
+    stack: "hrms",
+    icon: UsersIcon,
+    accentClass: "bg-teal-700",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description:
+      "Human Resource Management System. People, employment and workforce administration."
+  },
+  {
+    id: "docs",
+    label: "Docs",
+    moduleKey: "docs",
+    stack: "docs",
+    icon: FileTextIcon,
+    accentClass: "bg-sky-700",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Documentation. Documentation and knowledge management."
+  },
+  {
+    id: "himsx",
+    label: "Himsx",
+    moduleKey: "himsx",
+    stack: "himsx",
+    icon: Building2Icon,
+    accentClass: "bg-rose-700",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description:
+      "Hospital Information Management System. Hospital information and administrative operations."
+  },
   {
     id: "q-cafe",
     label: "Q Cafe",
@@ -319,6 +366,9 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 }
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
+  if (appId === "himsx") return "himsx.overview";
+  if (appId === "docs") return "docs.overview";
+  if (appId === "hrms") return "hrms.overview";
   if (appId === "q-cafe") return "q-cafe.overview";
   if (appId === "ecommerce") return "ecommerce.overview";
   if (appId === "logicx-erp") return "logicx-erp.overview";
@@ -347,6 +397,66 @@ export function appMenuFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem {
+  if (appId === "hrms")
+    return {
+      icon: UsersIcon,
+      title: "HRMS",
+      isActive: activePage.startsWith("hrms."),
+      items: [
+        {
+          icon: LayoutDashboardIcon,
+          title: "Overview",
+          isActive: activePage === "hrms.overview",
+          onSelect: () => onSelect("hrms.overview")
+        },
+        {
+          icon: FileTextIcon,
+          title: "Getting Started",
+          isActive: activePage === "hrms.guide",
+          onSelect: () => onSelect("hrms.guide")
+        }
+      ]
+    };
+  if (appId === "docs")
+    return {
+      icon: FileTextIcon,
+      title: "Docs",
+      isActive: activePage.startsWith("docs."),
+      items: [
+        {
+          icon: LayoutDashboardIcon,
+          title: "Overview",
+          isActive: activePage === "docs.overview",
+          onSelect: () => onSelect("docs.overview")
+        },
+        {
+          icon: FileTextIcon,
+          title: "Getting Started",
+          isActive: activePage === "docs.guide",
+          onSelect: () => onSelect("docs.guide")
+        }
+      ]
+    };
+  if (appId === "himsx")
+    return {
+      icon: Building2Icon,
+      title: "Himsx",
+      isActive: activePage.startsWith("himsx."),
+      items: [
+        {
+          icon: LayoutDashboardIcon,
+          title: "Overview",
+          isActive: activePage === "himsx.overview",
+          onSelect: () => onSelect("himsx.overview")
+        },
+        {
+          icon: FileTextIcon,
+          title: "Getting Started",
+          isActive: activePage === "himsx.guide",
+          onSelect: () => onSelect("himsx.guide")
+        }
+      ]
+    };
   if (appId === "q-cafe") {
     return {
       icon: CoffeeIcon,
@@ -773,8 +883,60 @@ export function appMenuItemsFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts
 ): SidemenuItem[] {
+  if (appId === "hrms")
+    return [
+      {
+        icon: LayoutDashboardIcon,
+        title: "Overview",
+        isActive: activePage === "hrms.overview",
+        onSelect: () => onSelect("hrms.overview")
+      },
+      {
+        icon: FileTextIcon,
+        title: "Getting Started",
+        isActive: activePage === "hrms.guide",
+        onSelect: () => onSelect("hrms.guide")
+      }
+    ];
+  if (appId === "docs")
+    return [
+      {
+        icon: LayoutDashboardIcon,
+        title: "Overview",
+        isActive: activePage === "docs.overview",
+        onSelect: () => onSelect("docs.overview")
+      },
+      {
+        icon: FileTextIcon,
+        title: "Getting Started",
+        isActive: activePage === "docs.guide",
+        onSelect: () => onSelect("docs.guide")
+      }
+    ];
+  if (appId === "himsx")
+    return [
+      {
+        icon: LayoutDashboardIcon,
+        title: "Overview",
+        isActive: activePage === "himsx.overview",
+        onSelect: () => onSelect("himsx.overview")
+      },
+      {
+        icon: FileTextIcon,
+        title: "Getting Started",
+        isActive: activePage === "himsx.guide",
+        onSelect: () => onSelect("himsx.guide")
+      }
+    ];
   if (appId === "q-cafe") {
-    return [{ icon: CoffeeIcon, title: "Q Cafe", isActive: true, onSelect: () => onSelect("q-cafe.overview") }];
+    return [
+      {
+        icon: CoffeeIcon,
+        title: "Q Cafe",
+        isActive: true,
+        onSelect: () => onSelect("q-cafe.overview")
+      }
+    ];
   }
   if (appId === "ecommerce") {
     return ecommerceMenuItems(activePage, onSelect);

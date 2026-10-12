@@ -18,10 +18,48 @@ export const defaultTenantModuleKeys = [
   "zetro",
   "logicx-erp",
   "ecommerce",
-  "q-cafe"
+  "q-cafe",
+  "hrms",
+  "docs",
+  "himsx"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    appId: "hrms",
+    id: 0,
+    uuid: "",
+    label: "HRMS",
+    moduleKey: "hrms",
+    stack: "hrms",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description:
+      "Human Resource Management System. People, employment and workforce administration."
+  },
+  {
+    appId: "docs",
+    id: 0,
+    uuid: "",
+    label: "Docs",
+    moduleKey: "docs",
+    stack: "docs",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Documentation. Documentation and knowledge management."
+  },
+  {
+    appId: "himsx",
+    id: 0,
+    uuid: "",
+    label: "Himsx",
+    moduleKey: "himsx",
+    stack: "himsx",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description:
+      "Hospital Information Management System. Hospital information and administrative operations."
+  },
   {
     appId: "q-cafe",
     id: 0,

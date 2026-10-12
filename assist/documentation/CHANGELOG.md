@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.85
+Current version: 1.0.86
 
-Release tag: v-1.0.85
+Release tag: v-1.0.86
 
-Changelog label: v 1.0.85
+Changelog label: v 1.0.86
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,28 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.86
+
+### [v 1.0.86] 2026-10-12 7:44 am - HRMS, Docs and Himsx tenant app foundations
+
+#### Database Changes
+
+- Database update: Yes (permission and registry seeding only). No new business tables, DDL migrations or alterations to Core tables are introduced.
+- Registered HRMS, Docs and Himsx in the existing Platform app registry and tenant activation contracts. Tenant provisioning seeds `hrms.overview.view`, `docs.overview.view` and `himsx.overview.view` only for enabled apps, with deterministic admin-role grants.
+- Permission seeding is repeatable and preserves deliberately inactive permissions and role grants. Existing tenants need app registry seeding, effective Plan Access/Entitlements activation and tenant permission seeding before opening the new desks.
+- Verified registry and permission seeding plus session/tenant isolation against the isolated development MariaDB tenant. Production databases were not modified.
+
+#### App Codebase Changes
+
+- Updated root/workspace versions, internal dependencies, the root lockfile, Windows manifests and deployment sample to lockstep version 1.0.86.
+- Added separate API/Web workspaces for HRMS (Human Resource Management System), Docs (Documentation) and Himsx (Hospital Information Management System), each owning its read-only overview service, fixed API route, response contract, permission seed and frontend workspace/gateway/hooks.
+- Wired all three apps into the tenant launcher, app switching, default-landing contracts, company landing-app validation, app-specific side menus and `/app/<app>/overview` and `/app/<app>/guide` routes. Desks use the existing authenticated Platform Main Layout and backend composition, without separate logins or browser token storage.
+- Added live activation and permission checks, verified tenant context, safe loading/error/retry states, Overview and Getting Started pages, and production package-resolution/module-boundary registration.
+- Added app-local READMEs covering purpose, implemented scope, API/desk URLs, activation, permissions, ownership and verification; updated root documentation and the project inventory.
+- These are app foundations. Employee/payroll CRUD, document authoring and patient/clinical workflows remain explicitly planned modules; no business records are fabricated.
+- Verified the six new API/Web module boundaries, dependency layout, workspace TypeScript/lint, production build, six focused tests, database-backed app access/activation/reseeding E2E, composed Platform E2E and launcher/desk/guide/mobile browser flows before the version update.
+- Full `npm run check` is blocked by the pre-existing CRM data-source module missing `data-source.form.tsx` and `data-source.schema.ts`. This release does not add placeholder files to that unrelated module.
 
 ## v-1.0.85
 

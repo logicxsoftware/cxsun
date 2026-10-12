@@ -203,3 +203,7 @@ Backend modules must use the complete behavior-bearing file contract in `assist/
 Frontend full modules use `index.ts`, `sales.workspace.tsx`, `sales.list.tsx`, `sales.form.tsx`, `sales.services.ts`, `sales.hooks.ts`, `sales.types.ts`, `sales.schema.ts`, and `sales.spec.ts`, with settings/print files when those capabilities exist. Alias-only wrappers and empty role files are forbidden.
 
 Use `web/src/shared` only for cross-module web code; module-specific screens stay under `web/src/modules/{module}`.
+
+### New tenant desks
+
+[HRMS](apps/hrms/README.md), [Docs](apps/docs/README.md), and [Himsx](apps/himsx/README.md) are separate tenant apps composed into Platform Web/API. Enable their app keys through Plan Access and tenant Entitlements, seed their permissions, then open them from the launcher. Each owns an Overview and Getting Started side menu. These are app foundations; workforce CRUD, document editing and clinical workflows are planned modules.

@@ -15,7 +15,10 @@ const appId = z.enum([
   "zetro",
   "logicx-erp",
   "ecommerce",
-  "q-cafe"
+  "q-cafe",
+  "hrms",
+  "docs",
+  "himsx"
 ]);
 const stack = z.enum([
   "platform",
@@ -32,7 +35,10 @@ const stack = z.enum([
   "zetro",
   "logicx-erp",
   "ecommerce",
-  "q-cafe"
+  "q-cafe",
+  "hrms",
+  "docs",
+  "himsx"
 ]);
 
 export const platformAppSaveSchema = z

@@ -81,7 +81,10 @@ export type PlatformAppsTable = {
     | "zetro"
     | "logicx-erp"
     | "ecommerce"
-    | "q-cafe";
+    | "q-cafe"
+    | "hrms"
+    | "docs"
+    | "himsx";
   updated_at: TimestampColumn;
   uuid: string;
 };

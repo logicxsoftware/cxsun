@@ -1,0 +1,31 @@
+import type { FastifyInstance, FastifyRequest } from "fastify";
+import { z } from "zod";
+import { registerContractRoute } from "@cxsun/framework/http";
+import type {} from "@cxsun/framework/api";
+import { HrmsOverviewService } from "./overview.service.js";
+import type { HrmsOverviewRequestContext } from "./overview.types.js";
+
+const overviewSchema = z.object({
+  actorEmail: z.string(),
+  appKey: z.literal("hrms"),
+  checkedAt: z.string(),
+  label: z.string(),
+  tenantCode: z.string(),
+  tenantName: z.string()
+});
+
+export function registerHrmsOverviewRoutes(
+  app: FastifyInstance,
+  context: (request: FastifyRequest) => Promise<HrmsOverviewRequestContext>
+) {
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/hrms/overview",
+    schemas: { response: overviewSchema },
+    handler: async ({ request }) => {
+      const scope = await context(request);
+      await scope.authorize("hrms.overview.view");
+      return new HrmsOverviewService(scope).getOverview();
+    }
+  });
+}

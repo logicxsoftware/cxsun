@@ -74,6 +74,24 @@
     },
     {
       "path": "./apps/ecommerce/storefront"
+    },
+    {
+      "path": "./apps/hrms/api"
+    },
+    {
+      "path": "./apps/hrms/web"
+    },
+    {
+      "path": "./apps/docs/api"
+    },
+    {
+      "path": "./apps/docs/web"
+    },
+    {
+      "path": "./apps/himsx/api"
+    },
+    {
+      "path": "./apps/himsx/web"
     }
   ]
 }

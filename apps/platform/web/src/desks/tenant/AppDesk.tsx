@@ -1,3 +1,9 @@
+import { HrmsOverviewWorkspace } from "@cxsun/hrms-web/modules/overview";
+import { hrmsOverviewGateway } from "../../modules/hrms/hrms-host";
+import { DocsOverviewWorkspace } from "@cxsun/docs-web/modules/overview";
+import { docsOverviewGateway } from "../../modules/docs/docs-host";
+import { HimsxOverviewWorkspace } from "@cxsun/himsx-web/modules/overview";
+import { himsxOverviewGateway } from "../../modules/himsx/himsx-host";
 import {
   EcommerceModuleWorkspace,
   ecommerceModulePages,
@@ -481,6 +487,12 @@ type AppPage =
   | "ecommerce.service-banner"
   | "ecommerce.trusted-strip"
   | "q-cafe.overview"
+  | "hrms.overview"
+  | "hrms.guide"
+  | "docs.overview"
+  | "docs.guide"
+  | "himsx.overview"
+  | "himsx.guide"
   | "logicx-erp.overview"
   | "logicx-erp.schemes"
   | "crm.overview"
@@ -635,34 +647,42 @@ export function AppDesk() {
   const appSafePage =
     page.startsWith("devkit") || page.startsWith("project-manager")
       ? pageForApp(landingApp)
-      : page.startsWith("q-cafe") && !switchableApps.includes("q-cafe")
+      : page.startsWith("hrms.") && !switchableApps.includes("hrms")
         ? pageForApp(landingApp)
-      : page.startsWith("ecommerce") && !switchableApps.includes("ecommerce")
-        ? pageForApp(landingApp)
-        : page.startsWith("auditor") && !switchableApps.includes("auditor")
+        : page.startsWith("docs.") && !switchableApps.includes("docs")
           ? pageForApp(landingApp)
-          : page.startsWith("logicx-erp") && !switchableApps.includes("logicx-erp")
+          : page.startsWith("himsx.") && !switchableApps.includes("himsx")
             ? pageForApp(landingApp)
-            : page.startsWith("zetro") && !switchableApps.includes("zetro")
+            : page.startsWith("q-cafe") && !switchableApps.includes("q-cafe")
               ? pageForApp(landingApp)
-              : page.startsWith("frappe") && !switchableApps.includes("frappe")
+              : page.startsWith("ecommerce") && !switchableApps.includes("ecommerce")
                 ? pageForApp(landingApp)
-                : page.startsWith("task-manager") && !switchableApps.includes("task-manager")
+                : page.startsWith("auditor") && !switchableApps.includes("auditor")
                   ? pageForApp(landingApp)
-                  : page.startsWith("mail") && !switchableApps.includes("mail")
+                  : page.startsWith("logicx-erp") && !switchableApps.includes("logicx-erp")
                     ? pageForApp(landingApp)
-                    : page.startsWith("crm") && !switchableApps.includes("crm")
+                    : page.startsWith("zetro") && !switchableApps.includes("zetro")
                       ? pageForApp(landingApp)
-                      : page.startsWith("blog") && !switchableApps.includes("blog")
+                      : page.startsWith("frappe") && !switchableApps.includes("frappe")
                         ? pageForApp(landingApp)
-                        : page.startsWith("accounts") && !switchableApps.includes("accounts")
+                        : page.startsWith("task-manager") &&
+                            !switchableApps.includes("task-manager")
                           ? pageForApp(landingApp)
-                          : (page.startsWith("billing") ||
-                                (page.startsWith("core") &&
-                                  !page.startsWith("core.organisation"))) &&
-                              !switchableApps.includes("billing")
+                          : page.startsWith("mail") && !switchableApps.includes("mail")
                             ? pageForApp(landingApp)
-                            : page;
+                            : page.startsWith("crm") && !switchableApps.includes("crm")
+                              ? pageForApp(landingApp)
+                              : page.startsWith("blog") && !switchableApps.includes("blog")
+                                ? pageForApp(landingApp)
+                                : page.startsWith("accounts") &&
+                                    !switchableApps.includes("accounts")
+                                  ? pageForApp(landingApp)
+                                  : (page.startsWith("billing") ||
+                                        (page.startsWith("core") &&
+                                          !page.startsWith("core.organisation"))) &&
+                                      !switchableApps.includes("billing")
+                                    ? pageForApp(landingApp)
+                                    : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle =
     safePage === "crm.reports"
@@ -776,7 +796,12 @@ export function AppDesk() {
   function navigatePage(nextPage: AppPage, replace = false, search: Record<string, string> = {}) {
     void navigate({
       params: {
-        _splat: nextPage === "ecommerce.overview" ? "ecommerce" : nextPage === "q-cafe.overview" ? "q-cafe" : nextPage.replaceAll(".", "/")
+        _splat:
+          nextPage === "ecommerce.overview"
+            ? "ecommerce"
+            : nextPage === "q-cafe.overview"
+              ? "q-cafe"
+              : nextPage.replaceAll(".", "/")
       },
       replace,
       search,
@@ -1135,6 +1160,27 @@ export function AppDesk() {
             {safePage === "blog.overview" || safePage === "blog.articles" ? (
               <BlogsEditorWorkspace host={blogEditorHost} />
             ) : null}
+            {safePage === "hrms.overview" || safePage === "hrms.guide" ? (
+              <HrmsOverviewWorkspace
+                gateway={hrmsOverviewGateway}
+                guide={safePage === "hrms.guide"}
+                onNavigate={requestListNavigation}
+              />
+            ) : null}
+            {safePage === "docs.overview" || safePage === "docs.guide" ? (
+              <DocsOverviewWorkspace
+                gateway={docsOverviewGateway}
+                guide={safePage === "docs.guide"}
+                onNavigate={requestListNavigation}
+              />
+            ) : null}
+            {safePage === "himsx.overview" || safePage === "himsx.guide" ? (
+              <HimsxOverviewWorkspace
+                gateway={himsxOverviewGateway}
+                guide={safePage === "himsx.guide"}
+                onNavigate={requestListNavigation}
+              />
+            ) : null}
             {safePage === "auditor.overview" ? <AuditorOverviewWorkspace /> : null}
             {ecommerceModulePages.includes(safePage as EcommerceModulePage) ? (
               <EcommerceModuleWorkspace
@@ -1390,9 +1436,10 @@ function TenantBootstrapErrorScreen({ error }: { error: unknown }) {
 function landingAppOptions(apps: PlatformAppId[]): LandingAppOption[] {
   return apps.map((app) => ({
     label:
-      app === "application"
+      platformAppRegistry.find((definition) => definition.id === app)?.label ??
+      (app === "application"
         ? "Application"
-        : app.replaceAll("-", " ").replace(/^./, (c) => c.toUpperCase()),
+        : app.replaceAll("-", " ").replace(/^./, (c) => c.toUpperCase())),
     value: app
   }));
 }
@@ -1476,6 +1523,12 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
 
   const key = `${app}.${children.filter(Boolean).join(".") || "overview"}`;
   if (
+    key === "hrms.overview" ||
+    key === "hrms.guide" ||
+    key === "docs.overview" ||
+    key === "docs.guide" ||
+    key === "himsx.overview" ||
+    key === "himsx.guide" ||
     key === "zetro.chat" ||
     key === "frappe.overview" ||
     key === "frappe.enquiry-sync" ||
@@ -1647,92 +1700,88 @@ function LandingDesk({
     description:
       appId === "q-cafe"
         ? "Restaurant operations with a separate Q Cafe PIN login."
-        :
-      appId === "ecommerce"
-        ? "Tenant ecommerce operations workspace."
-        : appId === "logicx-erp"
-          ? "LogicX ERP operations workspace for the tenant desk."
-          : appId === "billing"
-            ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
-            : appId === "crm"
-              ? "Customer relationships and sales opportunities."
-              : appId === "zetro"
-                ? "AI coworker with private conversation history."
-                : appId === "frappe"
-                  ? "Frappe connection and manual CRM enquiry sync."
-                  : appId === "accounts"
-                    ? "Chart of accounts, ledger groups, ledgers, journal, and accounting overview."
-                    : appId === "mail"
-                      ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
-                      : "Shared workspace, company setup, roles, and cross-app launch desk.",
+        : appId === "ecommerce"
+          ? "Tenant ecommerce operations workspace."
+          : appId === "logicx-erp"
+            ? "LogicX ERP operations workspace for the tenant desk."
+            : appId === "billing"
+              ? "Sales, purchase, receipt, payment, report, master, common, and billing settings."
+              : appId === "crm"
+                ? "Customer relationships and sales opportunities."
+                : appId === "zetro"
+                  ? "AI coworker with private conversation history."
+                  : appId === "frappe"
+                    ? "Frappe connection and manual CRM enquiry sync."
+                    : appId === "accounts"
+                      ? "Chart of accounts, ledger groups, ledgers, journal, and accounting overview."
+                      : appId === "mail"
+                        ? "Inbox, compose, scheduled delivery, sent history, failures, and mail settings."
+                        : "Shared workspace, company setup, roles, and cross-app launch desk.",
     icon:
       appId === "q-cafe"
         ? CoffeeIcon
-        :
-      appId === "ecommerce"
-        ? BoxesIcon
-        : appId === "logicx-erp"
+        : appId === "ecommerce"
           ? BoxesIcon
-          : appId === "billing"
-            ? CreditCardIcon
-            : appId === "crm"
-              ? ContactRoundIcon
-              : appId === "zetro"
-                ? ZetroLogo
-                : appId === "frappe"
-                  ? RefreshCwIcon
-                  : appId === "accounts"
-                    ? LayersIcon
-                    : appId === "mail"
-                      ? MailIcon
-                      : appId === "task-manager"
-                        ? ListChecksIcon
-                        : LayoutDashboardIcon,
+          : appId === "logicx-erp"
+            ? BoxesIcon
+            : appId === "billing"
+              ? CreditCardIcon
+              : appId === "crm"
+                ? ContactRoundIcon
+                : appId === "zetro"
+                  ? ZetroLogo
+                  : appId === "frappe"
+                    ? RefreshCwIcon
+                    : appId === "accounts"
+                      ? LayersIcon
+                      : appId === "mail"
+                        ? MailIcon
+                        : appId === "task-manager"
+                          ? ListChecksIcon
+                          : LayoutDashboardIcon,
     iconClass:
       appId === "q-cafe"
         ? "bg-amber-700 text-white"
-        :
-      appId === "ecommerce"
-        ? "bg-indigo-600 text-white"
-        : appId === "logicx-erp"
-          ? "bg-orange-600 text-white"
-          : appId === "billing"
-            ? "bg-emerald-600 text-white"
-            : appId === "crm"
-              ? "bg-rose-600 text-white"
-              : appId === "zetro"
-                ? "border border-border bg-white"
-                : appId === "frappe"
-                  ? "bg-teal-600 text-white"
-                  : appId === "accounts"
-                    ? "bg-cyan-600 text-white"
-                    : appId === "mail"
-                      ? "bg-sky-600 text-white"
-                      : appId === "task-manager"
-                        ? "bg-violet-600 text-white"
-                        : "bg-slate-950 text-white",
+        : appId === "ecommerce"
+          ? "bg-indigo-600 text-white"
+          : appId === "logicx-erp"
+            ? "bg-orange-600 text-white"
+            : appId === "billing"
+              ? "bg-emerald-600 text-white"
+              : appId === "crm"
+                ? "bg-rose-600 text-white"
+                : appId === "zetro"
+                  ? "border border-border bg-white"
+                  : appId === "frappe"
+                    ? "bg-teal-600 text-white"
+                    : appId === "accounts"
+                      ? "bg-cyan-600 text-white"
+                      : appId === "mail"
+                        ? "bg-sky-600 text-white"
+                        : appId === "task-manager"
+                          ? "bg-violet-600 text-white"
+                          : "bg-slate-950 text-white",
     id: appId,
     label:
       appId === "q-cafe"
         ? "Q Cafe"
-        :
-      appId === "ecommerce"
-        ? "Ecommerce"
-        : appId === "logicx-erp"
-          ? "LogicX ERP"
-          : appId === "billing"
-            ? "Billing"
-            : appId === "crm"
-              ? "CRM"
-              : appId === "frappe"
-                ? "Frappe"
-                : appId === "accounts"
-                  ? "Accounts"
-                  : appId === "mail"
-                    ? "Mail"
-                    : appId === "task-manager"
-                      ? "Task Manager"
-                      : "Application"
+        : appId === "ecommerce"
+          ? "Ecommerce"
+          : appId === "logicx-erp"
+            ? "LogicX ERP"
+            : appId === "billing"
+              ? "Billing"
+              : appId === "crm"
+                ? "CRM"
+                : appId === "frappe"
+                  ? "Frappe"
+                  : appId === "accounts"
+                    ? "Accounts"
+                    : appId === "mail"
+                      ? "Mail"
+                      : appId === "task-manager"
+                        ? "Task Manager"
+                        : "Application"
   })) satisfies Array<{
     description: string;
     icon: ComponentType<{ className?: string }>;
@@ -2136,6 +2185,12 @@ function renderOwnedCommonMasterPage(page: AppPage) {
 
 function titleForPage(page: AppPage) {
   const labels: Partial<Record<AppPage, string>> = {
+    "hrms.overview": "HRMS",
+    "hrms.guide": "Getting Started",
+    "docs.overview": "Docs",
+    "docs.guide": "Getting Started",
+    "himsx.overview": "Himsx",
+    "himsx.guide": "Getting Started",
     "q-cafe.overview": "Q Cafe",
     "frappe.overview": "Frappe",
     "frappe.enquiry-sync": "Enquiry sync",
@@ -2307,6 +2362,9 @@ function appFromPage(
   landingApp: PlatformAppId,
   enabledApps: PlatformAppId[]
 ): PlatformAppId {
+  if (page.startsWith("hrms.")) return enabledApps.includes("hrms") ? "hrms" : landingApp;
+  if (page.startsWith("docs.")) return enabledApps.includes("docs") ? "docs" : landingApp;
+  if (page.startsWith("himsx.")) return enabledApps.includes("himsx") ? "himsx" : landingApp;
   if (page.startsWith("q-cafe")) return enabledApps.includes("q-cafe") ? "q-cafe" : landingApp;
   if (page.startsWith("frappe")) return enabledApps.includes("frappe") ? "frappe" : landingApp;
   if (page.startsWith("crm")) return enabledApps.includes("crm") ? "crm" : landingApp;

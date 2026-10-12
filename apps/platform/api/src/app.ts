@@ -1,3 +1,6 @@
+import { hrmsOverviewModule } from "@cxsun/hrms-api";
+import { docsOverviewModule } from "@cxsun/docs-api";
+import { himsxOverviewModule } from "@cxsun/himsx-api";
 import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxsun/framework/api";
 import { randomBytes } from "node:crypto";
 import { registerModules } from "@cxsun/framework/modules";
@@ -186,6 +189,10 @@ export async function createApp() {
             enquiryModule.key,
             auditorClientModule.key,
             ecommerceOverviewModule.key,
+            hrmsOverviewModule.key,
+            docsOverviewModule.key,
+            himsxOverviewModule.key,
+
             ...ecommerceModuleKeys,
             logicxErpOverviewModule.key,
             logicxErpSchemeModule.key,
@@ -1037,6 +1044,60 @@ export async function createApp() {
       frappeSettings,
       (request) => tenantAccessContext(request).actorEmail
     );
+  });
+  await hrmsOverviewModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "hrms")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("HRMS is not enabled for this tenant.");
+    const tenant = await new TenantRepository().findByIdOrCode(context.tenantId);
+    if (!tenant) throw AppError.notFound("Tenant was not found.");
+    return {
+      actorEmail: context.actorEmail,
+      authorize: context.authorize,
+      tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
+  });
+  await docsOverviewModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "docs")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("Docs is not enabled for this tenant.");
+    const tenant = await new TenantRepository().findByIdOrCode(context.tenantId);
+    if (!tenant) throw AppError.notFound("Tenant was not found.");
+    return {
+      actorEmail: context.actorEmail,
+      authorize: context.authorize,
+      tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
+  });
+  await himsxOverviewModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "himsx")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("Himsx is not enabled for this tenant.");
+    const tenant = await new TenantRepository().findByIdOrCode(context.tenantId);
+    if (!tenant) throw AppError.notFound("Tenant was not found.");
+    return {
+      actorEmail: context.actorEmail,
+      authorize: context.authorize,
+      tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
   });
   await ecommerceOverviewModule.register(app, async (request) => {
     const context = tenantAccessContext(request);

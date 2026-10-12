@@ -4,6 +4,10 @@ import { join } from "node:path";
 const requestedApp = process.argv[2]?.trim();
 
 const moduleRoots = [
+  { app: "hrms-api", path: join(process.cwd(), "apps", "hrms", "api", "src", "modules") },
+  { app: "docs-api", path: join(process.cwd(), "apps", "docs", "api", "src", "modules") },
+  { app: "himsx-api", path: join(process.cwd(), "apps", "himsx", "api", "src", "modules") },
+
   {
     app: "auditor-api",
     path: join(process.cwd(), "apps", "auditor", "api", "src", "modules")
@@ -100,6 +104,10 @@ const crmContact360Leaves = [
   "contact-documents"
 ];
 const capabilityBackendRoles = new Map([
+  ["hrms-api/overview", ["module", "service", "routes", "seed", "types"]],
+  ["docs-api/overview", ["module", "service", "routes", "seed", "types"]],
+  ["himsx-api/overview", ["module", "service", "routes", "seed", "types"]],
+
   ["auditor-api/client", ["module", "service", "repository", "routes", "migration", "types"]],
   ["ecommerce-api/catalog-data-source", ["service", "repository", "routes", "migration", "types"]],
   ["ecommerce-api/catalog-matching", [...reducedBackendRoles, "worker"]],
@@ -147,6 +155,10 @@ const capabilityBackendRoles = new Map([
 ]);
 
 const webModuleRoots = [
+  { app: "hrms-web", path: join(process.cwd(), "apps", "hrms", "web", "src", "modules") },
+  { app: "docs-web", path: join(process.cwd(), "apps", "docs", "web", "src", "modules") },
+  { app: "himsx-web", path: join(process.cwd(), "apps", "himsx", "web", "src", "modules") },
+
   {
     app: "ecommerce-storefront",
     path: join(process.cwd(), "apps", "ecommerce", "storefront", "src", "modules")
@@ -206,6 +218,9 @@ const shellOnlyFrontendModules = new Set();
 const shellOnlyFrontendRoles = ["module", "workspace", "services", "hooks", "types"];
 const capabilityFrontendRoles = new Map([
   ["auditor-web/overview", ["workspace"]],
+  ["hrms-web/overview", ["workspace", "services", "hooks", "types"]],
+  ["docs-web/overview", ["workspace", "services", "hooks", "types"]],
+  ["himsx-web/overview", ["workspace", "services", "hooks", "types"]],
   ["ecommerce-web/overview", ["workspace", "services", "hooks", "types"]],
   ["ecommerce-web/storefront", ["page", "services", "types"]],
   [

@@ -13,7 +13,10 @@ export type PlatformAppId =
   | "zetro"
   | "logicx-erp"
   | "ecommerce"
-  | "q-cafe";
+  | "q-cafe"
+  | "hrms"
+  | "docs"
+  | "himsx";
 
 export type PlatformAppDefinition = {
   alwaysEnabled: boolean;
@@ -38,7 +41,10 @@ export type PlatformAppDefinition = {
     | "zetro"
     | "logicx-erp"
     | "ecommerce"
-    | "q-cafe";
+    | "q-cafe"
+    | "hrms"
+    | "docs"
+    | "himsx";
   uuid: string;
 };
 

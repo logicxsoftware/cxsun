@@ -1,3 +1,6 @@
+import { seedHrmsOverviewPermissions, type HrmsPermissionDatabase } from "@cxsun/hrms-api";
+import { seedDocsOverviewPermissions, type DocsPermissionDatabase } from "@cxsun/docs-api";
+import { seedHimsxOverviewPermissions, type HimsxPermissionDatabase } from "@cxsun/himsx-api";
 import {
   seedEcommerceOverviewPermissions,
   migrateEcommerceTenantDatabase,
@@ -217,6 +220,18 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
 export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
   const enabled = new Set(tenant.enabledModuleKeys);
   const seededApps = ["application"];
+  if (enabled.has("hrms")) {
+    await seedHrmsOverviewPermissions(database as unknown as Kysely<HrmsPermissionDatabase>);
+    seededApps.push("hrms");
+  }
+  if (enabled.has("docs")) {
+    await seedDocsOverviewPermissions(database as unknown as Kysely<DocsPermissionDatabase>);
+    seededApps.push("docs");
+  }
+  if (enabled.has("himsx")) {
+    await seedHimsxOverviewPermissions(database as unknown as Kysely<HimsxPermissionDatabase>);
+    seededApps.push("himsx");
+  }
 
   await seedCoreTenantDatabase(tenant.dbName);
   if (enabled.has("crm")) {

@@ -286,3 +286,11 @@ against this inventory before treating them as current implementation state.
 - `npm run test:e2e:ecommerce-catalog` verifies the isolated development tenant catalog flow, permissions, forged-header isolation, validation, lifecycle, audit, and Core data/schema preservation.
 
 - `apps/ecommerce/storefront` serves the anonymous Techmedia computer shop on 7040 using the Platform public storefront API. `ecommerce.storefront` owns verified-domain resolution, disabled-by-default publishing settings, consented/idempotent/rate-limited quote intake, protected quote inbox and four new Ecommerce tables. Platform and the separate staff desk both mount Storefront settings. See `apps/ecommerce/README.md` for marketplace phases and production routing.
+
+## HRMS, Docs and Himsx tenant apps
+
+- `apps/hrms`, `apps/docs` and `apps/himsx` each own API/Web workspaces and a read-only overview module. They represent Human Resource Management System, Documentation, and Hospital Information Management System respectively.
+- Platform owns app registration, activation and session/tenant guard composition. Each app owns its fixed overview API, response/service contract, deterministic permission seed, frontend gateway/hooks and workspace.
+- Launcher/default landing contracts and tenant desk routes recognise `hrms`, `docs`, and `himsx`. Each app sidebar offers Overview and Getting Started using the existing authenticated Main Layout.
+- No new business tables or altered Core schemas are introduced. Provisioning seeds the three view permissions only for enabled apps; disabled permission/role statuses survive reseeding. Existing tenants need registry/activation/permission seeding before use.
+- App-local READMEs document implementation scope, planned modules, ownership, API URLs, activation and verification. App foundations do not implement employee/payroll CRUD, document authoring or patient/clinical workflows.

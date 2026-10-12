@@ -3,7 +3,17 @@ import { runWithCoreDatabase } from "../../../database/core-database.js";
 import { DefaultCompanyRepository } from "./default-company.repository.js";
 import type { DefaultCompanySavePayload } from "./default-company.types.js";
 
-const landingApps = new Set(["application", "billing", "mail", "task-manager", "crm", "q-cafe"]);
+const landingApps = new Set([
+  "application",
+  "billing",
+  "mail",
+  "task-manager",
+  "crm",
+  "q-cafe",
+  "hrms",
+  "docs",
+  "himsx"
+]);
 
 export class DefaultCompanyService {
   constructor(private readonly repository = new DefaultCompanyRepository()) {}

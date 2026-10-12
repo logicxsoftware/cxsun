@@ -22,7 +22,10 @@ export type Tenant = {
     | "zetro"
     | "logicx-erp"
     | "ecommerce"
-    | "q-cafe";
+    | "q-cafe"
+    | "hrms"
+    | "docs"
+    | "himsx";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -61,7 +64,10 @@ export type TenantSavePayload = {
     | "zetro"
     | "logicx-erp"
     | "ecommerce"
-    | "q-cafe";
+    | "q-cafe"
+    | "hrms"
+    | "docs"
+    | "himsx";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;
@@ -99,7 +105,10 @@ export type TenantRuntime = {
       | "zetro"
       | "logicx-erp"
       | "ecommerce"
-      | "q-cafe";
+      | "q-cafe"
+      | "hrms"
+      | "docs"
+      | "himsx";
     label: string;
     moduleKey: string;
     stack:
@@ -117,7 +126,10 @@ export type TenantRuntime = {
       | "zetro"
       | "logicx-erp"
       | "ecommerce"
-      | "q-cafe";
+      | "q-cafe"
+      | "hrms"
+      | "docs"
+      | "himsx";
   }>;
   defaultLandingApp:
     | "application"
@@ -134,6 +146,9 @@ export type TenantRuntime = {
     | "zetro"
     | "logicx-erp"
     | "ecommerce"
-    | "q-cafe";
+    | "q-cafe"
+    | "hrms"
+    | "docs"
+    | "himsx";
   tenant: Tenant | null;
 };
