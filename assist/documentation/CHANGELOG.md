@@ -37,6 +37,7 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 - Split CRM Data Source into a table list and a real provider form with strict local/Frappe validation. The CRM module now satisfies the frontend ownership boundary check without placeholder files.
 - Added focused tests for app card identity, LogicX menu access, Accounts entitlement compatibility, and CRM provider validation.
 - Verified focused tests, the full `npm run check` gate, dependency layout, lockstep versions, changed-file formatting, and the production Platform web build. The repository-wide format check reports many unrelated existing files; the Platform web build succeeds with large-chunk and ineffective-dynamic-import warnings.
+- Fixed the Q Cafe web build so it requires local API and web ports only when the development server starts. The demo Docker build can now compile the workspace without development port settings.
 
 ## v-1.0.86
 
