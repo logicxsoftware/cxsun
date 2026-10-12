@@ -4,30 +4,34 @@ import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, root, "");
   const port = Number(process.env.CXSUN_ECOMMERCE_WEB_PORT ?? env.CXSUN_ECOMMERCE_WEB_PORT);
-  if (!Number.isInteger(port) || port < 1 || port > 65535)
+  if (command === "serve" && (!Number.isInteger(port) || port < 1 || port > 65535))
     throw new Error("CXSUN_ECOMMERCE_WEB_PORT is required");
   const apiPort = Number(process.env.PLATFORM_API_PORT ?? env.PLATFORM_API_PORT);
-  if (!Number.isInteger(apiPort) || apiPort < 1) throw new Error("PLATFORM_API_PORT is required");
+  if (command === "serve" && (!Number.isInteger(apiPort) || apiPort < 1))
+    throw new Error("PLATFORM_API_PORT is required");
   return {
     plugins: [react(), tailwindcss()],
     envDir: root,
     cacheDir: resolve(root, "node_modules/.vite/ecommerce-storefront"),
     define: { __CXSUN_PLATFORM_WEB_PORT__: JSON.stringify(Number(env.PLATFORM_WEB_PORT)) },
     build: { outDir: resolve(root, "dist/apps/ecommerce/storefront"), emptyOutDir: true },
-    server: {
-      host: "127.0.0.1",
-      port,
-      strictPort: true,
-      proxy: {
-        "/api/platform": {
-          target: `http://127.0.0.1:${apiPort}`,
-          changeOrigin: false,
-          rewrite: (path) => path.replace(/^\/api\/platform/, "")
-        }
-      }
-    }
+    server:
+      command === "serve"
+        ? {
+            host: "127.0.0.1",
+            port,
+            strictPort: true,
+            proxy: {
+              "/api/platform": {
+                target: `http://127.0.0.1:${apiPort}`,
+                changeOrigin: false,
+                rewrite: (path) => path.replace(/^\/api\/platform/, "")
+              }
+            }
+          }
+        : undefined
   };
 });
