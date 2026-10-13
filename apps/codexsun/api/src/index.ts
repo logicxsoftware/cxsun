@@ -17,6 +17,12 @@ import {
   seedDevicesPermissions
 } from "./modules/devices/index.js";
 import type { CodexsunContextResolver, CodexsunDatabase } from "./context.js";
+export { registerCodexsunRealtime } from "./modules/realtime/index.js";
+export type {
+  CodexsunSocketIdentity,
+  CodexsunSocketCredentials,
+  CodexsunChange
+} from "./modules/realtime/index.js";
 export type {
   CodexsunContextResolver,
   CodexsunRequestContext,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceFormBanner } from "@cxsun/ui/workspace/upsert";
@@ -11,6 +11,7 @@ import {
 } from "./modules/requirements";
 import { CodexsunDevicesWorkspace } from "./modules/devices";
 import { useCodexsunSync } from "./sync";
+import { CodexsunRealtimePanel } from "./realtime/realtime.panel";
 
 export function CodexsunPortal({
   gateway,
@@ -24,6 +25,8 @@ export function CodexsunPortal({
     ? { tenantUuid: context.data.tenantUuid, actorEmail: context.data.actorEmail }
     : null;
   const sync = useCodexsunSync({ gateway, scope });
+  const [deviceRevision, setDeviceRevision] = useState(0);
+  const refreshDevices = useCallback(() => setDeviceRevision((value) => value + 1), []);
   const [offline, setOffline] = useState(
     () => typeof navigator !== "undefined" && !navigator.onLine
   );
@@ -51,6 +54,9 @@ export function CodexsunPortal({
       {...(sync.available ? { saveDraft: sync.saveDraft } : {})}
       devicePanel={
         <div className="space-y-3">
+          {scope && (
+            <CodexsunRealtimePanel gateway={gateway} portal={kind} onChange={refreshDevices} />
+          )}
           <WorkspaceFormBanner title="Device sync" tone={sync.error ? "warning" : "info"}>
             <p>
               {sync.syncing ? "Syncing with cloud…" : `${sync.pending} drafts waiting to sync.`}
@@ -66,7 +72,12 @@ export function CodexsunPortal({
             </Button>
           </WorkspaceFormBanner>
           {scope && context.data?.permissions["codexsun.devices.view"] && (
-            <CodexsunDevicesWorkspace gateway={gateway} scope={scope} kind={kind} />
+            <CodexsunDevicesWorkspace
+              gateway={gateway}
+              scope={scope}
+              kind={kind}
+              revision={deviceRevision}
+            />
           )}
         </div>
       }

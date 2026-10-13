@@ -26,6 +26,26 @@ export function registerDevicesRoutes(app: FastifyInstance, context: CodexsunCon
     await scope.authorize(`codexsun.devices.${action}`);
     return new DevicesService(new DevicesRepository(scope.database), scope.actorEmail);
   }
+  async function change(
+    request: FastifyRequest,
+    action: string,
+    work: () => Promise<z.infer<typeof record>>
+  ) {
+    const scope = await context(request);
+    const result = await work();
+    try {
+      await scope.publishChange?.({
+        tenantUuid: scope.tenantUuid,
+        actorEmail: result.createdBy,
+        resource: "devices",
+        uuid: result.uuid,
+        action
+      });
+    } catch {
+      request.log.warn("Realtime notification unavailable; device remains saved.");
+    }
+    return result;
+  }
   registerContractRoute(app, {
     method: "GET",
     url: path,
@@ -36,7 +56,8 @@ export function registerDevicesRoutes(app: FastifyInstance, context: CodexsunCon
     method: "POST",
     url: path,
     schemas: { body: input, response: record },
-    handler: async ({ request, body }) => (await service(request, "manage")).register(body)
+    handler: async ({ request, body }) =>
+      change(request, "registered", async () => (await service(request, "manage")).register(body))
   });
   registerContractRoute(app, {
     method: "POST",
@@ -50,6 +71,8 @@ export function registerDevicesRoutes(app: FastifyInstance, context: CodexsunCon
     url: path + "/:uuid",
     schemas: { params, body: z.object({ status }).strict(), response: record },
     handler: async ({ request, params, body }) =>
-      (await service(request, "manage")).setStatus(params.uuid, body.status)
+      change(request, body.status, async () =>
+        (await service(request, "manage")).setStatus(params.uuid, body.status)
+      )
   });
 }

@@ -11,7 +11,8 @@ import type {
 export function useCodexsunDevices(
   gateway: CodexsunDevicesGateway,
   scope: CodexsunDevicesScope | null,
-  kind: CodexsunDeviceKind
+  kind: CodexsunDeviceKind,
+  revision = 0
 ) {
   const key = scope ? JSON.stringify([scope.tenantUuid, scope.actorEmail.toLowerCase(), kind]) : "";
   const current = useRef({ key, gateway, generation: 0 });
@@ -87,7 +88,7 @@ export function useCodexsunDevices(
         });
     }, 30_000);
     return () => window.clearInterval(timer);
-  }, [refresh, service, generation]);
+  }, [refresh, service, generation, revision]);
   const visible = state.key === key && key ? state : { records: [], loading: false, error: null };
   return { ...visible, refresh: () => refresh(), register: () => refresh(true) };
 }

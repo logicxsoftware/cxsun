@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/billing-web",
-  "version": "1.0.89",
+  "version": "1.0.90",
   "private": true,
   "type": "module",
   "exports": {
@@ -22,9 +22,9 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/core-web": "^1.0.89",
-    "@cxsun/ui": "^1.0.89",
-    "@cxsun/mail-web": "^1.0.89",
+    "@cxsun/core-web": "^1.0.90",
+    "@cxsun/ui": "^1.0.90",
+    "@cxsun/mail-web": "^1.0.90",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "lucide-react": "^1.52.0",

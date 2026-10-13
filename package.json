@@ -1,6 +1,6 @@
 {
   "name": "cxsun",
-  "version": "1.0.89",
+  "version": "1.0.90",
   "private": true,
   "packageManager": "npm@12.2.0",
   "description": "CODEXSUN",
@@ -125,7 +125,11 @@
     "crm:mobile:apk:debug": "node tools/crm-mobile.mjs build-debug",
     "crm:mobile:apk:release": "node tools/crm-mobile.mjs build-release",
     "crm:mobile:analyze": "node tools/crm-mobile.mjs analyze",
-    "crm:mobile:test": "node tools/crm-mobile.mjs test"
+    "crm:mobile:test": "node tools/crm-mobile.mjs test",
+    "codexsun:mobile:run": "node tools/codexsun-mobile.mjs run",
+    "codexsun:mobile:apk:debug": "node tools/codexsun-mobile.mjs build-debug",
+    "codexsun:mobile:analyze": "node tools/codexsun-mobile.mjs analyze",
+    "codexsun:mobile:test": "node tools/codexsun-mobile.mjs test"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

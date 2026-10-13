@@ -105,6 +105,7 @@ const crmContact360Leaves = [
   "contact-documents"
 ];
 const capabilityBackendRoles = new Map([
+  ["codexsun-api/realtime", ["module", "service", "types"]],
   ["codexsun-api/requirements", reducedBackendRoles],
   ["codexsun-api/devices", reducedBackendRoles],
   ["hrms-api/overview", ["module", "service", "routes", "seed", "types"]],

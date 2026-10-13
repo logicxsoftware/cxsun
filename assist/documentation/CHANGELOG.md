@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.89
+Current version: 1.0.90
 
-Release tag: v-1.0.89
+Release tag: v-1.0.90
 
-Changelog label: v 1.0.89
+Changelog label: v 1.0.90
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,28 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.90
+
+### [v 1.0.90] 2026-10-13 11:31 am - CODEXSUN real-time web and Android device sync
+
+#### Database Changes
+
+- Database update: No. Requirements, approvals, and devices use the existing CODEXSUN tables, migrations, and permission seeds.
+
+#### App Codebase Changes
+
+- Bumped root, workspace, lockfile, Windows, deployment sample, and CODEXSUN Android versions to 1.0.90.
+- Added authenticated Socket.IO WebSocket transport for web, desktop portal, and native Android device communication. Platform resolves the current tenant session and backend permissions.
+- Restricted messages to the same actor and tenant. Added strict payload limits, message rate limits, connection limits, session revalidation, and revoked-access disconnects.
+- Published requirement and device notifications after successful saves. Connected web query refresh and Android reloads so changes appear without manual refresh.
+- Added the CODEXSUN Flutter Android app with tenant sign-in, idea capture, requirement submission, mobile decisions, persistent device registration keys, and memory-only session credentials.
+- Fixed Android transport cleanup after server closure. Added bounded acknowledgments and cleared the signed-in screen after access denial.
+- Added root mobile commands and setup instructions. Android output stays in root dist through an ignored Flutter build junction.
+- Added WebSocket proxy support to Platform development routing and the demo Nginx configuration. Public VPS routing remains unchanged.
+- Verified bidirectional browser and emulator messages, ideas created on both devices, and mobile approval updating the browser without refresh. Verified socket isolation and revocation, 13 focused tests, live MariaDB lifecycle tests, Android analysis and socket cleanup tests, API/web typechecks, lint, and builds.
+- Installed the normal Android debug app after testing. Test credentials and test APKs are excluded from the source commit. Worker execution, native desktop packaging, mobile offline drafts, and cloud deployment remain future work.
+- Release validation: all workspace typechecks, repository lint, lockstep versions, root dependency layout, focused tests, formatting, and the 1.0.90 Android build passed. Direct workspace typechecks replaced the repository runner after its build-output cache stalled. The full repository check stops at existing Docs knowledge boundary violations: missing events, worker, and sync role files. These files were already absent in the committed baseline.
 
 ## v-1.0.89
 

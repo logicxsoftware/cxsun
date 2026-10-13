@@ -46,6 +46,27 @@ export function registerRequirementsRoutes(app: FastifyInstance, context: Codexs
       await scope.can("codexsun.requirements.approve")
     );
   }
+  async function change(
+    request: FastifyRequest,
+    action: string,
+    work: () => Promise<z.infer<typeof record>>
+  ) {
+    const scope = await context(request);
+    const result = await work();
+    try {
+      await scope.publishChange?.({
+        tenantUuid: scope.tenantUuid,
+        actorEmail: result.createdBy,
+        resource: "requirements",
+        uuid: result.uuid,
+        revision: result.revision,
+        action
+      });
+    } catch {
+      request.log.warn("Realtime notification unavailable; requirement remains saved.");
+    }
+    return result;
+  }
   registerContractRoute(app, {
     method: "GET",
     url: path,
@@ -80,7 +101,8 @@ export function registerRequirementsRoutes(app: FastifyInstance, context: Codexs
         .strict(),
       response: record
     },
-    handler: async ({ request, body }) => (await service(request, "create")).create(body)
+    handler: async ({ request, body }) =>
+      change(request, "created", async () => (await service(request, "create")).create(body))
   });
   registerContractRoute(app, {
     method: "GET",
@@ -93,14 +115,18 @@ export function registerRequirementsRoutes(app: FastifyInstance, context: Codexs
     url: path + "/:uuid",
     schemas: { params, body: z.object({ ...fields, revision }).strict(), response: record },
     handler: async ({ request, params, body }) =>
-      (await service(request, "update")).update(params.uuid, body)
+      change(request, "updated", async () =>
+        (await service(request, "update")).update(params.uuid, body)
+      )
   });
   registerContractRoute(app, {
     method: "POST",
     url: path + "/:uuid/submit",
     schemas: { params, body: z.object({ revision }).strict(), response: record },
     handler: async ({ request, params, body }) =>
-      (await service(request, "update")).submit(params.uuid, body.revision)
+      change(request, "submitted", async () =>
+        (await service(request, "update")).submit(params.uuid, body.revision)
+      )
   });
   registerContractRoute(app, {
     method: "POST",
@@ -117,11 +143,13 @@ export function registerRequirementsRoutes(app: FastifyInstance, context: Codexs
       response: record
     },
     handler: async ({ request, params, body }) =>
-      (await service(request, "approve")).decision(
-        params.uuid,
-        body.revision,
-        body.decision,
-        body.note
+      change(request, body.decision, async () =>
+        (await service(request, "approve")).decision(
+          params.uuid,
+          body.revision,
+          body.decision,
+          body.note
+        )
       )
   });
   registerContractRoute(app, {

@@ -12,13 +12,15 @@ import type {
 export function CodexsunDevicesWorkspace({
   gateway,
   scope,
-  kind
+  kind,
+  revision = 0
 }: {
   gateway: CodexsunDevicesGateway;
   scope: CodexsunDevicesScope | null;
   kind: CodexsunDeviceKind;
+  revision?: number;
 }) {
-  const devices = useCodexsunDevices(gateway, scope, kind);
+  const devices = useCodexsunDevices(gateway, scope, kind, revision);
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">

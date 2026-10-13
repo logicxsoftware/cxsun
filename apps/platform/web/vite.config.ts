@@ -189,6 +189,7 @@ function platformDevelopmentServer(runtimeEnv: Record<string, string | undefined
     PLATFORM_API_PORT: requireEnvNumber(runtimeEnv.PLATFORM_API_PORT, "PLATFORM_API_PORT")
   });
   const proxy = {
+    ws: true,
     changeOrigin: false,
     target: platformRuntime.apiUrl
   };
@@ -203,6 +204,10 @@ function platformDevelopmentServer(runtimeEnv: Record<string, string | undefined
     host: platformRuntime.webBindHost,
     port: requireEnvNumber(runtimeEnv.PLATFORM_WEB_PORT, "PLATFORM_WEB_PORT"),
     proxy: {
+      "/api/app/codexsun/socket.io": {
+        ...proxy,
+        rewrite: (path: string) => path.replace(/^\/api\/app/u, "")
+      },
       "/api/app": proxy,
       "/api/v1/q-cafe": {
         changeOrigin: false,

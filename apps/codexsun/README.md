@@ -28,6 +28,14 @@ activity rollback, device ownership, and cross-account draft protection.
 
 ## Phase 2: Worker execution
 
+Before worker execution, verify native device communication.
+The Android app is in `mobile`. Socket.IO connects web, desktop portal, and native Android sessions.
+Saved-record notifications trigger reloads through the existing permission-controlled REST API.
+Messages go only to the same actor in the same tenant.
+Notifications carry record identity and revision, not requirement contents.
+The server checks current access before each message and periodically checks idle sessions.
+The mobile setup and test instructions are in `mobile/README.md`.
+
 2.1 Add task planning with dependencies and an approved requirement revision.
 
 2.2 Add a desktop runner with local durable storage, scoped workspace enrollment,
