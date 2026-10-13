@@ -63,14 +63,15 @@ export class FrappeUserMappingRepository {
 export async function mappedEmployeeCodeForLocalUser(
   database: Kysely<FrappeUserMappingDatabase>,
   localEmail: string,
-  baseUrl: string
+  baseUrl: string,
+  includeInactive = false
 ) {
   if (!baseUrl) return null;
   const hash = createHash("sha256").update(new URL(baseUrl).origin.toLowerCase()).digest("hex");
   const result = await sql<{ employee_code: string | null }>`SELECT mapping.employee_code
     FROM frappe_user_mappings mapping
     INNER JOIN app_users local_user ON local_user.id=mapping.local_user_id
-    WHERE LOWER(local_user.email)=LOWER(${localEmail}) AND local_user.status='active'
+    WHERE LOWER(local_user.email)=LOWER(${localEmail}) AND (${includeInactive} OR local_user.status='active')
       AND mapping.connection_hash=${hash} LIMIT 1`.execute(database);
   return result.rows[0]?.employee_code ?? null;
 }

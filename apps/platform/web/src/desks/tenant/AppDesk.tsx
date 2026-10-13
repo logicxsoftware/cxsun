@@ -6,6 +6,9 @@ import {
 import { docsKnowledgeGateway } from "../../modules/docs/docs-host";
 import { CodexsunHost } from "../../modules/codexsun/codexsun-host";
 import { HrmsOverviewWorkspace } from "@cxsun/hrms-web/modules/overview";
+import { EmployeeWorkspace, employeeFormId } from "@cxsun/hrms-web/modules/employee";
+import { AttendanceWorkspace as HrmsAttendanceWorkspace } from "@cxsun/hrms-web/modules/attendance";
+import { attendanceGateway, employeeGateway } from "../../modules/hrms/hrms-host";
 import { hrmsOverviewGateway } from "../../modules/hrms/hrms-host";
 import { DocsOverviewWorkspace } from "@cxsun/docs-web/modules/overview";
 import { docsOverviewGateway } from "../../modules/docs/docs-host";
@@ -92,6 +95,7 @@ import { blogEditorHost } from "../../modules/blog/blog-host";
 import { useCrmNavigationCounts } from "@cxsun/crm-web/modules/enquiry/hooks";
 import { ZetroLogo } from "@cxsun/zetro-web/logo";
 import { landingAppChoices } from "./landing-app-choices";
+import { CrmContactApplicationHeader } from "./crm-contact-application-header";
 import { newEnquiryFormId, type EnquiryReportFilters } from "@cxsun/crm-web/modules/enquiry";
 import { auditorClientGateway } from "../../modules/auditor/auditor-host";
 import {
@@ -131,9 +135,6 @@ const LogicxErpSchemeWorkspace = lazyWorkspace(() =>
 const CrmOverviewWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/overview").then((module) => module.CrmOverviewWorkspace)
 );
-const CrmDataSourceWorkspace = lazyWorkspace(() =>
-  import("@cxsun/crm-web/modules/data-source").then((module) => module.CrmDataSourceWorkspace)
-);
 const FrappeOverviewWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/overview").then((module) => module.FrappeOverviewWorkspace)
 );
@@ -151,9 +152,6 @@ const FrappeEnquirySyncWorkspace = lazyWorkspace(() =>
 const FrappeConnectionWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/connection").then((module) => module.FrappeConnectionWorkspace)
 );
-const FrappeDataSourceWorkspace = lazyWorkspace(() =>
-  import("@cxsun/frappe-web/modules/data-source").then((module) => module.FrappeDataSourceWorkspace)
-);
 const FrappeUserSyncWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/user-sync").then((module) => module.FrappeUserSyncWorkspace)
 );
@@ -167,6 +165,12 @@ const CrmReportsWorkspace = lazyWorkspace(() =>
 );
 const EnquiryWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/enquiry").then((module) => module.EnquiryWorkspace)
+);
+const ActivitiesWorkspace = lazyWorkspace(() =>
+  import("@cxsun/crm-web/modules/activities").then((module) => module.ActivitiesWorkspace)
+);
+const CallLogWorkspace = lazyWorkspace(() =>
+  import("@cxsun/crm-web/modules/call-log").then((module) => module.CallLogWorkspace)
 );
 const ListInWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/list-in").then((module) => module.ListInWorkspace)
@@ -337,6 +341,9 @@ const ContactWorkspace = lazyWorkspace(() =>
     (module) => module.ContactWorkspace
   )
 );
+const CrmContactWorkspace = lazyWorkspace(() =>
+  import("@cxsun/crm-web/modules/contact").then((module) => module.CrmContactWorkspace)
+);
 const Contact360Workspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/contact-360").then((module) => module.Contact360Workspace)
 );
@@ -468,7 +475,6 @@ type AppPage =
   | "frappe.overview"
   | "frappe.enquiry-sync"
   | "frappe.connection"
-  | "frappe.data-sources"
   | "frappe.users"
   | "frappe.user-mapping"
   | "auditor.overview"
@@ -488,7 +494,8 @@ type AppPage =
   | "ecommerce.trusted-strip"
   | "q-cafe.overview"
   | "hrms.overview"
-  | "hrms.guide"
+  | "hrms.employees"
+  | "hrms.attendance"
   | "codexsun.frontdesk"
   | "codexsun.workspace"
   | "codexsun.approvals"
@@ -500,9 +507,10 @@ type AppPage =
   | "logicx-erp.overview"
   | "logicx-erp.schemes"
   | "crm.overview"
-  | "crm.data-source"
   | "crm.reports"
   | "crm.enquiries"
+  | "crm.activities"
+  | "crm.call-logs"
   | "crm.enquiries.new"
   | "crm.my-job"
   | "crm.my-calls"
@@ -583,6 +591,11 @@ export function AppDesk() {
   } | null>(null);
   const [crmListRevision, setCrmListRevision] = useState(0);
   const [crmReportTitle, setCrmReportTitle] = useState("List in");
+  const [crmContactHeader, setCrmContactHeader] = useState<{
+    code: string;
+    name: string;
+    primaryPhone: string | null;
+  } | null>(null);
   const dirtyFormsRef = useRef<Set<Element>>(new Set());
   const [shouldResolveLandingPath, setShouldResolveLandingPath] = useState(() =>
     isAppRootPath(location.pathname)
@@ -693,11 +706,15 @@ export function AppDesk() {
                                         : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle =
-    safePage === "crm.reports"
-      ? crmReportTitle
-      : safePage === "crm.enquiries"
-        ? "Enquiries"
-        : titleForPage(safePage);
+    safePage === "hrms.employees" && location.pathname.endsWith("/new")
+      ? "New employee"
+      : safePage === "hrms.employees" && location.pathname.endsWith("/edit")
+        ? "Edit employee"
+        : safePage === "crm.reports"
+          ? crmReportTitle
+          : safePage === "crm.enquiries"
+            ? "Enquiries"
+            : titleForPage(safePage);
   const accountingYear = selectedFinancialYear?.name ?? "Accounting year";
   const defaultSelectionMutation = useMutation({
     mutationFn: saveDefaultCompany,
@@ -958,6 +975,8 @@ export function AppDesk() {
 
   const activeWorkspaceTitle =
     platformAppRegistry.find((app) => app.id === activeApp)?.label ?? "Application";
+  const showingCrmContact =
+    safePage === "crm.contacts" && /^\/app\/crm\/contacts\/[^/]+\/show$/.test(location.pathname);
   const docsCatalog = useKnowledgeCatalog(docsKnowledgeGateway, activeApp === "docs");
   const selectedDocKey = new URLSearchParams(location.searchStr).get("page") ?? "";
   const openDocPage = (page: string) => {
@@ -1049,12 +1068,16 @@ export function AppDesk() {
     <AuthGate desk="tenant">
       <TenantMainLayout
         headerActionsAlignment={
-          safePage === "crm.enquiries.new"
-            ? "form"
-            : safePage === "crm.enquiries" ||
-                (safePage === "crm.contacts" && location.pathname === "/app/crm/contacts")
+          safePage === "hrms.employees"
+            ? location.pathname === "/app/hrms/employees"
               ? "workspace"
-              : "edge"
+              : "form"
+            : safePage === "crm.enquiries.new"
+              ? "form"
+              : safePage === "crm.enquiries" ||
+                  (safePage === "crm.contacts" && location.pathname === "/app/crm/contacts")
+                ? "workspace"
+                : "edge"
         }
         appItems={workspaceItems}
         brand={{
@@ -1091,8 +1114,43 @@ export function AppDesk() {
           title: companyBranding.brandName ?? activeWorkspaceTitle
         }}
         headerTitle={activePageTitle}
+        {...(showingCrmContact
+          ? {
+              headerContent: <CrmContactApplicationHeader contact={crmContactHeader} />
+            }
+          : {})}
         headerActions={
-          safePage === "crm.contacts" && location.pathname === "/app/crm/contacts" ? (
+          safePage === "hrms.employees" ? (
+            location.pathname === "/app/hrms/employees" ? (
+              <Button
+                key="new-hrms-employee"
+                size="sm"
+                className="h-7 px-3"
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  void navigate({ to: "/app/$", params: { _splat: "hrms/employees/new" } });
+                }}
+              >
+                <PlusIcon className="size-4" />
+                New employee
+              </Button>
+            ) : (
+              <Button
+                key="save-hrms-employee"
+                size="sm"
+                className="h-7 px-3"
+                type="submit"
+                form={employeeFormId}
+                aria-keyshortcuts="Control+S"
+              >
+                {location.pathname.endsWith("/edit") ? "Update employee" : "Save employee"}
+                <kbd className="ml-1 rounded bg-background/15 px-1.5 py-0.5 text-[10px] font-medium text-background/75">
+                  Ctrl S
+                </kbd>
+              </Button>
+            )
+          ) : safePage === "crm.contacts" && location.pathname === "/app/crm/contacts" ? (
             <Button
               size="sm"
               className="h-7 px-3"
@@ -1139,10 +1197,10 @@ export function AppDesk() {
             </Button>
           ) : null
         }
-        hideSidebarBrand={activeApp === "crm"}
+        hideSidebarBrand={activeApp === "crm" || activeApp === "hrms"}
         homeHref={appRootUrl(activeApp)}
         menuItems={menuItems}
-        omitWorkspaceBreadcrumb={activeApp === "crm"}
+        omitWorkspaceBreadcrumb={activeApp === "crm" || safePage === "hrms.employees"}
         onLogout={handleLogout}
         onOpenSettings={() => requestListNavigation("application.settings")}
         settingsActive={safePage === "application.settings"}
@@ -1179,11 +1237,16 @@ export function AppDesk() {
             {safePage === "blog.overview" || safePage === "blog.articles" ? (
               <BlogsEditorWorkspace host={blogEditorHost} />
             ) : null}
-            {safePage === "hrms.overview" || safePage === "hrms.guide" ? (
+            {safePage === "hrms.employees" ? <EmployeeWorkspace gateway={employeeGateway} /> : null}
+            {safePage === "hrms.attendance" ? (
+              <HrmsAttendanceWorkspace gateway={attendanceGateway} />
+            ) : null}
+            {safePage === "hrms.overview" ? (
               <HrmsOverviewWorkspace
                 gateway={hrmsOverviewGateway}
-                guide={safePage === "hrms.guide"}
-                onNavigate={requestListNavigation}
+                currentUserName={signedInUser.name}
+                onOpenAttendance={() => requestListNavigation("hrms.attendance")}
+                onOpenEmployees={() => requestListNavigation("hrms.employees")}
               />
             ) : null}
             {safePage === "codexsun.frontdesk" ||
@@ -1244,7 +1307,6 @@ export function AppDesk() {
             ) : null}
             {safePage === "frappe.enquiry-sync" ? <FrappeEnquirySyncWorkspace /> : null}
             {safePage === "frappe.connection" ? <FrappeConnectionWorkspace /> : null}
-            {safePage === "frappe.data-sources" ? <FrappeDataSourceWorkspace /> : null}
             {safePage === "frappe.users" ? <FrappeUserSyncWorkspace /> : null}
             {safePage === "frappe.user-mapping" ? <FrappeUserMappingWorkspace /> : null}
             {safePage === "auditor.clients" ? (
@@ -1262,9 +1324,6 @@ export function AppDesk() {
                 onOpenMyCalls={() => requestListNavigation("crm.my-calls")}
               />
             ) : null}
-            {safePage === "crm.data-source" ? (
-              <CrmDataSourceWorkspace frappeEnabled={enabledApps.includes("frappe")} />
-            ) : null}
             {safePage === "crm.reports" ? (
               <CrmReportsWorkspace
                 onOpenEnquiries={openReportEnquiries}
@@ -1272,14 +1331,25 @@ export function AppDesk() {
               />
             ) : null}
             {safePage === "crm.contacts" ? (
-              <ContactWorkspace
+              <CrmContactWorkspace
                 key={`${safePage}:${crmListRevision}`}
                 basePath="/app/crm/contacts"
                 hideSinglePagePagination
                 showListHeader={false}
+                onOpenEnquiry={openEnquiryRecord}
+                onShowContextChange={setCrmContactHeader}
               />
             ) : null}
             {safePage === "crm.contact-360" ? <Contact360Workspace key={safePage} /> : null}
+            {safePage === "crm.activities" ? (
+              <ActivitiesWorkspace
+                key={`${safePage}:${crmListRevision}`}
+                onOpenEnquiry={(id) => openEnquiryRecord(String(id))}
+              />
+            ) : null}
+            {safePage === "crm.call-logs" ? (
+              <CallLogWorkspace key={`${safePage}:${crmListRevision}`} />
+            ) : null}
             {safePage === "crm.enquiries" ? (
               <EnquiryWorkspace
                 key={`${safePage}:${location.href}:${crmListRevision}`}
@@ -1488,12 +1558,28 @@ function uniqueApps(apps: PlatformAppId[]) {
 }
 
 function isCrmListPage(page: AppPage) {
-  return page === "crm.contacts" || page === "crm.enquiries" || page === "crm.list-in";
+  return (
+    page === "crm.contacts" ||
+    page === "crm.enquiries" ||
+    page === "crm.activities" ||
+    page === "crm.call-logs" ||
+    page === "crm.list-in"
+  );
 }
 
 function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPage {
   const [, , app, ...children] = pathname.split("/");
   if (!app) return pageForApp(landingApp ?? "application");
+  if (
+    app === "hrms" &&
+    children[0] === "employees" &&
+    (children.length === 1 ||
+      (children.length === 2 && children[1] === "new") ||
+      (children.length === 3 && Boolean(children[1]) && children[2] === "edit"))
+  )
+    return "hrms.employees";
+  if (app === "hrms" && children[0] === "attendance" && children.length === 1)
+    return "hrms.attendance";
 
   if (
     app === "crm" &&
@@ -1509,7 +1595,7 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     children[0] === "contacts" &&
     (children.length === 1 ||
       (children.length === 2 && children[1] === "new") ||
-      (children.length === 3 && children[2] === "edit"))
+      (children.length === 3 && (children[2] === "edit" || children[2] === "show")))
   ) {
     return "crm.contacts";
   }
@@ -1563,7 +1649,8 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
   const key = `${app}.${children.filter(Boolean).join(".") || "overview"}`;
   if (
     key === "hrms.overview" ||
-    key === "hrms.guide" ||
+    key === "hrms.employees" ||
+    key === "hrms.attendance" ||
     key === "codexsun.frontdesk" ||
     key === "codexsun.workspace" ||
     key === "codexsun.approvals" ||
@@ -1576,7 +1663,6 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "frappe.overview" ||
     key === "frappe.enquiry-sync" ||
     key === "frappe.connection" ||
-    key === "frappe.data-sources" ||
     key === "frappe.users" ||
     key === "frappe.user-mapping" ||
     key === "auditor.overview" ||
@@ -1587,9 +1673,10 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "logicx-erp.overview" ||
     key === "logicx-erp.schemes" ||
     key === "crm.overview" ||
-    key === "crm.data-source" ||
     key === "crm.reports" ||
     key === "crm.enquiries" ||
+    key === "crm.activities" ||
+    key === "crm.call-logs" ||
     key === "crm.enquiries.new" ||
     key === "crm.my-job" ||
     key === "crm.my-calls" ||
@@ -1666,6 +1753,8 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
 }
 
 function tenantPathMatchesPage(pathname: string, page: AppPage): boolean {
+  if (page === "hrms.employees")
+    return /^\/app\/hrms\/employees(?:\/new|\/[^/]+\/edit)?$/.test(pathname);
   if (page === "ecommerce.overview" && pathname === "/app/ecommerce") return true;
   if (page === "q-cafe.overview" && pathname === "/app/q-cafe") return true;
   const canonicalPath = `/app/${page.replaceAll(".", "/")}`;
@@ -1702,7 +1791,9 @@ function tenantPathMatchesPage(pathname: string, page: AppPage): boolean {
     const segments = pathname.slice(prefix.length).split("/");
     return (
       (segments.length === 1 && Boolean(segments[0])) ||
-      (segments.length === 2 && Boolean(segments[0]) && segments[1] === "edit")
+      (segments.length === 2 &&
+        Boolean(segments[0]) &&
+        (segments[1] === "edit" || (page === "crm.contacts" && segments[1] === "show")))
     );
   }
   if (
@@ -2137,7 +2228,8 @@ function renderOwnedCommonMasterPage(page: AppPage) {
 function titleForPage(page: AppPage) {
   const labels: Partial<Record<AppPage, string>> = {
     "hrms.overview": "HRMS",
-    "hrms.guide": "Getting Started",
+    "hrms.employees": "Employees",
+    "hrms.attendance": "Attendance",
     "codexsun.frontdesk": "Zuno Front Desk",
     "codexsun.workspace": "Desktop Workspace",
     "codexsun.approvals": "Mobile Approvals",
@@ -2148,9 +2240,8 @@ function titleForPage(page: AppPage) {
     "himsx.guide": "Getting Started",
     "q-cafe.overview": "Q Cafe",
     "frappe.overview": "Frappe",
-    "frappe.enquiry-sync": "Enquiry sync",
+    "frappe.enquiry-sync": "Sync queue",
     "frappe.connection": "Frappe connection",
-    "frappe.data-sources": "App data sources",
     "frappe.users": "Frappe users",
     "frappe.user-mapping": "User mapping",
     "auditor.overview": "Overview",
@@ -2171,9 +2262,10 @@ function titleForPage(page: AppPage) {
     "logicx-erp.overview": "Overview",
     "logicx-erp.schemes": "Schemes",
     "crm.overview": "Overview",
-    "crm.data-source": "Data Sources",
     "crm.reports": "List in",
     "crm.enquiries": "All Enquiries",
+    "crm.activities": "Activities",
+    "crm.call-logs": "Call Logs",
     "crm.enquiries.new": "New enquiry",
     "crm.my-job": "My Job",
     "crm.my-calls": "My Calls",

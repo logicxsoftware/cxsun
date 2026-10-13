@@ -15,7 +15,9 @@ const detailFields = [
   "customer",
   "due_date",
   "status_details",
-  "user_employee"
+  "user_employee",
+  "assigned_to_employee",
+  "group"
 ];
 
 export class FrappeEnquirySyncService {
@@ -87,8 +89,9 @@ export class FrappeEnquirySyncService {
           continue;
         }
         try {
-          await this.pullWithSettings(name, settings);
-          progress.created += 1;
+          const result = await this.pullWithSettings(name, settings);
+          if (result.status === "linked") progress.skipped += 1;
+          else progress.created += 1;
         } catch (error) {
           progress.failed += 1;
           if (progress.failures.length < 100)
@@ -141,6 +144,18 @@ export class FrappeEnquirySyncService {
     if (!remote || remote.name !== remoteName)
       throw AppError.validation("The selected Frappe enquiry could not be found.");
     const linked = await this.repository.byRemoteName(remoteName);
+    if (!linked) {
+      const existing = await this.context.database
+        .selectFrom("crm_enquiries")
+        .select("id")
+        .where("source", "=", "frappe")
+        .where("source_reference", "=", remoteName)
+        .executeTakeFirst();
+      if (existing) {
+        await this.repository.save(existing.id, remoteName);
+        return { remoteName, enquiryId: existing.id, status: "linked" as const };
+      }
+    }
     if (linked && linked.source !== "frappe")
       throw AppError.conflict("This enquiry originated locally. Post its changes to Frappe.");
     if (linked && utcMillis(linked.updatedAt) > utcMillis(linked.syncedAt))
@@ -189,9 +204,12 @@ export class FrappeEnquirySyncService {
     const dueDate = remote.due_date?.trim() || null;
     if (dueDate && (!/^\d{4}-\d{2}-\d{2}$/u.test(dueDate) || Number.isNaN(Date.parse(dueDate))))
       throw AppError.validation("The Frappe enquiry has an invalid due date.");
-    const mappedAssignee = remote.user_employee?.trim()
-      ? await this.context.localUserForEmployee(remote.user_employee.trim(), baseUrl)
+    const mappedAssignee = remote.assigned_to_employee?.trim()
+      ? await this.context.localUserForEmployee(remote.assigned_to_employee.trim(), baseUrl)
       : null;
+    const listInId = remote.group?.trim()
+      ? await this.context.listInForName(remote.group.trim())
+      : (linked?.listInId ?? null);
     return {
       title: (remote.title?.trim() || remote.enquiry_details?.trim() || remote.name).slice(0, 255),
       description: remote.enquiry_details?.trim() || null,
@@ -201,7 +219,7 @@ export class FrappeEnquirySyncService {
       capturedPhone: phone,
       source: "frappe",
       sourceReference: remote.name,
-      listInId: linked?.listInId ?? null,
+      listInId,
       statusId: status.id,
       priorityId: priority.id,
       assignedUserId: mappedAssignee ?? linked?.assignedUserId ?? null,

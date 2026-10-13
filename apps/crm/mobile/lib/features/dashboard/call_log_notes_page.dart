@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api/crm_mobile_api.dart';
-import '../../core/auth/secure_session_store.dart';
 import 'admin_call_log_page.dart';
 import 'home_enquiry_form_page.dart';
-import 'call_log_note_store.dart';
 
 class CallLogNotesPage extends StatefulWidget {
   const CallLogNotesPage({
     required this.api,
     required this.session,
     required this.entry,
+    required this.callLogName,
     super.key,
   });
 
   final CrmMobileApi api;
   final UserSession session;
   final CallLogEntry entry;
+  final String callLogName;
 
   @override
   State<CallLogNotesPage> createState() => _CallLogNotesPageState();
@@ -25,18 +25,13 @@ class CallLogNotesPage extends StatefulWidget {
 class _CallLogNotesPageState extends State<CallLogNotesPage> {
   final _controller = TextEditingController();
   final _composerFocus = FocusNode();
-  late final CallLogNoteStore _store;
-  List<CallLogNote> _notes = const [];
+  List<CrmCallLogComment> _notes = const [];
   var _isLoading = true;
   var _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _store = CallLogNoteStore(
-      SecureSessionStore(),
-      accountEmail: widget.session.profile.email,
-    );
     _load();
   }
 
@@ -70,7 +65,7 @@ class _CallLogNotesPageState extends State<CallLogNotesPage> {
                       if (_notes.isEmpty)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 18),
-                          child: Text('No local comments yet.'),
+                          child: Text('No CRM comments yet.'),
                         )
                       else
                         ..._notes.map((note) => _CallNoteRow(note: note)),
@@ -97,7 +92,10 @@ class _CallLogNotesPageState extends State<CallLogNotesPage> {
   );
 
   Future<void> _load() async {
-    final notes = await _store.read(widget.entry.mobile);
+    final notes = await widget.api.callLogComments(
+      accessToken: widget.session.accessToken,
+      callLogName: widget.callLogName,
+    );
     if (mounted) setState(() => _notes = notes);
     if (mounted) setState(() => _isLoading = false);
     if (mounted) _focusComposer();
@@ -113,38 +111,43 @@ class _CallLogNotesPageState extends State<CallLogNotesPage> {
     final content = _controller.text.trim();
     if (content.isEmpty) return;
     setState(() => _isSaving = true);
-    final note = CallLogNote(
-      id: '${DateTime.now().microsecondsSinceEpoch}-${widget.entry.mobile}',
-      mobile: widget.entry.mobile,
-      content: content,
-      createdAt: DateTime.now(),
-    );
-    await _store.save(note);
-    _controller.clear();
-    await _load();
-    if (mounted) setState(() => _isSaving = false);
+    try {
+      await widget.api.addCallLogComment(
+        accessToken: widget.session.accessToken,
+        callLogName: widget.callLogName,
+        body: content,
+      );
+      _controller.clear();
+      await _load();
+    } on CrmMobileApiException catch (error) {
+      _showMessage(error.message);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
-  Future<void> _openEnquiry(CallLogNote? note) async {
+  Future<void> _openEnquiry(CrmCallLogComment? note) async {
     final posted = await Navigator.of(context).push<CrmJob>(
       MaterialPageRoute(
         builder: (context) => HomeEnquiryFormPage(
           api: widget.api,
           session: widget.session,
           initialMobile: widget.entry.mobile,
-          initialMessage: note?.content ?? '',
+          initialMessage: note?.body ?? '',
         ),
       ),
     );
-    if (posted == null || note == null) return;
-    await _store.remove(note.id);
-    await _load();
+    if (posted == null) return;
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Enquiry #${posted.number} posted.')),
       );
     }
   }
+
+  void _showMessage(String message) =>
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
 }
 
 class _ContactSummary extends StatelessWidget {
@@ -247,12 +250,12 @@ class _CommentComposer extends StatelessWidget {
 class _CallNoteRow extends StatelessWidget {
   const _CallNoteRow({required this.note});
 
-  final CallLogNote note;
+  final CrmCallLogComment note;
 
   @override
   Widget build(BuildContext context) => ListTile(
     contentPadding: const EdgeInsets.symmetric(vertical: 4),
-    title: Text(note.content),
+    title: Text(note.body),
     subtitle: Text(_formatNoteTime(note.createdAt)),
   );
 }

@@ -4,6 +4,7 @@ import { registerContractRoute } from "@cxsun/framework/http";
 import type {} from "@cxsun/framework/api";
 import { HrmsOverviewService } from "./overview.service.js";
 import type { HrmsOverviewRequestContext } from "./overview.types.js";
+import { attendanceOverviewSchema } from "../attendance/attendance.routes.js";
 
 const overviewSchema = z.object({
   actorEmail: z.string(),
@@ -11,7 +12,8 @@ const overviewSchema = z.object({
   checkedAt: z.string(),
   label: z.string(),
   tenantCode: z.string(),
-  tenantName: z.string()
+  tenantName: z.string(),
+  attendance: attendanceOverviewSchema
 });
 
 export function registerHrmsOverviewRoutes(

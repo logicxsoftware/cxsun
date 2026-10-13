@@ -1,14 +1,23 @@
 import { AppError } from "@cxsun/framework/errors";
+import type { Transaction } from "kysely";
 import { EnquiryRepository } from "./enquiry.repository.js";
-import type { EnquiryInput, EnquiryListOptions, EnquiryRecord } from "./enquiry.types.js";
+import type {
+  EnquiryDatabase,
+  EnquiryInput,
+  EnquiryListOptions,
+  EnquiryRecord
+} from "./enquiry.types.js";
 import { commentPlainText, sanitizeCommentHtml } from "./enquiry.comment-html.js";
 
 export type EnquiryRelations = {
   contact: (id: number) => Promise<{ name: string } | null>;
-  resolveOrCreateCustomer: (input: {
-    name: string | null;
-    mobile: string | null;
-  }) => Promise<{ id: number; name: string }>;
+  resolveOrCreateCustomer: (
+    input: {
+      name: string | null;
+      mobile: string | null;
+    },
+    transaction?: Transaction<EnquiryDatabase>
+  ) => Promise<{ id: number; name: string }>;
   user: (id: number) => Promise<{ name: string } | null>;
   listIn: (id: number) => Promise<{ name: string } | null>;
   status: (id: number) => Promise<{ name: string; code: string } | null>;
@@ -55,17 +64,22 @@ export class EnquiryService {
     return this.withContact(record);
   }
 
-  async create(input: EnquiryInput, actor: string) {
-    if (input.capturedPhone?.trim() && !/^\d{10}$/.test(input.capturedPhone.trim())) {
+  async create(input: EnquiryInput, actor: string, imported = false) {
+    if (!imported && input.capturedPhone?.trim() && !/^\d{10}$/.test(input.capturedPhone.trim())) {
       throw AppError.validation("Enter a 10-digit mobile number.");
     }
     const prepared = await this.prepare(input, null);
-    const record = await this.repository.create(prepared, actor);
+    const record = await this.repository.create(
+      prepared,
+      actor,
+      (transaction) => this.resolveContact(prepared, transaction),
+      !imported && prepared.source !== "mobile"
+    );
     if (!record) throw AppError.notFound("Enquiry could not be created.");
     return this.withContact(record);
   }
 
-  async update(id: number, input: EnquiryInput, actor: string) {
+  async update(id: number, input: EnquiryInput, actor: string, imported = false) {
     const current = await this.get(id);
     const prepared = await this.prepare(input, current);
     const record = await this.repository.update(
@@ -73,7 +87,9 @@ export class EnquiryService {
       prepared,
       actor,
       "Enquiry updated",
-      current.statusId
+      current.statusId,
+      (transaction) => this.resolveContact(prepared, transaction),
+      !imported
     );
     if (!record) throw AppError.notFound("Enquiry was not found.");
     return this.withContact(record);
@@ -156,7 +172,8 @@ export class EnquiryService {
     body: string,
     parentId: number | null,
     actor: string,
-    bodyFormat: "plain" | "html" = "plain"
+    bodyFormat: "plain" | "html" = "plain",
+    queueOutbound = true
   ) {
     await this.get(id);
     const text = bodyFormat === "html" ? sanitizeCommentHtml(body) : body.trim();
@@ -169,7 +186,7 @@ export class EnquiryService {
         throw AppError.validation("Select a comment from this enquiry to reply to.");
       }
     }
-    return this.repository.addComment(id, parentId, text, bodyFormat, actor);
+    return this.repository.addComment(id, parentId, text, bodyFormat, actor, queueOutbound);
   }
 
   private async prepare(input: EnquiryInput, current: EnquiryRecord | null): Promise<EnquiryInput> {
@@ -215,14 +232,21 @@ export class EnquiryService {
         title,
         closedReason: terminal.has(status.code) ? input.closedReason?.trim() || null : null
       };
-    const contact = await this.relations.resolveOrCreateCustomer({
-      name: input.capturedName,
-      mobile: input.capturedPhone
-    });
     return {
       ...input,
       title,
-      closedReason: terminal.has(status.code) ? input.closedReason?.trim() || null : null,
+      closedReason: terminal.has(status.code) ? input.closedReason?.trim() || null : null
+    };
+  }
+
+  private async resolveContact(input: EnquiryInput, transaction: Transaction<EnquiryDatabase>) {
+    if (input.contactId) return input;
+    const contact = await this.relations.resolveOrCreateCustomer(
+      { name: input.capturedName, mobile: input.capturedPhone },
+      transaction
+    );
+    return {
+      ...input,
       contactId: contact.id,
       capturedName: input.capturedName?.trim() || contact.name
     };

@@ -216,6 +216,19 @@ async function addEnquiryFrappeSyncLedger(database: Kysely<EnquiryDatabase>) {
     .execute(database);
 }
 
+async function indexImportedEnquiries(database: Kysely<EnquiryDatabase>) {
+  const index = await sql<{ index_name: string }>`SELECT INDEX_NAME AS index_name
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='crm_enquiries'
+      AND INDEX_NAME='crm_enquiries_source_reference_uq'`.execute(database);
+  if (!index.rows.length)
+    await sql
+      .raw(
+        "ALTER TABLE crm_enquiries ADD UNIQUE KEY crm_enquiries_source_reference_uq (source, source_reference)"
+      )
+      .execute(database);
+}
+
 async function addEnquiryComments(database: Kysely<EnquiryDatabase>) {
   await sql
     .raw(
@@ -516,6 +529,13 @@ export const enquiryMigrationBatch: MigrationBatch<EnquiryDatabase> = {
       name: "crm.enquiry.frappe-sync-ledger-v12",
       up: addEnquiryFrappeSyncLedger,
       version: 12
+    },
+    {
+      checksum: "crm.enquiry.import-identity-v13:v1",
+      description: "Keep one local enquiry for each imported Frappe identity.",
+      name: "crm.enquiry.import-identity-v13",
+      up: indexImportedEnquiries,
+      version: 13
     }
   ]
 };

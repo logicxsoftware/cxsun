@@ -1,1 +1,1 @@
-export { FrappeEnquirySyncWorkspace } from "./enquiry-sync.workspace";
+export { FrappeEnquirySyncWorkspace } from "./enquiry-sync.queue";

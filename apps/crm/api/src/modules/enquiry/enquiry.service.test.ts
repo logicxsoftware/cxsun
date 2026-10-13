@@ -75,6 +75,27 @@ test("new enquiries accept only ten-digit mobile numbers when provided", async (
   assert.equal(created, 1);
 });
 
+test("mobile enquiries stay local and do not enter the Frappe outbox", async () => {
+  let queueOutbound: boolean | undefined;
+  const repository = {
+    create: async (_input: EnquiryInput, _actor: string, _resolve: unknown, queue: boolean) => {
+      queueOutbound = queue;
+      return record();
+    }
+  } as unknown as EnquiryRepository;
+  const service = new EnquiryService(repository, relations, {
+    actorEmail: "mobile@example.com",
+    actorUserId: 2,
+    canViewAll: false
+  });
+
+  await service.create(
+    { ...record(), source: "mobile", capturedPhone: "9976222059" },
+    "mobile@example.com"
+  );
+  assert.equal(queueOutbound, false);
+});
+
 test("list scope and detail access use the server actor", async () => {
   let options: EnquiryListOptions | undefined;
   const repository = {

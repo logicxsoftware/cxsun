@@ -20,8 +20,10 @@ export const queueManagerWorker = {
   jobs: [
     "client-artifact.prepare",
     "crm.enquiry.frappe-sync",
+    "crm.call-log.frappe-sync",
     "database-maintenance.run",
     "frappe.enquiries.import",
+    "frappe.call-logs.import",
     "mail.send",
     "mail.sync",
     "mail.system-send",

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api/crm_mobile_api.dart';
+import 'admin_call_log_page.dart';
 import 'dashboard_list_page.dart';
 import 'home_enquiry_form_page.dart';
 import 'job_enquiry_card.dart';
@@ -39,6 +40,12 @@ class _MyEnquiriesPageState extends State<MyEnquiriesPage> {
     appBar: AppBar(
       title: const Text('Enquiries'),
       actions: [
+        if (isCallLogAdministrator(widget.session.profile.role))
+          IconButton(
+            tooltip: 'Call Logs',
+            onPressed: _openCallLogs,
+            icon: const Icon(Icons.call_outlined),
+          ),
         IconButton(
           tooltip: 'New enquiry',
           onPressed: _openNewEnquiry,
@@ -206,6 +213,15 @@ class _MyEnquiriesPageState extends State<MyEnquiriesPage> {
       ),
     );
     if (created != null && mounted) await _refresh();
+  }
+
+  Future<void> _openCallLogs() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) =>
+            AdminCallLogPage(api: widget.api, session: widget.session),
+      ),
+    );
   }
 }
 

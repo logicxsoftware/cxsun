@@ -5,7 +5,20 @@ import {
   seedCodexsunPermissions,
   type CodexsunDatabase
 } from "@cxsun/codexsun-api";
-import { seedHrmsOverviewPermissions, type HrmsPermissionDatabase } from "@cxsun/hrms-api";
+import {
+  seedHrmsOverviewPermissions,
+  seedEmployeePermissions,
+  attendanceMigrations,
+  migrateAttendanceDatabase,
+  rollbackAttendanceDatabase,
+  seedAttendancePermissions,
+  type AttendanceDatabase,
+  employeeMigrations,
+  migrateEmployeeDatabase,
+  rollbackEmployeeDatabase,
+  type EmployeeDatabase,
+  type HrmsPermissionDatabase
+} from "@cxsun/hrms-api";
 import {
   migrateKnowledgeDatabase,
   rollbackKnowledgeDatabase,
@@ -175,6 +188,14 @@ export function tenantDatabaseMigrationsFor(_tenant: Tenant) {
       ...migration,
       statements: [`RUN ${migration.name}`]
     })),
+    ...employeeMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...attendanceMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
     ...knowledgeMigrations.map((migration) => ({
       ...migration,
       statements: [`RUN ${migration.name}`]
@@ -209,6 +230,9 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   const provisionedApps = ["application"];
 
   await migrateCoreTenantDatabase(tenant.dbName);
+  await migrateEmployeeDatabase(database as unknown as Kysely<EmployeeDatabase>);
+  await migrateAttendanceDatabase(database as unknown as Kysely<AttendanceDatabase>);
+  provisionedApps.push("hrms");
   if (tenant.enabledModuleKeys.includes("docs")) {
     await migrateKnowledgeDatabase(database as unknown as Kysely<KnowledgeDatabase>);
     provisionedApps.push("docs");
@@ -256,6 +280,8 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
   }
   if (enabled.has("hrms")) {
     await seedHrmsOverviewPermissions(database as unknown as Kysely<HrmsPermissionDatabase>);
+    await seedEmployeePermissions(database as unknown as Kysely<HrmsPermissionDatabase>);
+    await seedAttendancePermissions(database as unknown as Kysely<HrmsPermissionDatabase>);
     seededApps.push("hrms");
   }
   if (enabled.has("docs")) {
@@ -332,6 +358,8 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
 }
 
 export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
+  await rollbackEmployeeDatabase(database as unknown as Kysely<EmployeeDatabase>);
+  await rollbackAttendanceDatabase(database as unknown as Kysely<AttendanceDatabase>);
   const enabled = new Set(tenant.enabledModuleKeys);
   if (enabled.has("codexsun"))
     await rollbackCodexsunDatabase(database as unknown as Kysely<CodexsunDatabase>);

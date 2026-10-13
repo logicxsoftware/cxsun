@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/framework",
-  "version": "1.0.90",
+  "version": "1.0.91",
   "private": true,
   "type": "module",
   "exports": {

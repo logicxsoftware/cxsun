@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { sql, type Kysely, type Transaction } from "kysely";
-import { getCoreDatabase, type CoreDatabase } from "../../../database/core-database.js";
+import {
+  currentCoreTransaction,
+  getCoreDatabase,
+  type CoreDatabase
+} from "../../../database/core-database.js";
 import type {
   ContactAddress,
   ContactBankAccount,
@@ -151,7 +155,7 @@ export class ContactRepository {
   async create(input: ContactSaveInput) {
     const draft = normalizeContact(input, null);
     const database = getCoreDatabase();
-    const id = await database.transaction().execute(async (transaction) => {
+    const insert = async (transaction: Transaction<CoreDatabase>) => {
       const result = await transaction
         .insertInto("core_contacts" as never)
         .values(toContactRow(draft) as never)
@@ -159,7 +163,10 @@ export class ContactRepository {
       const contactId = Number(result.insertId);
       await replaceContactChildren(transaction, contactId, draft);
       return contactId;
-    });
+    };
+    const id = currentCoreTransaction()
+      ? await insert(currentCoreTransaction()!)
+      : await database.transaction().execute(insert);
     return requiredContact(await this.find(id));
   }
 

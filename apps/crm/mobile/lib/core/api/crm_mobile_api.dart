@@ -199,7 +199,7 @@ class CrmMobileApi {
     required String comment,
   }) async {
     await _request(
-      '/crm/enquiries/${Uri.encodeComponent(id)}/comments',
+      '/crm/mobile/enquiries/${Uri.encodeComponent(id)}/comments',
       accessToken: accessToken,
       method: 'POST',
       body: {'body': comment, 'bodyFormat': 'plain', 'parentId': null},
@@ -246,23 +246,77 @@ class CrmMobileApi {
     required int durationSeconds,
     required DateTime occurredAt,
   }) async {
+    return createEnquiry(
+      accessToken: accessToken,
+      customer: customerName,
+      mobile: mobile,
+      title: title,
+      enquiryGroup: enquiryGroup,
+      assignedToUserId: assignedToUserId,
+      message:
+          '$message\n\n${direction.trim()} call · ${durationSeconds}s · ${occurredAt.toLocal()}',
+    );
+  }
+
+  Future<CrmCallLog> syncDeviceCallLog({
+    required String accessToken,
+    required String sourceReference,
+    required String type,
+    required String from,
+    required String to,
+    required String status,
+    required int duration,
+    required DateTime occurredAt,
+  }) async {
     final data = await _request(
-      '/mobile/crm/call-enquiries',
+      '/crm/mobile/call-logs',
       accessToken: accessToken,
       method: 'POST',
       body: {
-        'assignedToUserId': assignedToUserId,
-        'customerName': customerName,
-        'direction': direction,
-        'durationSeconds': durationSeconds,
-        'enquiryGroup': enquiryGroup,
-        'message': message,
-        'mobile': mobile,
+        'type': type,
+        'from': from,
+        'to': to,
+        'status': status,
+        'duration': duration,
+        'user': null,
+        'sourceReference': sourceReference,
         'occurredAt': occurredAt.toUtc().toIso8601String(),
-        'title': title,
       },
     );
-    return CrmJob.fromJson(data as Map<String, dynamic>);
+    return CrmCallLog.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<List<CrmCallLogComment>> callLogComments({
+    required String accessToken,
+    required String callLogName,
+  }) async {
+    final data = await _request(
+      '/crm/call-logs/${Uri.encodeComponent(callLogName)}/comments',
+      accessToken: accessToken,
+    );
+    if (data is! List) {
+      throw const CrmMobileApiException(
+        'Unexpected call log comments response.',
+      );
+    }
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(CrmCallLogComment.fromJson)
+        .toList();
+  }
+
+  Future<CrmCallLogComment> addCallLogComment({
+    required String accessToken,
+    required String callLogName,
+    required String body,
+  }) async {
+    final data = await _request(
+      '/crm/mobile/call-logs/${Uri.encodeComponent(callLogName)}/comments',
+      accessToken: accessToken,
+      method: 'POST',
+      body: {'body': body},
+    );
+    return CrmCallLogComment.fromJson(data as Map<String, dynamic>);
   }
 
   Future<CrmJob> createEnquiry({
@@ -641,14 +695,14 @@ class CrmCallEnquiryAssignee {
 
 class CrmMobileEnquiryMatch {
   const CrmMobileEnquiryMatch({
-    required this.frappeName,
+    required this.enquiryId,
     required this.number,
     required this.title,
     required this.status,
     required this.createdAt,
   });
 
-  final String frappeName;
+  final String enquiryId;
   final int number;
   final String title;
   final String status;
@@ -656,13 +710,46 @@ class CrmMobileEnquiryMatch {
 
   factory CrmMobileEnquiryMatch.fromJson(Map<String, dynamic> json) =>
       CrmMobileEnquiryMatch(
-        frappeName: json['id']?.toString() ?? '',
+        enquiryId: json['id']?.toString() ?? '',
         number: int.tryParse((json['enquiryNo'] ?? json['id']).toString()) ?? 0,
         title: json['title'] as String? ?? 'Untitled enquiry',
         status: json['status'] as String? ?? 'Open',
         createdAt:
             DateTime.tryParse(json['createdAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),
+      );
+}
+
+class CrmCallLog {
+  const CrmCallLog({required this.name});
+
+  final String name;
+
+  factory CrmCallLog.fromJson(Map<String, dynamic> json) =>
+      CrmCallLog(name: json['name'] as String? ?? '');
+}
+
+class CrmCallLogComment {
+  const CrmCallLogComment({
+    required this.id,
+    required this.body,
+    required this.createdAt,
+    required this.createdBy,
+  });
+
+  final int id;
+  final String body;
+  final DateTime createdAt;
+  final String createdBy;
+
+  factory CrmCallLogComment.fromJson(Map<String, dynamic> json) =>
+      CrmCallLogComment(
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        body: _plainTextComment(json['body'] as String? ?? ''),
+        createdAt:
+            DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+        createdBy: json['createdBy'] as String? ?? '',
       );
 }
 

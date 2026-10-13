@@ -52,3 +52,25 @@ export type FrappeConnectionState = {
   enabled: boolean;
   baseUrl: string | null;
 };
+
+export type SyncQueueStatus = "all" | "pending" | "processing" | "retry" | "failed" | "synced";
+
+export type SyncQueueEvent = {
+  id: number;
+  enquiryId: number;
+  enquiryNo: number;
+  title: string;
+  eventType: string;
+  status: Exclude<SyncQueueStatus, "all">;
+  attempts: number;
+  remoteName: string | null;
+  lastError: string | null;
+  createdAt: string;
+};
+
+export type SyncQueuePage = {
+  items: SyncQueueEvent[];
+  page: number;
+  pageSize: number;
+  total: number;
+};

@@ -21,9 +21,11 @@ for (const key of ["hrms", "docs", "himsx"] as const) {
     const menu = appMenuFor(key, `${key}.overview`, (page) => selected.push(page));
     assert.deepEqual(
       menu.items?.map((i) => i.title),
-      key === "docs"
-        ? ["Overview", "Developer Library", "Getting Started"]
-        : ["Overview", "Getting Started"]
+      key === "hrms"
+        ? ["Overview", "Employees", "Getting Started"]
+        : key === "docs"
+          ? ["Overview", "Developer Library", "Getting Started"]
+          : ["Overview", "Getting Started"]
     );
     menu.items?.find((item) => item.title === "Getting Started")?.onSelect?.();
     assert.deepEqual(selected, [`${key}.guide`]);

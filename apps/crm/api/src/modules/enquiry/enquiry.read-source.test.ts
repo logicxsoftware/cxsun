@@ -1,53 +1,32 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { EnquiryService } from "./enquiry.service.js";
-import { EnquiryReadService, type EnquiryRemoteSource } from "./enquiry.read-source.js";
+import { EnquiryReadService } from "./enquiry.read-source.js";
 
 const query = { scope: "all" as const, page: 1, pageSize: 50, search: "", filter: "all" };
 
 test("Local source reads only the local repository", async () => {
+  let localContactId: number | undefined;
   const local = {
-    listPage: async () => ({ items: [], total: 3, statusCounts: [] })
-  } as unknown as EnquiryService;
-  const remote = {
-    provider: async () => "local" as const,
-    list: async () => {
-      throw new Error("unexpected Frappe read");
+    listPage: async (input: { contactId?: number }) => {
+      localContactId = input.contactId;
+      return { items: [], total: 3, statusCounts: [] };
     }
-  } as unknown as EnquiryRemoteSource;
-  const page = await new EnquiryReadService(local, remote).list(query);
+  } as unknown as EnquiryService;
+  const page = await new EnquiryReadService(local).list({ ...query, contactId: 12 });
   assert.equal(page.source, "local");
   assert.equal(page.total, 3);
+  assert.equal(localContactId, 12);
 });
 
-test("Frappe source reads only the live adapter and forwards report filters", async () => {
+test("CRM enquiry reads reject remote-only filters", async () => {
   const local = {
     listPage: async () => {
-      throw new Error("unexpected local read");
+      throw new Error("invalid filters must be rejected before local read");
     }
   } as unknown as EnquiryService;
-  const remote = {
-    provider: async () => "frappe" as const,
-    list: async (input: Record<string, unknown>) => {
-      assert.equal(input.group, "Service");
-      assert.equal(input.status, "New");
-      assert.equal(input.fromDate, "2026-10-01");
-      assert.equal(input.mobile, "9876543210");
-      assert.equal(input.searchCustomer, "Acme");
-      assert.equal(input.searchAssignedTo, "EMP-2");
-      return { source: "frappe" as const, page: 1, pageSize: 50, hasMore: false, total: 0, statusCounts: [], items: [] };
-    }
-  } as unknown as EnquiryRemoteSource;
-  const page = await new EnquiryReadService(local, remote).list({
-    ...query,
-    filter: "New",
-    listInId: "Service",
-    fromAt: "2026-09-30T18:30:00.000Z",
-    mobile: "9876543210",
-    contactId: 12,
-    searchCustomer: "Acme",
-    searchAssignedTo: "EMP-2"
-  });
-  assert.equal(page.source, "frappe");
-  await assert.rejects(() => new EnquiryReadService(local, remote).assertLocal(), /Select Local/);
+  const read = new EnquiryReadService(local);
+  assert.equal(await read.source(), "local");
+  await assert.rejects(() => read.list({ ...query, group: "Service" }), /Frappe report filters/);
+  await assert.rejects(() => read.list({ ...query, listInId: "Service" }), /invalid identifier/);
 });

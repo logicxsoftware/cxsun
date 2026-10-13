@@ -1,19 +1,19 @@
 # CRM mobile
 
-This Flutter client belongs to the CRM app and uses the CXSUN Platform API. The client name, API address, Android application ID, and logo are build inputs, so the same source can be branded for each customer.
+This generic CRM Flutter app uses the CXSUN Platform API. Its default app name is `CRM` and its Android application ID is `in.cxsun.crm_app`. Client branding remains available as an optional build input.
 
 Run from the repository root with Flutter installed:
 
 ```powershell
-npm run crm:mobile:run -- --client-name="Example Client" --api-url=http://127.0.0.1:7010 --application-id=in.example.crm
+npm run crm:mobile:run -- --api-url=http://127.0.0.1:7010
 ```
 
 Create a client-named APK with the same settings. Release APKs include the repository version in their filename:
 
 ```powershell
-npm run crm:mobile:apk:release -- --client-name="Example Client" --api-url=https://crm.example.com --application-id=in.example.crm
+npm run crm:mobile:apk:release -- --api-url=https://crm.example.com
 ```
 
-Optional build inputs are `--corporate-id=CLIENTCODE`, `--logo-asset=assets/crm-logo.png`, and `--android-brand-asset=crm`. The API URL is the API base URL, without an app-specific `/crm` path. Configure the API base URL and client name for each customer. The app supports Android branding and currently uses a generic `CRM Mobile` iOS display name.
+Optional build inputs are `--client-name="Client Name"`, `--application-id=in.example.crm`, `--corporate-id=CLIENTCODE`, `--logo-asset=assets/crm-logo.png`, and `--android-brand-asset=crm`. The API URL is the API base URL, without an app-specific `/crm` path. The default display name is `CRM` across supported platforms.
 
-The CRM screens use existing enquiry APIs for assigned and created enquiries, details, comments, work jobs, activity, and enquiry creation. Notifications, chat, HR duties, and device call-log registration are hidden because the CXSUN CRM API does not provide those CRM routes.
+The CRM screens use local CRM APIs for enquiries, comments, work jobs, and activities. An administrator can manually sync a selected Android call-log entry and its comments to the local CRM database. Mobile CRM actions do not send records to Frappe.

@@ -102,7 +102,7 @@ function readOptions(args) {
   const options = {
     clientName: value("client-name", "CRM"),
     apiUrl: value("api-url", "http://127.0.0.1:7010"),
-    applicationId: value("application-id", "in.cxsun.crm_mobile"),
+    applicationId: value("application-id", "in.cxsun.crm_app"),
     corporateId: value("corporate-id", ""),
     logoAsset: value("logo-asset", "assets/crm-logo.png"),
     androidBrandAsset: value("android-brand-asset", "crm")

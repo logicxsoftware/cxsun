@@ -1,7 +1,7 @@
 import { AppError } from "@cxsun/framework/errors";
 import type { EnquiryListOptions } from "./enquiry.types.js";
 import { EnquiryService } from "./enquiry.service.js";
-import { indiaDate, localViewRecord, remoteViewRecord } from "./enquiry.view-model.js";
+import { localViewRecord } from "./enquiry.view-model.js";
 
 export type LiveEnquiryQuery = {
   scope: "all" | "assigned" | "created";
@@ -126,7 +126,10 @@ export type EnquiryRemoteSource = {
   list(query: LiveEnquiryQuery): Promise<LiveEnquiryPage>;
   get(name: string): Promise<LiveEnquiryRecord>;
   options(): Promise<LiveEnquiryOptions>;
-  createOption?(kind: "list-in" | "status" | "priority", name: string): Promise<{ id: string; name: string; code: string }>;
+  createOption?(
+    kind: "list-in" | "status" | "priority",
+    name: string
+  ): Promise<{ id: string; name: string; code: string }>;
   create(input: LiveEnquiryInput): Promise<LiveEnquiryRecord>;
   update(name: string, input: LiveEnquiryPatch): Promise<LiveEnquiryRecord>;
   addMessage(name: string, body: string, parentName: string | null): Promise<LiveEnquiryRecord>;
@@ -174,71 +177,26 @@ type ReadQuery = Omit<EnquiryListOptions, "actorEmail" | "actorUserId" | "canVie
 };
 
 export class EnquiryReadService {
-  constructor(
-    private readonly local: EnquiryService,
-    private readonly remote: EnquiryRemoteSource
-  ) {}
+  constructor(private readonly local: EnquiryService) {}
 
   source() {
-    return this.remote.provider();
-  }
-
-  async assertLocal() {
-    if ((await this.source()) !== "local") {
-      throw AppError.conflict(
-        "This CRM enquiry action uses Local records. Select Local before continuing."
-      );
-    }
+    return Promise.resolve("local" as const);
   }
 
   async list(query: ReadQuery) {
-    if ((await this.source()) === "local") {
-      for (const value of [query.listInId, query.assignedUserId]) {
-        if (value && value !== "none" && !/^[1-9]\d*$/.test(value))
-          throw AppError.validation("A Local enquiry filter has an invalid identifier.");
-      }
-      if (
-        query.group ||
-        query.creatorEmployee ||
-        query.assigneeEmployee ||
-        query.fromDate ||
-        query.toDate
-      )
-        throw AppError.validation("Frappe report filters cannot filter Local enquiries.");
-      const page = await this.local.listPage(query);
-      return { source: "local" as const, ...page, items: page.items.map(localViewRecord) };
+    for (const value of [query.listInId, query.assignedUserId]) {
+      if (value && value !== "none" && !/^[1-9]\d*$/.test(value))
+        throw AppError.validation("A Local enquiry filter has an invalid identifier.");
     }
-    const page = await this.remote.list({
-      scope: query.scope,
-      page: query.page,
-      pageSize: query.pageSize,
-      search: query.search,
-      ...(query.mobile ? { mobile: query.mobile } : {}),
-      ...(query.searchCustomer ? { searchCustomer: query.searchCustomer } : {}),
-      ...(query.searchDetails ? { searchDetails: query.searchDetails } : {}),
-      ...(query.searchListIn ? { searchListIn: query.searchListIn } : {}),
-      ...(query.searchDueDate ? { searchDueDate: query.searchDueDate } : {}),
-      ...(query.searchPriority ? { searchPriority: query.searchPriority } : {}),
-      ...(query.searchCreator ? { searchCreator: query.searchCreator } : {}),
-      ...(query.searchAssignedTo ? { searchAssignedTo: query.searchAssignedTo } : {}),
-      ...(query.searchStatus ? { searchStatus: query.searchStatus } : {}),
-      ...(query.filter === "all" ? {} : { status: query.filter }),
-      ...(query.listInId ? { group: query.listInId } : {}),
-      ...(query.createdBy ? { creator: query.createdBy } : {}),
-      ...(query.assignedUserId
-        ? { assignee: query.assignedUserId }
-        : {}),
-      ...(query.fromAt ? { fromDate: indiaDate(query.fromAt) } : {}),
-      ...(query.toAt ? { toDate: indiaDate(new Date(new Date(query.toAt).getTime() - 1).toISOString()) } : {})
-    });
-    return {
-      source: "frappe" as const,
-      total: page.total,
-      statusCounts: page.statusCounts.map((item) => ({
-        ...item,
-        code: item.code.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-      })),
-      items: page.items.map((item) => remoteViewRecord(item))
-    };
+    if (
+      query.group ||
+      query.creatorEmployee ||
+      query.assigneeEmployee ||
+      query.fromDate ||
+      query.toDate
+    )
+      throw AppError.validation("Frappe report filters cannot filter Local enquiries.");
+    const page = await this.local.listPage(query);
+    return { source: "local" as const, ...page, items: page.items.map(localViewRecord) };
   }
 }

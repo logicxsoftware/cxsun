@@ -140,9 +140,12 @@ const capabilityBackendRoles = new Map([
   ],
   ["billing-api/opening-balance", reducedBackendRoles],
   ["crm-api/enquiry", reducedBackendRoles],
+  ["crm-api/activities", ["module", "service", "repository", "routes", "types"]],
+  ["crm-api/call-log", ["module", "service", "routes", "seed", "types"]],
   ["crm-api/list-in", reducedBackendRoles],
   ["crm-api/status", reducedBackendRoles],
   ["crm-api/priority", reducedBackendRoles],
+  ["crm-api/contact", ["module", "service", "routes", "types"]],
   ...crmContact360Leaves.map((name) => [`crm-api/${name}`, reducedBackendRoles]),
   [
     "frappe-api/connection",
@@ -150,6 +153,7 @@ const capabilityBackendRoles = new Map([
   ],
   ["frappe-api/user-sync", ["module", "service", "routes", "types"]],
   ["frappe-api/enquiry-sync", ["module", "service", "routes", "types"]],
+  ["frappe-api/call-log-sync", ["module", "service", "routes", "types"]],
   ["frappe-api/user-mapping", ["module", "service", "repository", "routes", "migration", "types"]],
   ["zetro-api/chat", ["module", "service", "repository", "routes", "migration", "seed", "types"]],
   [
@@ -246,6 +250,12 @@ const capabilityFrontendRoles = new Map([
     ["workspace", "list", "form", "show", "services", "hooks", "types", "schema"]
   ],
   ["crm-web/overview", ["workspace"]],
+  ["crm-web/activities", ["workspace", "list", "services", "hooks", "types"]],
+  ["crm-web/call-log", ["workspace", "list", "form", "services", "hooks", "schema", "types"]],
+  [
+    "crm-web/contact",
+    ["workspace", "list", "form", "show", "services", "hooks", "types", "schema"]
+  ],
   ["frappe-web/overview", ["workspace", "list", "services", "hooks", "types"]],
   ["frappe-web/enquiry-sync", ["workspace", "list", "services", "hooks", "types"]],
   ["frappe-web/connection", ["workspace", "form", "services", "hooks", "types", "schema"]],

@@ -29,6 +29,7 @@ type TenantMainLayoutProps = {
   brand: SidebarBrand;
   children: ReactNode;
   headerActions?: ReactNode;
+  headerContent?: ReactNode;
   headerTitle: string;
   hideSidebarBrand?: boolean;
   homeHref: string;
@@ -66,6 +67,7 @@ function TenantMainShell({
   brand,
   children,
   headerActions,
+  headerContent,
   headerTitle,
   hideSidebarBrand,
   homeHref,
@@ -153,15 +155,17 @@ function TenantMainShell({
           variant="inset"
         />
         <SidebarInset className="min-h-0 min-w-0 overflow-hidden md:peer-data-[variant=inset]:m-1 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:mt-0 md:peer-data-[variant=inset]:mb-0.5">
-          <AppHeader
-            actionsAlignment={headerActionsAlignment}
-            actions={headerActions}
-            breadcrumbs={[
-              ...(omitWorkspaceBreadcrumb ? [] : [{ label: workspaceName, href: homeHref }]),
-              { label: headerTitle }
-            ]}
-            homeHref={homeHref}
-          />
+          {headerContent ?? (
+            <AppHeader
+              actionsAlignment={headerActionsAlignment}
+              actions={headerActions}
+              breadcrumbs={[
+                ...(omitWorkspaceBreadcrumb ? [] : [{ label: workspaceName, href: homeHref }]),
+                { label: headerTitle }
+              ]}
+              homeHref={homeHref}
+            />
+          )}
           <div
             aria-label="Workspace canvas"
             className="workspace-scroll min-h-0 flex-1 overflow-y-auto"

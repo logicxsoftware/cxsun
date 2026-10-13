@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { AppError } from "@cxsun/framework/errors";
+import { countEmployeeUserReferences, type EmployeeDatabase } from "@cxsun/hrms-api";
+import type { Kysely } from "kysely";
 import { hashPassword } from "../../auth/password-hash.js";
 import { recordTenantAccessAudit } from "../../database/tenant-access-audit.js";
 import { TenantUserRepository } from "./tenant-user.repository.js";
@@ -119,6 +121,14 @@ export class TenantUserService {
   async forceDelete(id: string) {
     await this.context.authorize("platform.application.user.delete");
     const current = await this.mutable(id);
+    const employees = await countEmployeeUserReferences(
+      this.context.database as unknown as Kysely<EmployeeDatabase>,
+      current.id
+    );
+    if (employees)
+      throw AppError.conflict(
+        "User cannot be force deleted while an employee account mapping references it. Unlink the employee first."
+      );
     const count = await this.repository.dependentCount(current.id);
     if (count)
       throw AppError.conflict(

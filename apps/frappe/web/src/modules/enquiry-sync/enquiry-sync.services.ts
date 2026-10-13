@@ -4,6 +4,7 @@ import type {
   LocalEnquiryPage,
   RemoteEnquiryPage
 } from "./enquiry-sync.types";
+import type { SyncQueuePage, SyncQueueStatus } from "./enquiry-sync.types";
 
 type Envelope<T> = { data: T; success: true } | { error: { message: string }; success: false };
 
@@ -49,3 +50,17 @@ export const postEnquiry = (id: number) =>
     `/frappe/enquiries/${id}/sync`,
     {}
   );
+
+export const getSyncQueue = (status: SyncQueueStatus, page: number, pageSize: number) =>
+  request<SyncQueuePage>(
+    `/frappe/enquiries/sync-queue?${new URLSearchParams({ status, page: String(page), pageSize: String(pageSize) })}`
+  );
+
+export const retrySyncEvent = (eventId: number) =>
+  request<{ id: number; status: "pending" }>(`/frappe/enquiries/sync-queue/${eventId}/retry`, {});
+
+export const startEnquiryBackfill = () =>
+  request<{ jobId: number; status: string }>("/frappe/enquiries/backfill", {});
+
+export const getEnquiryBackfill = (jobId: number) =>
+  request<EnquiryImportJob>(`/frappe/enquiries/backfill/${jobId}`);

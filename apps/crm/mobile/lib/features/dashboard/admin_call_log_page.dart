@@ -89,6 +89,7 @@ class _AdminCallLogPageState extends State<AdminCallLogPage> {
                             itemBuilder: (context, index) => _CallLogCard(
                               entry: calls[index],
                               onOpen: () => _openComments(calls[index]),
+                              onSync: () => _syncCall(calls[index]),
                               onCreateEnquiry:
                                   isCallLogAdministrator(
                                     widget.session.profile.role,
@@ -138,15 +139,47 @@ class _AdminCallLogPageState extends State<AdminCallLogPage> {
   }
 
   Future<void> _openComments(CallLogEntry entry) async {
+    final name = await _ensureSynced(entry);
+    if (name == null || !mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (context) => CallLogNotesPage(
           api: widget.api,
           session: widget.session,
           entry: entry,
+          callLogName: name,
         ),
       ),
     );
+  }
+
+  Future<void> _syncCall(CallLogEntry entry) async {
+    final name = await _ensureSynced(entry);
+    if (!mounted || name == null) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$name saved in CRM.')));
+  }
+
+  Future<String?> _ensureSynced(CallLogEntry entry) async {
+    try {
+      final callLog = await widget.api.syncDeviceCallLog(
+        accessToken: widget.session.accessToken,
+        sourceReference: entry.sourceReference,
+        type: entry.crmType,
+        from: entry.fromNumber,
+        to: entry.toNumber,
+        status: entry.crmStatus,
+        duration: entry.durationSeconds,
+        occurredAt: entry.timestamp,
+      );
+      return callLog.name;
+    } on CrmMobileApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
+      return null;
+    }
   }
 
   Future<void> _openEnquiryForm(CallLogEntry entry) async {
@@ -185,10 +218,7 @@ class _CallLogControls extends StatelessWidget {
 }
 
 class _CallLogFilterMenu extends StatelessWidget {
-  const _CallLogFilterMenu({
-    required this.filter,
-    required this.onSelected,
-  });
+  const _CallLogFilterMenu({required this.filter, required this.onSelected});
 
   final _CallFilter filter;
   final ValueChanged<_CallFilter> onSelected;
@@ -218,12 +248,14 @@ class _CallLogCard extends StatelessWidget {
   const _CallLogCard({
     required this.entry,
     required this.onOpen,
+    required this.onSync,
     required this.onCreateEnquiry,
     required this.onCall,
   });
 
   final CallLogEntry entry;
   final VoidCallback onOpen;
+  final VoidCallback onSync;
   final VoidCallback? onCreateEnquiry;
   final VoidCallback onCall;
 
@@ -278,6 +310,12 @@ class _CallLogCard extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  _CallLogActionButton(
+                    tooltip: 'Sync this call to CRM',
+                    onTap: onSync,
+                    icon: Icons.cloud_upload_outlined,
+                  ),
+                  const SizedBox(width: 4),
                   if (onCreateEnquiry case final onCreateEnquiry?)
                     _CallLogActionButton(
                       tooltip: 'Create enquiry for ${entry.displayName}',
@@ -373,7 +411,7 @@ class _CallLogDisclosure extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'The app does not upload call history automatically. It posts one enquiry only after an administrator completes the form.',
+            'The app never uploads call history automatically. An administrator can sync one selected call to the local CRM and then add comments or create an enquiry.',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 18),
@@ -460,6 +498,16 @@ class CallLogEntry {
   String get savedName => hasSavedName ? name.trim() : '';
   String get mobile => _digits(number).takeLast(10);
   String get direction => type == 1 ? 'incoming' : 'outgoing';
+  String get crmType => type == 2 ? 'Outgoing' : 'Incoming';
+  String get crmStatus => type == 3
+      ? 'No Answer'
+      : durationSeconds > 0
+      ? 'Completed'
+      : 'Initiated';
+  String get fromNumber => type == 2 ? 'mobile-device' : mobile;
+  String get toNumber => type == 2 ? mobile : 'mobile-device';
+  String get sourceReference =>
+      'mobile-call-${timestamp.millisecondsSinceEpoch}-${_digits(number)}-$type';
   String get directionLabel => switch (type) {
     1 => 'Incoming',
     2 => 'Outgoing',

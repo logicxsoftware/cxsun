@@ -1,4 +1,5 @@
 import type { Kysely } from "kysely";
+import { callLogMigrationBatch, migrateCallLogModule } from "./modules/call-log/index.js";
 import { contact360MigrationBatches, migrateContact360Database } from "./contact-360.migration.js";
 import {
   enquiryMigrationBatch,
@@ -18,6 +19,7 @@ const batches = [
   statusMigrationBatch,
   priorityMigrationBatch,
   enquiryMigrationBatch,
+  callLogMigrationBatch,
   ...contact360MigrationBatches
 ];
 
@@ -30,6 +32,7 @@ export async function migrateCrmTenantDatabase(database: Kysely<EnquiryDatabase>
   await migrateStatusMaster(database as unknown as Kysely<StatusDatabase>);
   await migratePriorityMaster(database as unknown as Kysely<PriorityDatabase>);
   await migrateEnquiryDatabase(database);
+  await migrateCallLogModule(database as unknown as Kysely<unknown>);
   return migrateContact360Database(database);
 }
 

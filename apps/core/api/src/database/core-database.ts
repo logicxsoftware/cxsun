@@ -7,7 +7,7 @@ import {
   runMigrationBatch,
   type MigrationBatch
 } from "@cxsun/framework/db";
-import { Kysely, MysqlDialect } from "kysely";
+import { Kysely, MysqlDialect, type Transaction } from "kysely";
 import { createPool, type PoolOptions } from "mysql2";
 import { createConnection } from "mysql2/promise";
 import { seedCoreTenantPermissions } from "../auth/tenant-permission.seed.js";
@@ -75,6 +75,7 @@ const coreTableNames = [
 const corePrefixPolicy = { include: coreTableNames, prefix: "core_" } as const;
 
 const context = new AsyncLocalStorage<string>();
+const transactionContext = new AsyncLocalStorage<Transaction<CoreDatabase>>();
 type CoreConnectionEntry = { database: Kysely<CoreDatabase>; lastUsedAt: number };
 
 const connections = new Map<string, CoreConnectionEntry>();
@@ -165,6 +166,18 @@ export function runWithCoreDatabase<T>(databaseName: string, callback: () => T) 
   return context.run(resolveCoreDatabaseName(databaseName), callback);
 }
 
+export function runWithCoreTransaction<T>(
+  databaseName: string,
+  transaction: Transaction<CoreDatabase>,
+  callback: () => T
+) {
+  return runWithCoreDatabase(databaseName, () => transactionContext.run(transaction, callback));
+}
+
+export function currentCoreTransaction() {
+  return transactionContext.getStore();
+}
+
 export function registerCoreTenantDatabaseConnection(input: TenantConnectionOptions) {
   const name = resolveCoreDatabaseName(input.database);
   tenantConnectionOptions.set(name, { ...input, database: name });
@@ -172,6 +185,8 @@ export function registerCoreTenantDatabaseConnection(input: TenantConnectionOpti
 
 export function getCoreDatabase(databaseName = context.getStore()) {
   const name = resolveCoreDatabaseName(databaseName);
+  const transaction = transactionContext.getStore();
+  if (transaction && name === context.getStore()) return transaction as Kysely<CoreDatabase>;
   const existing = connections.get(name);
   if (existing) {
     existing.lastUsedAt = Date.now();

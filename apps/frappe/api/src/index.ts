@@ -19,6 +19,9 @@ export {
   processFrappeEnquiryImportJob
 } from "./modules/enquiry-sync/index.js";
 export { processLocalEnquirySync } from "./modules/enquiry-sync/index.js";
+export { processLocalCallLogSync } from "./modules/call-log-sync/index.js";
+export { importFrappeCallLogs, frappeCallLogSyncModule } from "./modules/call-log-sync/index.js";
+export type { CallLogImportProgress } from "./modules/call-log-sync/index.js";
 export type { ImportProgress } from "./modules/enquiry-sync/index.js";
 export { frappeUserSyncModule } from "./modules/user-sync/index.js";
 export {

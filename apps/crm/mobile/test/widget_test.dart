@@ -15,7 +15,6 @@ import 'package:cxsun_crm_mobile/features/dashboard/job_detail_page.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/job_duration.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/job_start_countdown.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/job_start_store.dart';
-import 'package:cxsun_crm_mobile/features/dashboard/call_log_note_store.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/messages_sample_page.dart';
 
 void main() {
@@ -64,7 +63,7 @@ void main() {
     expect(conversation.title, 'Meera');
   });
 
-  test('converts Frappe rich-text comments to readable mobile text', () {
+  test('converts rich-text comments to readable mobile text', () {
     final comment = CrmComment.fromJson({
       'id': 'message-1',
       'comment':
@@ -76,10 +75,9 @@ void main() {
     expect(comment.comment, 'Test & verify\nSecond line\nDone ✓');
   });
 
-  test('maps Frappe job executions and enquiry activities', () {
+  test('maps CRM job executions and enquiry activities', () {
     final job = CrmJob.fromJson({
       'id': 762,
-      'frappeName': '762',
       'messages': <Object>[],
       'jobs': [
         {
@@ -287,48 +285,6 @@ void main() {
     expect(await store.read(), isEmpty);
   });
 
-  test('keeps rough call comments on this device until conversion', () async {
-    const channel = MethodChannel('in.cxsun.crm_mobile/secure-session');
-    final values = <String, String>{};
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async {
-          final key = call.arguments['key'] as String;
-          switch (call.method) {
-            case 'read':
-              return values[key];
-            case 'write':
-              values[key] = call.arguments['value'] as String;
-              return null;
-            case 'delete':
-              values.remove(key);
-              return null;
-          }
-          return null;
-        });
-    addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null),
-    );
-
-    final store = CallLogNoteStore(
-      SecureSessionStore(channel: channel),
-      accountEmail: 'vijay@example.com',
-    );
-    final note = CallLogNote(
-      id: 'note-1',
-      mobile: '9655227738',
-      content: 'Sundar asked about a laptop.',
-      createdAt: DateTime(2026, 8, 31),
-    );
-    await store.save(note);
-
-    expect((await store.read('9655227738')).single.content, note.content);
-    expect(await store.read('9999999999'), isEmpty);
-
-    await store.remove(note.id);
-    expect(await store.read(note.mobile), isEmpty);
-  });
-
   testWidgets('shows the CRM sign-in screen', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -439,6 +395,7 @@ void main() {
     expect(find.text('All'), findsOneWidget);
     expect(find.text('Assigned'), findsOneWidget);
     expect(find.text('Created'), findsOneWidget);
+    expect(find.byTooltip('Call Logs'), findsOneWidget);
   });
 
   testWidgets('shows the job detail comments and reply flow', (

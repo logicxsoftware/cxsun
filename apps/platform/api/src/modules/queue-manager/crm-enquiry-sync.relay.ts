@@ -1,5 +1,5 @@
 import { sql, type Kysely } from "kysely";
-import type { EnquiryDatabase } from "@cxsun/crm-api/enquiry-sync";
+import { EnquirySyncRepository, type EnquiryDatabase } from "@cxsun/crm-api/enquiry-sync";
 import type { FrappeDatabase } from "@cxsun/frappe-api";
 import type { TenantDatabase } from "../../database/schema.js";
 import { TenantRepository } from "../tenant/tenant.repository.js";
@@ -33,14 +33,9 @@ export function startCrmEnquirySyncRelay(queue: QueueManagerService) {
             .where("id", "=", 1)
             .executeTakeFirst();
           if (!connection?.enabled || connection.verification_status !== "verified") continue;
-          const events = await database
-            .selectFrom("crm_enquiry_sync_events")
-            .select(["id", "actor_email", "correlation_id", "attempts"])
-            .where("status", "in", ["pending", "retry"])
-            .where(sql<boolean>`available_at <= UTC_TIMESTAMP()`)
-            .orderBy("id")
-            .limit(50)
-            .execute();
+          const sync = new EnquirySyncRepository(database);
+          await sync.requeueStaleProcessing();
+          const events = await sync.dispatchableEvents();
           for (const event of events) {
             try {
               await queue.enqueue({
@@ -56,6 +51,39 @@ export function startCrmEnquirySyncRelay(queue: QueueManagerService) {
               });
             } catch (error) {
               console.warn("[crm-enquiry-sync] outbox dispatch deferred", {
+                tenantId: tenant.uuid,
+                eventId: event.id,
+                message: error instanceof Error ? error.message : "Queue dispatch failed."
+              });
+            }
+          }
+          await sql`UPDATE crm_call_log_sync_events SET status='retry', attempts=attempts+1,
+            last_error='Sync worker stopped before recording a result.', available_at=UTC_TIMESTAMP(),
+            updated_at=UTC_TIMESTAMP()
+            WHERE status='processing' AND updated_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)`.execute(
+            database
+          );
+          const callEvents = await sql<{ id: number; attempts: number; actor_email: string }>`
+            SELECT event.id, event.attempts, log.created_by AS actor_email
+            FROM crm_call_log_sync_events event
+            INNER JOIN crm_call_logs log ON log.id=event.call_log_id
+            WHERE event.status IN ('pending','retry') AND event.available_at <= UTC_TIMESTAMP()
+            ORDER BY event.id LIMIT 50`.execute(database);
+          for (const event of callEvents.rows) {
+            try {
+              await queue.enqueue({
+                actorEmail: event.actor_email,
+                correlationId: `crm-call-log:${event.id}`,
+                idempotencyKey: `crm-call-log-sync:${tenant.uuid}:${event.id}:${event.attempts}`,
+                jobName: "crm.call-log.frappe-sync",
+                maxAttempts: 6,
+                payload: { eventId: event.id, tenantDatabase: tenant.dbName },
+                queueName: "crm",
+                sourceModule: "crm.call-log",
+                tenantId: tenant.uuid
+              });
+            } catch (error) {
+              console.warn("[crm-call-log-sync] outbox dispatch deferred", {
                 tenantId: tenant.uuid,
                 eventId: event.id,
                 message: error instanceof Error ? error.message : "Queue dispatch failed."

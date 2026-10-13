@@ -49,6 +49,37 @@ export async function getActiveListInForDatabase(database: Kysely<ListInDatabase
   return record?.status === "active" ? record : null;
 }
 
+export async function resolveListInForImport(database: Kysely<ListInDatabase>, name: string) {
+  const normalized = name.trim();
+  if (!normalized) return null;
+  const repository = new ListInRepository(database);
+  const match = (await repository.list()).find(
+    (record) => record.name.toLowerCase() === normalized.toLowerCase()
+  );
+  if (match) {
+    if (match.status !== "active")
+      throw AppError.conflict(`List In ${normalized} is inactive in local CRM.`);
+    return match.id;
+  }
+  try {
+    return (
+      await new ListInService(repository).create(
+        { name: normalized, sortOrder: 1000 },
+        "system:frappe-import"
+      )
+    ).id;
+  } catch (error) {
+    if (error instanceof AppError && error.code === "CONFLICT") {
+      const retry = (await repository.list()).find(
+        (record) =>
+          record.name.toLowerCase() === normalized.toLowerCase() && record.status === "active"
+      );
+      if (retry) return retry.id;
+    }
+    throw error;
+  }
+}
+
 function validate(input: ListInInput): ListInInput {
   const name = input.name.trim();
   if (!name) throw AppError.validation("List In name is required.");

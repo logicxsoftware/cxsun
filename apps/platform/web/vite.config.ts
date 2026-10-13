@@ -45,7 +45,8 @@ export default defineConfig(({ command, mode }) => {
         "@cxsun/crm-web",
         "@cxsun/frappe-web",
         "@cxsun/zetro-web",
-        "@cxsun/docs-web"
+        "@cxsun/docs-web",
+        "@cxsun/hrms-web"
       ],
       include: [
         "react-markdown",
@@ -78,6 +79,22 @@ export default defineConfig(({ command, mode }) => {
     ],
     resolve: {
       alias: {
+        "@cxsun/ui/workspace/column-filter": resolve(
+          configDir,
+          "../../../packages/ui/src/workspace/column-filter.tsx"
+        ),
+        "@cxsun/hrms-web/modules/employee": resolve(
+          configDir,
+          "../../hrms/web/src/modules/employee/index.ts"
+        ),
+        "@cxsun/hrms-web/modules/attendance": resolve(
+          configDir,
+          "../../hrms/web/src/modules/attendance/index.ts"
+        ),
+        "@cxsun/ui/workspace/row-actions": resolve(
+          configDir,
+          "../../../packages/ui/src/workspace/row-actions.tsx"
+        ),
         "@cxsun/codexsun-web": resolve(configDir, "../../codexsun/web/src/index.ts"),
         "@cxsun/docs-web/modules/overview/gateway": resolve(
           configDir,
@@ -96,9 +113,17 @@ export default defineConfig(({ command, mode }) => {
           configDir,
           "../../core/web/src/modules/master/contact/contact.workspace.tsx"
         ),
+        "@cxsun/crm-web/modules/enquiry/services": resolve(
+          configDir,
+          "../../crm/web/src/modules/enquiry/enquiry.services.ts"
+        ),
         "@cxsun/crm-web/modules/enquiry/hooks": resolve(
           configDir,
           "../../crm/web/src/modules/enquiry/enquiry.hooks.ts"
+        ),
+        "@cxsun/crm-web/modules/call-log": resolve(
+          configDir,
+          "../../crm/web/src/modules/call-log/index.ts"
         ),
         "@cxsun/ui/layouts/application-layout": resolve(
           configDir,

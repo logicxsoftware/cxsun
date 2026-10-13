@@ -86,16 +86,18 @@ function localToday() {
 }
 export const useEnquiryContacts = (enabled = true) =>
   useQuery({ queryKey: enquiryContactsQueryKey, queryFn: listCoreContacts, enabled });
-export const useEnquiryOptions = () =>
+export const useEnquiryOptions = (enabled = true) =>
   useQuery({
     queryKey: ["crm", "enquiries", "options"],
-    queryFn: () => crmRequest<{
-      lists: import("./enquiry.types").EnquiryMasterLookup[];
-      statuses: import("./enquiry.types").EnquiryMasterLookup[];
-      priorities: import("./enquiry.types").EnquiryMasterLookup[];
-      users: import("./enquiry.types").EnquiryLookup[];
-      suppliers: import("./enquiry.types").EnquiryLookup[];
-    }>("/crm/enquiries/options")
+    queryFn: () =>
+      crmRequest<{
+        lists: import("./enquiry.types").EnquiryMasterLookup[];
+        statuses: import("./enquiry.types").EnquiryMasterLookup[];
+        priorities: import("./enquiry.types").EnquiryMasterLookup[];
+        users: import("./enquiry.types").EnquiryLookup[];
+        suppliers: import("./enquiry.types").EnquiryLookup[];
+      }>("/crm/enquiries/options"),
+    enabled
   });
 export const useEnquiryUsers = (enabled = true) =>
   useQuery({ queryKey: enquiryUsersQueryKey, queryFn: listTenantUsers, enabled });

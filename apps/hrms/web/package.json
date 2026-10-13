@@ -1,9 +1,11 @@
 {
   "name": "@cxsun/hrms-web",
-  "version": "1.0.90",
+  "version": "1.0.91",
   "private": true,
   "type": "module",
   "exports": {
+    "./modules/employee": "./src/modules/employee/index.ts",
+    "./modules/attendance": "./src/modules/attendance/index.ts",
     ".": "./src/index.ts",
     "./modules/overview": "./src/modules/overview/index.ts",
     "./modules/overview/gateway": "./src/modules/overview/overview.services.ts"
@@ -14,9 +16,13 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.90",
+    "@cxsun/ui": "^1.0.91",
     "@tanstack/react-query": "^5.104.1",
+    "@tanstack/react-router": "^1.170.41",
+    "@tanstack/react-table": "^9.2.6",
     "lucide-react": "^1.52.0",
-    "react": "^19.3.0"
+    "react": "^19.3.0",
+    "sonner": "^2.0.8",
+    "zod": "^4.6.5"
   }
 }

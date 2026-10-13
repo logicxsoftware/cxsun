@@ -93,7 +93,7 @@ class SecureSessionStore {
 
   /// Stores device-only UI state in the encrypted Android session store.
   ///
-  /// CRM records remain in Frappe; callers must not use this for business data.
+  /// Business records are stored through the CRM API, not in device state.
   Future<String?> readDeviceValue(String key) => _read(key);
 
   Future<void> writeDeviceValue(String key, String value) => _write(key, value);

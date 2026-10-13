@@ -147,13 +147,4 @@ export function registerFrappeRoutes(
     schemas: { params: idSchema, response: statusSchema },
     handler: async ({ params, request }) => (await service(request)).status(params.id)
   });
-  registerContractRoute(app, {
-    method: "POST",
-    url: "/frappe/enquiries/:id/sync",
-    schemas: {
-      params: idSchema,
-      response: statusSchema.extend({ remoteName: z.string(), syncedAt: z.string() })
-    },
-    handler: async ({ params, request }) => (await service(request)).sync(params.id)
-  });
 }

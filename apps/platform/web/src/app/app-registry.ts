@@ -24,6 +24,7 @@ import {
   ContactRoundIcon,
   RefreshCwIcon,
   LayoutDashboardIcon,
+  LogsIcon,
   ReceiptTextIcon,
   SearchIcon,
   SendIcon,
@@ -71,6 +72,7 @@ export type PlatformAppRootPage =
   | "ecommerce.overview"
   | "q-cafe.overview"
   | "hrms.overview"
+  | "hrms.employees"
   | "docs.overview"
   | "himsx.overview"
   | "codexsun.frontdesk";
@@ -438,10 +440,16 @@ export function appMenuFor(
           onSelect: () => onSelect("hrms.overview")
         },
         {
-          icon: FileTextIcon,
-          title: "Getting Started",
-          isActive: activePage === "hrms.guide",
-          onSelect: () => onSelect("hrms.guide")
+          icon: UsersIcon,
+          title: "Employees",
+          isActive: activePage === "hrms.employees",
+          onSelect: () => onSelect("hrms.employees")
+        },
+        {
+          icon: ClipboardListIcon,
+          title: "Attendance",
+          isActive: activePage === "hrms.attendance",
+          onSelect: () => onSelect("hrms.attendance")
         }
       ]
     };
@@ -576,6 +584,16 @@ export function appMenuFor(
           onSelect: () => onSelect("crm.enquiries")
         },
         {
+          title: "Activities",
+          isActive: activePage === "crm.activities",
+          onSelect: () => onSelect("crm.activities")
+        },
+        {
+          title: "Call Logs",
+          isActive: activePage === "crm.call-logs",
+          onSelect: () => onSelect("crm.call-logs")
+        },
+        {
           title: "Reports",
           isActive: activePage === "crm.reports",
           onSelect: () => onSelect("crm.reports")
@@ -592,14 +610,7 @@ export function appMenuFor(
         },
         {
           title: "On Research",
-          isActive: activePage === "crm.data-source",
-          items: [
-            {
-              title: "Data Sources",
-              isActive: activePage === "crm.data-source",
-              onSelect: () => onSelect("crm.data-source")
-            }
-          ]
+          isActive: activePage === "crm.contact-360"
         },
         {
           title: "Common",
@@ -932,10 +943,16 @@ export function appMenuItemsFor(
         onSelect: () => onSelect("hrms.overview")
       },
       {
-        icon: FileTextIcon,
-        title: "Getting Started",
-        isActive: activePage === "hrms.guide",
-        onSelect: () => onSelect("hrms.guide")
+        icon: UsersIcon,
+        title: "Employees",
+        isActive: activePage === "hrms.employees",
+        onSelect: () => onSelect("hrms.employees")
+      },
+      {
+        icon: ClipboardListIcon,
+        title: "Attendance",
+        isActive: activePage === "hrms.attendance",
+        onSelect: () => onSelect("hrms.attendance")
       }
     ];
   if (appId === "docs")
@@ -1026,16 +1043,10 @@ export function appMenuItemsFor(
         title: "Overview"
       },
       {
-        icon: Settings2Icon,
-        isActive: activePage === "frappe.data-sources",
-        onSelect: () => onSelect("frappe.data-sources"),
-        title: "App data sources"
-      },
-      {
         icon: RefreshCwIcon,
         isActive: activePage === "frappe.enquiry-sync",
         onSelect: () => onSelect("frappe.enquiry-sync"),
-        title: "Enquiry sync"
+        title: "Sync queue"
       },
       {
         icon: Settings2Icon,
@@ -1079,6 +1090,18 @@ export function appMenuItemsFor(
         count: crmCounts?.all
       },
       {
+        icon: LogsIcon,
+        isActive: activePage === "crm.activities",
+        onSelect: () => onSelect("crm.activities"),
+        title: "Activities"
+      },
+      {
+        icon: PhoneCallIcon,
+        isActive: activePage === "crm.call-logs",
+        onSelect: () => onSelect("crm.call-logs"),
+        title: "Call Logs"
+      },
+      {
         icon: BarChart3Icon,
         isActive: activePage === "crm.reports",
         onSelect: () => onSelect("crm.reports"),
@@ -1087,7 +1110,6 @@ export function appMenuItemsFor(
       {
         icon: SearchIcon,
         isActive:
-          activePage === "crm.data-source" ||
           activePage === "crm.contact-360" ||
           activePage === "crm.my-job" ||
           activePage === "crm.my-calls" ||
@@ -1096,12 +1118,6 @@ export function appMenuItemsFor(
           activePage === "crm.priority",
         title: "On Research",
         items: [
-          {
-            icon: Settings2Icon,
-            title: "Data Sources",
-            isActive: activePage === "crm.data-source",
-            onSelect: () => onSelect("crm.data-source")
-          },
           {
             icon: UsersIcon,
             title: "Contact 360",

@@ -78,7 +78,7 @@ class _CallLogContactPageState extends State<CallLogContactPage> {
     );
     final enquiries = await Future.wait(
       matches.map(
-        (match) => widget.api.job(widget.session.accessToken, match.frappeName),
+        (match) => widget.api.job(widget.session.accessToken, match.enquiryId),
       ),
     );
     enquiries.sort((left, right) => right.createdAt.compareTo(left.createdAt));
@@ -91,12 +91,24 @@ class _CallLogContactPageState extends State<CallLogContactPage> {
   }
 
   Future<void> _openNotes() async {
+    final callLog = await widget.api.syncDeviceCallLog(
+      accessToken: widget.session.accessToken,
+      sourceReference: widget.entry.sourceReference,
+      type: widget.entry.crmType,
+      from: widget.entry.fromNumber,
+      to: widget.entry.toNumber,
+      status: widget.entry.crmStatus,
+      duration: widget.entry.durationSeconds,
+      occurredAt: widget.entry.timestamp,
+    );
+    if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (context) => CallLogNotesPage(
           api: widget.api,
           session: widget.session,
           entry: widget.entry,
+          callLogName: callLog.name,
         ),
       ),
     );

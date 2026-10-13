@@ -21,7 +21,7 @@ class AppConfig {
 
   static const nativeChannelPrefix = String.fromEnvironment(
     'NATIVE_CHANNEL_PREFIX',
-    defaultValue: 'in.cxsun.crm_mobile',
+    defaultValue: 'in.cxsun.crm_app',
   );
 
   static const releaseFilePrefix = String.fromEnvironment(

@@ -78,7 +78,8 @@ test("previews remote enquiries and their local link", async () => {
       updateEnquiry: async () => {
         throw new Error("Unexpected update");
       },
-      localUserForEmployee: async () => null
+      localUserForEmployee: async () => null,
+      listInForName: async () => null
     },
     defaults,
     "secret"
@@ -119,7 +120,8 @@ test("previews a page beyond the former 1,000 enquiry limit", async () => {
       updateEnquiry: async () => {
         throw new Error("Unexpected update");
       },
-      localUserForEmployee: async () => null
+      localUserForEmployee: async () => null,
+      listInForName: async () => null
     },
     defaults,
     "secret"
@@ -167,7 +169,8 @@ test("imports unlinked enquiries across multiple remote batches", async () => {
       updateEnquiry: async () => {
         throw new Error("Unexpected update");
       },
-      localUserForEmployee: async () => null
+      localUserForEmployee: async () => null,
+      listInForName: async () => null
     },
     defaults,
     "secret"
@@ -195,7 +198,8 @@ test("queued import stops when the Frappe connection has changed", async () => {
       updateEnquiry: async () => {
         throw new Error("Unexpected update");
       },
-      localUserForEmployee: async () => null
+      localUserForEmployee: async () => null,
+      listInForName: async () => null
     },
     defaults,
     "secret"
@@ -218,6 +222,8 @@ test("pull creates a local enquiry and records the remote identity", async () =>
           enquiry_details: "Machine stopped",
           mobile: "9994885548",
           user_employee: "HR-EMP-00011",
+          assigned_to_employee: "HR-EMP-00011",
+          group: "Office",
           date: "2026-10-06",
           status: "New",
           priority: "Normal"
@@ -238,6 +244,10 @@ test("pull creates a local enquiry and records the remote identity", async () =>
       localUserForEmployee: async (employeeCode) => {
         assert.equal(employeeCode, "HR-EMP-00011");
         return 7;
+      },
+      listInForName: async (name) => {
+        assert.equal(name, "Office");
+        return 9;
       }
     },
     defaults,
@@ -252,6 +262,7 @@ test("pull creates a local enquiry and records the remote identity", async () =>
   assert.equal(created[0]?.sourceReference, "ENQ27");
   assert.equal(created[0]?.statusId, 2);
   assert.equal(created[0]?.assignedUserId, 7);
+  assert.equal(created[0]?.listInId, 9);
   assert.equal(scope.wasSaved(), true);
 });
 
@@ -276,7 +287,8 @@ test("pull rejects a linked enquiry with newer local edits", async () => {
       updateEnquiry: async () => {
         throw new Error("Unexpected update");
       },
-      localUserForEmployee: async () => null
+      localUserForEmployee: async () => null,
+      listInForName: async () => null
     },
     defaults,
     "secret"

@@ -33,6 +33,8 @@ export function EnquiryList({
   onShow,
   onEdit,
   onOpenCall,
+  showViewAction = false,
+  emptyState = "No enquiries found.",
   openingCallId
 }: {
   records: EnquiryRecord[];
@@ -46,8 +48,10 @@ export function EnquiryList({
   onHideInlineFilters: () => void;
   loading: boolean;
   onShow: (record: EnquiryRecord) => void;
-  onEdit: (record: EnquiryRecord) => void;
-  onOpenCall: (record: EnquiryRecord) => void;
+  onEdit?: (record: EnquiryRecord) => void;
+  onOpenCall?: (record: EnquiryRecord) => void;
+  showViewAction?: boolean;
+  emptyState?: string;
   openingCallId: string | null;
 }) {
   const userNames = new Map(users.map((user) => [String(user.id), user.name]));
@@ -87,18 +91,24 @@ export function EnquiryList({
       header: "Enquiry details",
       cell: ({ row }) =>
         row.original.status === "new" ? (
-          <button
-            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-wait"
-            disabled={openingCallId === row.original.id}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenCall(row.original);
-            }}
-            title="Open this new call"
-            type="button"
-          >
-            <BellRing className="size-3.5" /> New call
-          </button>
+          onOpenCall ? (
+            <button
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-wait"
+              disabled={openingCallId === row.original.id}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenCall(row.original);
+              }}
+              title="Open this new call"
+              type="button"
+            >
+              <BellRing className="size-3.5" /> New call
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+              <BellRing className="size-3.5" /> New call
+            </span>
+          )
         ) : (
           <button
             className="block max-w-80 cursor-pointer truncate text-left font-medium text-foreground hover:underline"
@@ -153,7 +163,9 @@ export function EnquiryList({
           : "",
       cell: ({ row }) =>
         row.original.assignedUserId
-          ? (userNames.get(row.original.assignedUserId) ?? row.original.assignedToName ?? `#${row.original.assignedUserId}`)
+          ? (userNames.get(row.original.assignedUserId) ??
+            row.original.assignedToName ??
+            `#${row.original.assignedUserId}`)
           : "—"
     },
     {
@@ -175,7 +187,8 @@ export function EnquiryList({
         >
           <WorkspaceRowActions
             title={`Enquiry #${row.original.enquiryNo}`}
-            onEdit={() => onEdit(row.original)}
+            {...(showViewAction ? { onView: () => onShow(row.original) } : {})}
+            {...(onEdit ? { onEdit: () => onEdit(row.original) } : {})}
           />
         </div>
       )
@@ -206,7 +219,7 @@ export function EnquiryList({
             }
           }
         : {})}
-      emptyState="No enquiries found."
+      emptyState={emptyState}
       isLoading={loading}
       minWidth="1020px"
       onRowClick={onShow}

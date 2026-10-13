@@ -292,8 +292,9 @@ against this inventory before treating them as current implementation state.
 - `apps/hrms`, `apps/docs` and `apps/himsx` each own API/Web workspaces and a read-only overview module. They represent Human Resource Management System, Documentation, and Hospital Information Management System respectively.
 - Platform owns app registration, activation and session/tenant guard composition. Each app owns its fixed overview API, response/service contract, deterministic permission seed, frontend gateway/hooks and workspace.
 - Launcher/default landing contracts and tenant desk routes recognise `hrms`, `docs`, and `himsx`. Each app sidebar offers Overview and Getting Started using the existing authenticated Main Layout.
-- No new business tables or altered Core schemas are introduced. Provisioning seeds the three view permissions only for enabled apps; disabled permission/role statuses survive reseeding. Existing tenants need registry/activation/permission seeding before use.
-- App-local READMEs document implementation scope, planned modules, ownership, API URLs, activation and verification. App foundations do not implement employee/payroll CRUD, document authoring or patient/clinical workflows.
+- Overview modules return verified session context without business tables. HRMS Employees and Docs Developer Library add module-owned business tables without altering Core schemas. Provisioning seeds app permissions only for enabled apps; disabled permission/role statuses survive reseeding. Existing tenants need owner migrations and registry/activation/permission seeding before use.
+- App-local READMEs document implementation scope, planned modules, ownership, API URLs, activation and verification. Payroll, document authoring and patient/clinical workflows remain planned.
+- HRMS now owns an employee CRUD module at `/app/hrms/employees`. It includes employee code, profile fields, optional unique tenant-user mapping, status and deletion lifecycle, and activity history. The `hrms.employee` migration creates `hrms_employees` and `hrms_employee_activity`. Existing tenants need migration and enabled-app permission seeding. Payroll remains planned. See `apps/hrms/README.md`.
 
 ## Developer reference library
 

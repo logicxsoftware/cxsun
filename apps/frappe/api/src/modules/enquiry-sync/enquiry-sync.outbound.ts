@@ -18,7 +18,12 @@ export async function processLocalEnquirySync(
   if (!event) throw AppError.notFound("Local enquiry sync event was not found.");
   if (event.status === "synced")
     return { eventId, status: "synced", remoteName: event.remote_name };
-  await sync.markProcessing(event.id);
+  if (!(await sync.markProcessing(event.id))) {
+    const current = await sync.getEvent(event.id);
+    if (current?.status === "synced")
+      return { eventId, status: "synced", remoteName: current.remote_name };
+    throw AppError.conflict("This sync event is already being processed.");
+  }
   try {
     const connections = new FrappeConnectionRepository(database);
     const credentials = await connections.credentials(encryptionSecret);

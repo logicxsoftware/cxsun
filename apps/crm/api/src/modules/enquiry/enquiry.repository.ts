@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sql, type Kysely, type Selectable } from "kysely";
+import { sql, type Kysely, type Selectable, type Transaction } from "kysely";
 import { AppError } from "@cxsun/framework/errors";
 import type {
   EnquiryComment,
@@ -212,6 +212,8 @@ export class EnquiryRepository {
           sql<boolean>`REGEXP_REPLACE(COALESCE(enquiry.captured_phone, ''), '[^0-9]', '') IN (${sql.join(alternatives)})`
         ])
       );
+    } else if (options.contactId) {
+      query = query.where("enquiry.contact_id", "=", options.contactId);
     }
     if (options.fromAt)
       query = query.where("enquiry.enquired_at", ">=", utcDateTime(options.fromAt));
@@ -337,14 +339,28 @@ export class EnquiryRepository {
     return row ? toRecord(row) : null;
   }
 
-  async create(input: EnquiryInput, actor: string) {
+  async findBySourceReference(source: string, reference: string) {
+    const row = await this.detailQuery()
+      .where("enquiry.source", "=", source)
+      .where("enquiry.source_reference", "=", reference)
+      .executeTakeFirst();
+    return row ? toRecord(row) : null;
+  }
+
+  async create(
+    input: EnquiryInput,
+    actor: string,
+    resolveContact?: (transaction: Transaction<EnquiryDatabase>) => Promise<EnquiryInput>,
+    queueOutbound = true
+  ) {
     const id = await this.database.transaction().execute(async (transaction) => {
+      const prepared = resolveContact ? await resolveContact(transaction) : input;
       const enquiryNo = await this.reserveNextNumber(transaction);
       // MariaDB DATETIME has no timezone; these values are read back as UTC.
       const result = await transaction
         .insertInto("crm_enquiries")
         .values({
-          ...toRow(input),
+          ...toRow(prepared),
           enquiry_no: enquiryNo,
           created_by: actor,
           created_at: sql`UTC_TIMESTAMP()`,
@@ -352,12 +368,12 @@ export class EnquiryRepository {
         })
         .executeTakeFirstOrThrow();
       const enquiryId = Number(result.insertId);
-      if (input.assignedUserId) {
+      if (prepared.assignedUserId) {
         await transaction
           .insertInto("crm_enquiry_alerts")
           .values({
             enquiry_id: enquiryId,
-            user_id: input.assignedUserId,
+            user_id: prepared.assignedUserId,
             kind: "assigned",
             read_at: null,
             status: "active",
@@ -367,13 +383,13 @@ export class EnquiryRepository {
           })
           .execute();
       }
-      if (input.description?.trim()) {
+      if (prepared.description?.trim()) {
         await transaction
           .insertInto("crm_enquiry_comments")
           .values({
             enquiry_id: enquiryId,
             parent_id: null,
-            body: input.description.trim(),
+            body: prepared.description.trim(),
             status: "active",
             created_by: actor,
             created_at: sql`UTC_TIMESTAMP()`,
@@ -388,10 +404,16 @@ export class EnquiryRepository {
         `Enquiry #${enquiryNo} created`,
         actor
       );
-      await this.sync.enqueue(
-        { actorEmail: actor, correlationId: randomUUID(), enquiryId, eventType: "enquiry-upsert" },
-        transaction
-      );
+      if (queueOutbound)
+        await this.sync.enqueue(
+          {
+            actorEmail: actor,
+            correlationId: randomUUID(),
+            enquiryId,
+            eventType: "enquiry-upsert"
+          },
+          transaction
+        );
       return enquiryId;
     });
     return this.get(id);
@@ -402,7 +424,9 @@ export class EnquiryRepository {
     input: EnquiryInput,
     actor: string,
     details = "Enquiry updated",
-    expectedStatusId?: number
+    expectedStatusId?: number,
+    resolveContact?: (transaction: Transaction<EnquiryDatabase>) => Promise<EnquiryInput>,
+    queueOutbound = true
   ) {
     await this.database.transaction().execute(async (transaction) => {
       const previous = await transaction
@@ -414,12 +438,13 @@ export class EnquiryRepository {
       if (expectedStatusId !== undefined && previous.status_id !== expectedStatusId) {
         throw AppError.conflict("This enquiry changed. Refresh it before saving.");
       }
+      const prepared = resolveContact ? await resolveContact(transaction) : input;
       await transaction
         .updateTable("crm_enquiries")
-        .set({ ...toRow(input), updated_at: sql`UTC_TIMESTAMP()` })
+        .set({ ...toRow(prepared), updated_at: sql`UTC_TIMESTAMP()` })
         .where("id", "=", id)
         .execute();
-      if (previous.assigned_user_id !== input.assignedUserId && previous.assigned_user_id) {
+      if (previous.assigned_user_id !== prepared.assignedUserId && previous.assigned_user_id) {
         await transaction
           .updateTable("crm_enquiry_alerts")
           .set({ read_at: sql`UTC_TIMESTAMP()`, updated_at: sql`UTC_TIMESTAMP()` })
@@ -428,12 +453,12 @@ export class EnquiryRepository {
           .where("read_at", "is", null)
           .execute();
       }
-      if (input.assignedUserId && input.assignedUserId !== previous.assigned_user_id) {
+      if (prepared.assignedUserId && prepared.assignedUserId !== previous.assigned_user_id) {
         await transaction
           .insertInto("crm_enquiry_alerts")
           .values({
             enquiry_id: id,
-            user_id: input.assignedUserId,
+            user_id: prepared.assignedUserId,
             kind: "assigned",
             read_at: null,
             status: "active",
@@ -446,20 +471,21 @@ export class EnquiryRepository {
           transaction,
           id,
           "assigned",
-          `Assigned to user #${input.assignedUserId}`,
+          `Assigned to user #${prepared.assignedUserId}`,
           actor
         );
       }
       await insertEnquiryActivity(transaction, id, "updated", details, actor);
-      await this.sync.enqueue(
-        {
-          actorEmail: actor,
-          correlationId: randomUUID(),
-          enquiryId: id,
-          eventType: "enquiry-upsert"
-        },
-        transaction
-      );
+      if (queueOutbound)
+        await this.sync.enqueue(
+          {
+            actorEmail: actor,
+            correlationId: randomUUID(),
+            enquiryId: id,
+            eventType: "enquiry-upsert"
+          },
+          transaction
+        );
     });
     return this.get(id);
   }
@@ -547,7 +573,8 @@ export class EnquiryRepository {
     parentId: number | null,
     body: string,
     bodyFormat: "plain" | "html",
-    actor: string
+    actor: string,
+    queueOutbound = true
   ) {
     const result = await this.database.transaction().execute(async (transaction) => {
       const inserted = await transaction
@@ -570,16 +597,17 @@ export class EnquiryRepository {
         parentId ? "Reply added" : "Comment added",
         actor
       );
-      await this.sync.enqueue(
-        {
-          actorEmail: actor,
-          correlationId: randomUUID(),
-          entityId: Number(inserted.insertId),
-          enquiryId,
-          eventType: "comment-add"
-        },
-        transaction
-      );
+      if (queueOutbound)
+        await this.sync.enqueue(
+          {
+            actorEmail: actor,
+            correlationId: randomUUID(),
+            entityId: Number(inserted.insertId),
+            enquiryId,
+            eventType: "comment-add"
+          },
+          transaction
+        );
       return inserted;
     });
     const row = await this.database

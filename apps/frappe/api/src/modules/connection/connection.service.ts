@@ -61,20 +61,6 @@ export class FrappeConnectionService {
   async saveConnection(input: FrappeConnectionInput) {
     const repository = new FrappeConnectionRepository(this.database);
     const current = await repository.connection();
-    if ((await repository.provider("crm.enquiries")) === "frappe") {
-      if (
-        current &&
-        input.enabled &&
-        current.base_url === input.baseUrl &&
-        current.connection_name === input.connectionName &&
-        !input.apiKey &&
-        !input.apiSecret
-      )
-        return this.configured();
-      throw AppError.conflict(
-        "Switch CRM Enquiries to Local before changing or disabling the live Frappe connection."
-      );
-    }
     if (current?.base_url !== input.baseUrl && (!input.apiKey || !input.apiSecret)) {
       throw AppError.validation("Enter both API credentials when changing the Frappe URL.");
     }
@@ -85,22 +71,16 @@ export class FrappeConnectionService {
   async provider() {
     return {
       moduleKey: "crm.enquiries" as const,
-      provider: await new FrappeConnectionRepository(this.database).provider("crm.enquiries")
+      provider: "local" as const
     };
   }
 
   async saveProvider(provider: "local" | "frappe", actorEmail: string) {
     const repository = new FrappeConnectionRepository(this.database);
     if (provider === "frappe") {
-      const connection = await repository.connection();
-      if (!connection || !connection.enabled || connection.verification_status !== "verified") {
-        throw AppError.conflict(
-          "Save, enable and verify the Frappe connection before selecting Frappe Live."
-        );
-      }
-      if (!connection.api_key_ciphertext || !connection.api_secret_ciphertext) {
-        throw AppError.conflict("Frappe API credentials are required for live enquiries.");
-      }
+      throw AppError.validation(
+        "CRM enquiries use the local database. Frappe receives synced copies."
+      );
     }
     return {
       moduleKey: "crm.enquiries" as const,
@@ -304,7 +284,7 @@ export async function requestFrappe<T>(
   }
   if (response.status === 400 || response.status === 422) {
     throw AppError.validation(
-      "Frappe rejected the enquiry data. Check required fields and mapped status, priority, list, employee, and supplier values."
+      "Frappe rejected the record data. Check required fields and referenced values."
     );
   }
   if (response.status === 404) {

@@ -24,6 +24,7 @@ export function WorkspaceRowActions({
   actions,
   deleteLabel = "Suspend",
   isSuspended = false,
+  modal = true,
   onDelete,
   onEdit,
   onRestore,
@@ -34,6 +35,7 @@ export function WorkspaceRowActions({
   actions?: WorkspaceRowAction[];
   deleteLabel?: string;
   isSuspended?: boolean;
+  modal?: boolean;
   onDelete?: () => void;
   onEdit?: () => void;
   onRestore?: () => void;
@@ -47,7 +49,7 @@ export function WorkspaceRowActions({
   if (!hasMainActions && !hasCustomActions) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={modal}>
       <DropdownMenuTrigger asChild>
         <Button
           aria-label={`${title} actions`}

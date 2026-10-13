@@ -1,4 +1,7 @@
 export { enquiryModule, seedEnquiryModule } from "./modules/enquiry/index.js";
+export { activitiesModule } from "./modules/activities/index.js";
+export { callLogModule } from "./modules/call-log/index.js";
+export type { ActivitiesDatabase } from "./modules/activities/index.js";
 export type { EnquiryRequestContext, EnquiryDatabase } from "./modules/enquiry/index.js";
 export { EnquiryRepository } from "./modules/enquiry/index.js";
 export { lookupAssignedEnquirySummary } from "./modules/enquiry/index.js";
@@ -22,7 +25,12 @@ export {
 } from "./crm.migration.js";
 export { seedCrmTenantDatabase } from "./crm.seed.js";
 export { registerContact360Modules } from "./contact-360.module.js";
-export { listInModule, getActiveListInForDatabase } from "./modules/list-in/index.js";
+export { crmContactModule } from "./modules/contact/index.js";
+export {
+  listInModule,
+  getActiveListInForDatabase,
+  resolveListInForImport
+} from "./modules/list-in/index.js";
 export type { ListInDatabase } from "./modules/list-in/index.js";
 export { statusModule, getActiveStatusForDatabase } from "./modules/status/index.js";
 export type { StatusDatabase } from "./modules/status/index.js";

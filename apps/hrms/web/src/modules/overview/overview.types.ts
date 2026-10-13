@@ -1,3 +1,5 @@
+import type { AttendanceOverview } from "../attendance/attendance.types";
+
 export type HrmsOverview = {
   actorEmail: string;
   appKey: "hrms";
@@ -5,4 +7,5 @@ export type HrmsOverview = {
   label: string;
   tenantCode: string;
   tenantName: string;
+  attendance: AttendanceOverview;
 };

@@ -1,5 +1,10 @@
-import { sql } from "kysely";
-import { getCoreDatabase, runWithCoreDatabase } from "../../../database/core-database.js";
+import { sql, type Transaction } from "kysely";
+import {
+  getCoreDatabase,
+  runWithCoreDatabase,
+  runWithCoreTransaction,
+  type CoreDatabase
+} from "../../../database/core-database.js";
 import { ContactService } from "./contact.service.js";
 
 export async function getActiveContactForDatabase(databaseName: string, id: number) {
@@ -11,9 +16,11 @@ export async function getActiveContactForDatabase(databaseName: string, id: numb
 
 export function resolveOrCreateCustomerForDatabase(
   databaseName: string,
-  input: { name: string | null; mobile: string | null }
+  input: { name: string | null; mobile: string | null },
+  transaction?: Transaction<CoreDatabase>
 ) {
-  return runWithCoreDatabase(databaseName, () =>
-    new ContactService().resolveOrCreateCustomer(input.name, input.mobile)
-  );
+  const resolve = () => new ContactService().resolveOrCreateCustomer(input.name, input.mobile);
+  return transaction
+    ? runWithCoreTransaction(databaseName, transaction, resolve)
+    : runWithCoreDatabase(databaseName, resolve);
 }
