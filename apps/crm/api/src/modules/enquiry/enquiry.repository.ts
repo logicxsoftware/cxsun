@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { sql, type Kysely, type Selectable } from "kysely";
 import { AppError } from "@cxsun/framework/errors";
 import type {
@@ -16,6 +17,7 @@ import type {
   EnquirySearchColumn
 } from "./enquiry.types.js";
 import { sanitizeCommentHtml } from "./enquiry.comment-html.js";
+import { EnquirySyncRepository } from "./enquiry.sync.repository.js";
 
 type PersistedRow = Selectable<EnquiryRow> & {
   list_name: string | null;
@@ -26,7 +28,11 @@ type PersistedRow = Selectable<EnquiryRow> & {
 };
 
 export class EnquiryRepository {
-  constructor(private readonly database: Kysely<EnquiryDatabase>) {}
+  private readonly sync: EnquirySyncRepository;
+
+  constructor(private readonly database: Kysely<EnquiryDatabase>) {
+    this.sync = new EnquirySyncRepository(database);
+  }
 
   async listPage(options: EnquiryListOptions): Promise<EnquiryPage> {
     let query = this.scopedQuery(options);
@@ -382,6 +388,10 @@ export class EnquiryRepository {
         `Enquiry #${enquiryNo} created`,
         actor
       );
+      await this.sync.enqueue(
+        { actorEmail: actor, correlationId: randomUUID(), enquiryId, eventType: "enquiry-upsert" },
+        transaction
+      );
       return enquiryId;
     });
     return this.get(id);
@@ -441,6 +451,15 @@ export class EnquiryRepository {
         );
       }
       await insertEnquiryActivity(transaction, id, "updated", details, actor);
+      await this.sync.enqueue(
+        {
+          actorEmail: actor,
+          correlationId: randomUUID(),
+          enquiryId: id,
+          eventType: "enquiry-upsert"
+        },
+        transaction
+      );
     });
     return this.get(id);
   }
@@ -551,6 +570,16 @@ export class EnquiryRepository {
         parentId ? "Reply added" : "Comment added",
         actor
       );
+      await this.sync.enqueue(
+        {
+          actorEmail: actor,
+          correlationId: randomUUID(),
+          entityId: Number(inserted.insertId),
+          enquiryId,
+          eventType: "comment-add"
+        },
+        transaction
+      );
       return inserted;
     });
     const row = await this.database
@@ -595,6 +624,15 @@ export class EnquiryRepository {
         })
         .execute();
       await insertEnquiryActivity(transaction, id, "new-call-opened", "New call opened", actor);
+      await this.sync.enqueue(
+        {
+          actorEmail: actor,
+          correlationId: randomUUID(),
+          enquiryId: id,
+          eventType: "enquiry-upsert"
+        },
+        transaction
+      );
     });
     return this.get(id);
   }

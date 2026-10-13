@@ -16,8 +16,15 @@ test("product packages compose into the single Platform runtime without sharing 
 
 test("stack impact keeps product-only changes inside their release boundary", () => {
   assert.deepEqual(affectedProductStacks(["apps/billing/api/src/app.ts"]), ["billing"]);
-  assert.deepEqual(affectedProductStacks(["packages/framework/src/api/index.ts"]), ["billing"]);
-  assert.deepEqual(affectedProductStacks(["tools/product-stack-contract.mjs"]), ["billing"]);
+  assert.deepEqual(affectedProductStacks(["apps/codexsun/api/src/index.ts"]), ["codexsun"]);
+  assert.deepEqual(affectedProductStacks(["packages/framework/src/api/index.ts"]), [
+    "codexsun",
+    "billing"
+  ]);
+  assert.deepEqual(affectedProductStacks(["tools/product-stack-contract.mjs"]), [
+    "codexsun",
+    "billing"
+  ]);
 });
 
 test("development attachment accepts only the expected healthy dependency", () => {

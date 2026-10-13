@@ -27,7 +27,8 @@ export type Tenant = {
     | "q-cafe"
     | "hrms"
     | "docs"
-    | "himsx";
+    | "himsx"
+    | "codexsun";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;

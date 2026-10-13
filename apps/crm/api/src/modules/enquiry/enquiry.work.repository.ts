@@ -1,6 +1,8 @@
 import { AppError } from "@cxsun/framework/errors";
-import type { Kysely, Selectable } from "kysely";
+import { randomUUID } from "node:crypto";
+import { type Kysely, type Selectable } from "kysely";
 import { insertEnquiryActivity } from "./enquiry.repository.js";
+import { EnquirySyncRepository } from "./enquiry.sync.repository.js";
 import type {
   EnquiryActivity,
   EnquiryActivityRow,
@@ -14,7 +16,11 @@ import type {
 } from "./enquiry.types.js";
 
 export class EnquiryWorkRepository {
-  constructor(private readonly database: Kysely<EnquiryDatabase>) {}
+  private readonly sync: EnquirySyncRepository;
+
+  constructor(private readonly database: Kysely<EnquiryDatabase>) {
+    this.sync = new EnquirySyncRepository(database);
+  }
 
   async listJobs(enquiryId: number): Promise<EnquiryJob[]> {
     const rows = await this.database
@@ -53,6 +59,16 @@ export class EnquiryWorkRepository {
         `Job started by ${employee}`,
         actor
       );
+      await this.sync.enqueue(
+        {
+          actorEmail: actor,
+          correlationId: randomUUID(),
+          entityId: Number(result.insertId),
+          enquiryId,
+          eventType: "job-upsert"
+        },
+        transaction
+      );
       return Number(result.insertId);
     });
     return this.getJob(enquiryId, id);
@@ -86,6 +102,16 @@ export class EnquiryWorkRepository {
         "job-stopped",
         `Job #${jobId} stopped`,
         actor
+      );
+      await this.sync.enqueue(
+        {
+          actorEmail: actor,
+          correlationId: randomUUID(),
+          entityId: jobId,
+          enquiryId,
+          eventType: "job-upsert"
+        },
+        transaction
       );
     });
     return this.getJob(enquiryId, jobId);
@@ -142,6 +168,16 @@ export class EnquiryWorkRepository {
         jobId ? "job-updated" : "job-created",
         `Job #${savedId} ${jobId ? "updated" : "created"}`,
         actor
+      );
+      await this.sync.enqueue(
+        {
+          actorEmail: actor,
+          correlationId: randomUUID(),
+          entityId: savedId,
+          enquiryId,
+          eventType: "job-upsert"
+        },
+        transaction
       );
       return savedId;
     });
@@ -216,6 +252,16 @@ export class EnquiryWorkRepository {
         estimateId ? "estimate-updated" : "estimate-created",
         `Estimate #${savedId} ${estimateId ? "updated" : "created"}: ${values.item_name}`,
         actor
+      );
+      await this.sync.enqueue(
+        {
+          actorEmail: actor,
+          correlationId: randomUUID(),
+          entityId: savedId,
+          enquiryId,
+          eventType: "estimate-upsert"
+        },
+        transaction
       );
       return savedId;
     });

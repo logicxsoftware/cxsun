@@ -21,10 +21,22 @@ export const defaultTenantModuleKeys = [
   "q-cafe",
   "hrms",
   "docs",
-  "himsx"
+  "himsx",
+  "codexsun"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    appId: "codexsun",
+    id: 0,
+    uuid: "",
+    label: "CODEXSUN",
+    moduleKey: "codexsun",
+    stack: "codexsun",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Zuno front desk, requirements, connected workspaces and approvals."
+  },
   {
     appId: "hrms",
     id: 0,

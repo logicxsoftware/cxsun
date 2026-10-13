@@ -84,7 +84,8 @@ export type PlatformAppsTable = {
     | "q-cafe"
     | "hrms"
     | "docs"
-    | "himsx";
+    | "himsx"
+    | "codexsun";
   updated_at: TimestampColumn;
   uuid: string;
 };

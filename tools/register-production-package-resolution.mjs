@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const apiPackages = new Map([
+  ["@cxsun/codexsun-api", "codexsun"],
   ["@cxsun/hrms-api", "hrms"],
   ["@cxsun/docs-api", "docs"],
   ["@cxsun/himsx-api", "himsx"],

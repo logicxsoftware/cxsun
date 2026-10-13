@@ -1,4 +1,5 @@
 export { frappeEnquirySyncModule } from "./enquiry-sync.module.js";
+export { processLocalEnquirySync } from "./enquiry-sync.outbound.js";
 export {
   frappeEnquiryImportJobName,
   processFrappeEnquiryImportJob

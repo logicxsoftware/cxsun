@@ -19,6 +19,7 @@ export const queueManagerWorker = {
   backends: ["database", "bullmq-redis"],
   jobs: [
     "client-artifact.prepare",
+    "crm.enquiry.frappe-sync",
     "database-maintenance.run",
     "frappe.enquiries.import",
     "mail.send",
@@ -26,7 +27,7 @@ export const queueManagerWorker = {
     "mail.system-send",
     "queue.probe"
   ],
-  queues: ["maintenance", "mail", "reports", "system"]
+  queues: ["crm", "maintenance", "mail", "reports", "system"]
 } as const;
 
 export function queueJobCanRunInline(job: QueueJobRecord) {

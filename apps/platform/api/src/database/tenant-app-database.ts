@@ -1,3 +1,10 @@
+import {
+  codexsunTenantMigrations,
+  migrateCodexsunDatabase,
+  rollbackCodexsunDatabase,
+  seedCodexsunPermissions,
+  type CodexsunDatabase
+} from "@cxsun/codexsun-api";
 import { seedHrmsOverviewPermissions, type HrmsPermissionDatabase } from "@cxsun/hrms-api";
 import {
   migrateKnowledgeDatabase,
@@ -185,6 +192,11 @@ export function tenantDatabaseMigrationsFor(_tenant: Tenant) {
       name,
       statements: [`RUN ${name}`]
     })),
+    ...codexsunTenantMigrations.map(({ description, name }) => ({
+      description,
+      name,
+      statements: [`RUN ${name}`]
+    })),
     ...blogsMigrationBatch.steps.map(({ description, name }) => ({
       description,
       name,
@@ -224,6 +236,8 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   provisionedApps.push("mail");
   await migrateTaskManagerTenantModule(database as never);
   provisionedApps.push("task-manager");
+  await migrateCodexsunDatabase(database as unknown as Kysely<CodexsunDatabase>);
+  provisionedApps.push("codexsun");
   await migrateBlogsDatabase(database as never, runMigrationBatch);
   provisionedApps.push("blog");
 
@@ -236,6 +250,10 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
 export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
   const enabled = new Set(tenant.enabledModuleKeys);
   const seededApps = ["application"];
+  if (enabled.has("codexsun")) {
+    await seedCodexsunPermissions(database as unknown as Kysely<CodexsunDatabase>);
+    seededApps.push("codexsun");
+  }
   if (enabled.has("hrms")) {
     await seedHrmsOverviewPermissions(database as unknown as Kysely<HrmsPermissionDatabase>);
     seededApps.push("hrms");
@@ -315,6 +333,8 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
 
 export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase>, tenant: Tenant) {
   const enabled = new Set(tenant.enabledModuleKeys);
+  if (enabled.has("codexsun"))
+    await rollbackCodexsunDatabase(database as unknown as Kysely<CodexsunDatabase>);
   if (enabled.has("docs"))
     await rollbackKnowledgeDatabase(database as unknown as Kysely<KnowledgeDatabase>);
   if (enabled.has("platform.task-manager"))

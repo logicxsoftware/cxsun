@@ -38,6 +38,7 @@ export default defineConfig(({ command, mode }) => {
     },
     optimizeDeps: {
       exclude: [
+        "@cxsun/codexsun-web",
         "@codexsun/blog/web",
         "@cxsun/billing-web",
         "@cxsun/core-web",
@@ -77,6 +78,7 @@ export default defineConfig(({ command, mode }) => {
     ],
     resolve: {
       alias: {
+        "@cxsun/codexsun-web": resolve(configDir, "../../codexsun/web/src/index.ts"),
         "@cxsun/docs-web/modules/overview/gateway": resolve(
           configDir,
           "../../docs/web/src/modules/overview/overview.services.ts"

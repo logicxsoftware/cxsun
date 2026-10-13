@@ -16,7 +16,8 @@ export type PlatformAppId =
   | "q-cafe"
   | "hrms"
   | "docs"
-  | "himsx";
+  | "himsx"
+  | "codexsun";
 
 export type PlatformAppDefinition = {
   alwaysEnabled: boolean;
@@ -44,7 +45,8 @@ export type PlatformAppDefinition = {
     | "q-cafe"
     | "hrms"
     | "docs"
-    | "himsx";
+    | "himsx"
+    | "codexsun";
   uuid: string;
 };
 

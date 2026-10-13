@@ -52,7 +52,8 @@ export type PlatformAppId =
   | "q-cafe"
   | "hrms"
   | "docs"
-  | "himsx";
+  | "himsx"
+  | "codexsun";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -71,7 +72,8 @@ export type PlatformAppRootPage =
   | "q-cafe.overview"
   | "hrms.overview"
   | "docs.overview"
-  | "himsx.overview";
+  | "himsx.overview"
+  | "codexsun.frontdesk";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -107,7 +109,8 @@ export type PlatformAppDefinition = {
     | "q-cafe"
     | "hrms"
     | "docs"
-    | "himsx";
+    | "himsx"
+    | "codexsun";
 };
 
 export const defaultTenantModuleKeys = [
@@ -125,10 +128,22 @@ export const defaultTenantModuleKeys = [
   "q-cafe",
   "hrms",
   "docs",
-  "himsx"
+  "himsx",
+  "codexsun"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
+  {
+    id: "codexsun",
+    label: "CODEXSUN",
+    moduleKey: "codexsun",
+    stack: "codexsun",
+    icon: SparklesIcon,
+    accentClass: "bg-indigo-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Zuno front desk, requirements, connected workspaces and approvals."
+  },
   {
     id: "hrms",
     label: "HRMS",
@@ -370,6 +385,7 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 }
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
+  if (appId === "codexsun") return "codexsun.frontdesk";
   if (appId === "himsx") return "himsx.overview";
   if (appId === "docs") return "docs.overview";
   if (appId === "hrms") return "hrms.overview";
@@ -402,6 +418,13 @@ export function appMenuFor(
   crmCounts?: CrmNavigationCounts,
   billingEnabled = false
 ): SidemenuItem {
+  if (appId === "codexsun")
+    return {
+      icon: SparklesIcon,
+      title: "CODEXSUN",
+      isActive: activePage.startsWith("codexsun."),
+      items: codexsunMenuItems(activePage, onSelect)
+    };
   if (appId === "hrms")
     return {
       icon: UsersIcon,
@@ -899,6 +922,7 @@ export function appMenuItemsFor(
   crmCounts?: CrmNavigationCounts,
   billingEnabled = false
 ): SidemenuItem[] {
+  if (appId === "codexsun") return codexsunMenuItems(activePage, onSelect);
   if (appId === "hrms")
     return [
       {
@@ -1498,6 +1522,29 @@ export function appMenuItemsFor(
           onSelect: () => onSelect("core.organisation.default-company")
         }
       ]
+    }
+  ];
+}
+
+function codexsunMenuItems(activePage: string, onSelect: (page: string) => void): SidemenuItem[] {
+  return [
+    {
+      icon: SparklesIcon,
+      title: "Zuno Front Desk",
+      isActive: activePage === "codexsun.frontdesk",
+      onSelect: () => onSelect("codexsun.frontdesk")
+    },
+    {
+      icon: LayoutDashboardIcon,
+      title: "Desktop Workspace",
+      isActive: activePage === "codexsun.workspace",
+      onSelect: () => onSelect("codexsun.workspace")
+    },
+    {
+      icon: ShieldCheckIcon,
+      title: "Mobile Approvals",
+      isActive: activePage === "codexsun.approvals",
+      onSelect: () => onSelect("codexsun.approvals")
     }
   ];
 }

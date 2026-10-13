@@ -25,7 +25,8 @@ export type Tenant = {
     | "q-cafe"
     | "hrms"
     | "docs"
-    | "himsx";
+    | "himsx"
+    | "codexsun";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -67,7 +68,8 @@ export type TenantSavePayload = {
     | "q-cafe"
     | "hrms"
     | "docs"
-    | "himsx";
+    | "himsx"
+    | "codexsun";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;
@@ -108,7 +110,8 @@ export type TenantRuntime = {
       | "q-cafe"
       | "hrms"
       | "docs"
-      | "himsx";
+      | "himsx"
+      | "codexsun";
     label: string;
     moduleKey: string;
     stack:
@@ -129,7 +132,8 @@ export type TenantRuntime = {
       | "q-cafe"
       | "hrms"
       | "docs"
-      | "himsx";
+      | "himsx"
+      | "codexsun";
   }>;
   defaultLandingApp:
     | "application"
@@ -149,6 +153,7 @@ export type TenantRuntime = {
     | "q-cafe"
     | "hrms"
     | "docs"
-    | "himsx";
+    | "himsx"
+    | "codexsun";
   tenant: Tenant | null;
 };

@@ -21,6 +21,16 @@ const TENANT_RUNTIME_KEYS = [
 
 type ApiEnvelope<T> = { data: T; success: true } | { error: { message: string }; success: false };
 
+export class PlatformApiError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode: number
+  ) {
+    super(message);
+    this.name = "PlatformApiError";
+  }
+}
+
 export type SessionContext = {
   cachedAt: string;
   company: { code: string; id: number; name: string } | null;
@@ -180,7 +190,10 @@ async function request<T>(path: string, options: RequestInit = {}, desk?: Desk):
     );
   }
   if (!response.ok || !envelope.success) {
-    throw new Error(envelope.success ? "Request failed" : envelope.error.message);
+    throw new PlatformApiError(
+      envelope.success ? "Request failed" : envelope.error.message,
+      response.status
+    );
   }
   return envelope.data;
 }
@@ -212,6 +225,36 @@ export function apiPost<T>(path: string, data?: unknown, desk?: Desk): Promise<T
 
 export function apiPut<T>(path: string, data?: unknown, desk?: Desk): Promise<T> {
   return request<T>(path, { body: JSON.stringify(data ?? {}), method: "PUT" }, desk);
+}
+
+export function apiPatch<T>(path: string, data?: unknown, desk?: Desk): Promise<T> {
+  return request<T>(path, { body: JSON.stringify(data ?? {}), method: "PATCH" }, desk);
+}
+
+export function createSessionBoundGateway(desk: Desk) {
+  const slot = getSessionSlot();
+  function boundRequest<T>(path: string, method: string, body?: unknown): Promise<T> {
+    if (!slot || getSessionSlot() !== slot) {
+      return Promise.reject(
+        new PlatformApiError("The signed-in session changed. Reopen this workspace.", 401)
+      );
+    }
+    return request<T>(
+      path,
+      {
+        method,
+        headers: { "x-cxsun-session-slot": slot },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) })
+      },
+      desk
+    );
+  }
+  return {
+    sessionKey: slot ?? "signed-out",
+    get: <T>(path: string) => boundRequest<T>(path, "GET"),
+    post: <T>(path: string, body: unknown) => boundRequest<T>(path, "POST", body),
+    patch: <T>(path: string, body: unknown) => boundRequest<T>(path, "PATCH", body)
+  };
 }
 
 export function apiDelete<T>(path: string, desk?: Desk): Promise<T> {

@@ -12,7 +12,8 @@ const landingApps = new Set([
   "q-cafe",
   "hrms",
   "docs",
-  "himsx"
+  "himsx",
+  "codexsun"
 ]);
 
 export class DefaultCompanyService {

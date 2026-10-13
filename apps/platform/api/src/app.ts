@@ -1,3 +1,4 @@
+import { codexsunApiModuleKeys } from "@cxsun/codexsun-api";
 import { hrmsOverviewModule } from "@cxsun/hrms-api";
 import {
   docsKnowledgeModule,
@@ -62,6 +63,7 @@ import {
   frappeEnquirySyncModule,
   frappeEnquiryImportJobName,
   processFrappeEnquiryImportJob,
+  processLocalEnquirySync,
   frappeUserMappingModule,
   mappedEmployeeCodeForLocalUser,
   mappedLocalUserForEmployeeCode,
@@ -105,6 +107,7 @@ import { taskManagerModule } from "./modules/task-manager/index.js";
 import { credentialRecoveryModule } from "./modules/credential-recovery/index.js";
 import { appOrchestrationModule } from "./modules/app-orchestration/index.js";
 import { startQueueManagerWorker } from "./modules/queue-manager/queue-manager.runtime.js";
+import { startCrmEnquirySyncRelay } from "./modules/queue-manager/crm-enquiry-sync.relay.js";
 import { QueueManagerService } from "./modules/queue-manager/queue-manager.service.js";
 import { registerQueueJobProcessor } from "./modules/queue-manager/queue-manager.worker.js";
 import { platformReadinessChecks } from "./readiness.js";
@@ -127,6 +130,7 @@ import { registerAuthRequestContext } from "./auth/auth-request-context.js";
 import { TenantDomainRepository } from "./modules/tenant-domain/tenant-domain.repository.js";
 import { registerProjectManagerHost } from "./project-manager-host.js";
 import { registerZunoHost } from "./zuno-host.js";
+import { registerCodexsunHost } from "./codexsun-host.js";
 import { resolvePlatformApiUrl } from "./api-url.js";
 import { projectManagerApiModuleKeys } from "@cxsun/project-manager-api";
 import { zunoApiModuleKeys } from "@cxsun/zuno-api";
@@ -177,6 +181,7 @@ export async function createApp() {
   registerAuthRequestContext(app);
   await registerProjectManagerHost(app);
   await registerZunoHost(app);
+  await registerCodexsunHost(app);
   console.info("[platform.routes] Project Manager package ready");
   const mailModule = createMailModule({
     enqueue: (payload) => queueService.enqueue(payload),
@@ -196,6 +201,7 @@ export async function createApp() {
             ecommerceOverviewModule.key,
             hrmsOverviewModule.key,
             docsOverviewModule.key,
+            ...codexsunApiModuleKeys,
             docsKnowledgeModule.key,
             himsxOverviewModule.key,
 
@@ -567,6 +573,9 @@ export async function createApp() {
   });
   await enquiryModule.register(app, async (request) => {
     const context = await crmAccess(request, "enquiry", "/crm/enquiries");
+    const enquiryDatabase = context.database as unknown as import("kysely").Kysely<EnquiryDatabase>;
+    const frappeMappingDatabase =
+      context.database as unknown as import("kysely").Kysely<FrappeUserMappingDatabase>;
     const actor = await context.database
       .selectFrom("app_users")
       .select("id")
@@ -593,6 +602,127 @@ export async function createApp() {
       canViewAll,
       database: context.database as unknown as import("kysely").Kysely<EnquiryDatabase>,
       relations: enquiryRelations(context),
+      queueSyncEvent: async (event: { id: number; correlationId: string }) => {
+        const frappeModuleEnabled = await context.database
+          .selectFrom("app_module_settings")
+          .select("id")
+          .where("module_key", "=", "frappe")
+          .where("enabled", "=", true)
+          .where("status", "=", "active")
+          .executeTakeFirst();
+        if (!frappeModuleEnabled) return;
+        const syncConnection = await new FrappeConnectionRepository(
+          frappeMappingDatabase as unknown as import("kysely").Kysely<FrappeDatabase>
+        ).connection();
+        if (!syncConnection?.enabled || syncConnection.verification_status !== "verified") return;
+        try {
+          await queueService.enqueue({
+            actorEmail: context.actorEmail,
+            correlationId: event.correlationId,
+            idempotencyKey: `crm-enquiry-sync:${context.tenantId}:${event.id}:0`,
+            jobName: "crm.enquiry.frappe-sync",
+            maxAttempts: 6,
+            payload: { eventId: event.id, tenantDatabase: context.tenantDatabase },
+            queueName: "crm",
+            sourceModule: "crm.enquiry",
+            tenantId: context.tenantId
+          });
+        } catch (error) {
+          console.warn("[crm-enquiry-sync] event saved locally; relay will retry dispatch", {
+            eventId: event.id,
+            message: error instanceof Error ? error.message : "Queue dispatch failed."
+          });
+        }
+      },
+      resolveLocalReference: async (kind: "list-in" | "status" | "priority", value: string) => {
+        if (/^\d+$/u.test(value)) {
+          const id = Number(value);
+          const active =
+            kind === "list-in"
+              ? await enquiryDatabase
+                  .selectFrom("crm_enquiry_lists")
+                  .select("id")
+                  .where("id", "=", id)
+                  .where("status", "=", "active")
+                  .executeTakeFirst()
+              : kind === "status"
+                ? await enquiryDatabase
+                    .selectFrom("crm_enquiry_statuses")
+                    .select("id")
+                    .where("id", "=", id)
+                    .where("status", "=", "active")
+                    .executeTakeFirst()
+                : await enquiryDatabase
+                    .selectFrom("crm_enquiry_priorities")
+                    .select("id")
+                    .where("id", "=", id)
+                    .where("status", "=", "active")
+                    .executeTakeFirst();
+          if (active) return id;
+        }
+        const match =
+          kind === "list-in"
+            ? await enquiryDatabase
+                .selectFrom("crm_enquiry_lists")
+                .select("id")
+                .where("name", "=", value)
+                .where("status", "=", "active")
+                .executeTakeFirst()
+            : kind === "status"
+              ? await enquiryDatabase
+                  .selectFrom("crm_enquiry_statuses")
+                  .select("id")
+                  .where((eb) =>
+                    eb.or([eb("name", "=", value), eb("code", "=", value.toLowerCase())])
+                  )
+                  .where("status", "=", "active")
+                  .executeTakeFirst()
+              : await enquiryDatabase
+                  .selectFrom("crm_enquiry_priorities")
+                  .select("id")
+                  .where((eb) =>
+                    eb.or([eb("name", "=", value), eb("code", "=", value.toLowerCase())])
+                  )
+                  .where("status", "=", "active")
+                  .executeTakeFirst();
+        if (!match)
+          throw AppError.validation(
+            `Map the Frappe ${kind} “${value}” to an active local CRM option first.`
+          );
+        return match.id;
+      },
+      resolveLocalAssignee: async (value: string | null) => {
+        if (value === null) return null;
+        if (/^\d+$/u.test(value)) {
+          const id = Number(value);
+          const local = await context.database
+            .selectFrom("app_users")
+            .select("id")
+            .where("id", "=", id)
+            .where("status", "=", "active")
+            .executeTakeFirst();
+          if (local) return id;
+        }
+        const connection = await new FrappeConnectionRepository(
+          frappeMappingDatabase as unknown as import("kysely").Kysely<FrappeDatabase>
+        ).connection();
+        const localUserId = await mappedLocalUserForEmployeeCode(
+          frappeMappingDatabase,
+          value,
+          connection?.base_url ?? ""
+        );
+        if (!localUserId)
+          throw AppError.validation(
+            `Map Frappe employee “${value}” to an active local user first.`
+          );
+        return localUserId;
+      },
+      localEnquiryIdForRemote: async (name: string) => {
+        const link = await new FrappeConnectionRepository(
+          frappeMappingDatabase as unknown as import("kysely").Kysely<FrappeDatabase>
+        ).byRemoteName(name);
+        return link?.enquiryId ?? null;
+      },
       listUsers: () =>
         context.database
           .selectFrom("app_users")
@@ -786,6 +916,47 @@ export async function createApp() {
       env.JWT_SECRET,
       job.payload.baseUrl,
       report
+    );
+  });
+  registerQueueJobProcessor("crm.enquiry.frappe-sync", async (job) => {
+    const tenant = await new TenantRepository().findByIdOrCode(job.tenantId ?? "");
+    const eventId = Number(job.payload.eventId);
+    if (
+      !tenant ||
+      tenant.dbName !== job.payload.tenantDatabase ||
+      !Number.isSafeInteger(eventId) ||
+      eventId < 1
+    )
+      throw new Error("The CRM enquiry sync tenant or event is no longer valid.");
+    const database = getTenantDatabase(tenant);
+    const enabled = await database
+      .selectFrom("app_module_settings")
+      .select("module_key")
+      .where("module_key", "in", ["crm", "frappe"])
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .execute();
+    if (enabled.length !== 2)
+      throw new Error("CRM and Frappe must remain enabled to sync enquiries.");
+    const actor = await database
+      .selectFrom("app_users")
+      .select("email")
+      .where("email", "=", job.actorEmail ?? "")
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!actor) throw new Error("The user who saved the enquiry is no longer active.");
+    return processLocalEnquirySync(
+      database as unknown as import("kysely").Kysely<import("@cxsun/frappe-api").FrappeDatabase>,
+      eventId,
+      env.JWT_SECRET,
+      (email, baseUrl) =>
+        mappedEmployeeCodeForLocalUser(
+          database as unknown as import("kysely").Kysely<
+            import("@cxsun/frappe-api").FrappeUserMappingDatabase
+          >,
+          email,
+          baseUrl
+        )
     );
   });
   frappeEnquirySyncModule.register(
@@ -1230,6 +1401,8 @@ export async function createApp() {
     }
   );
   startQueueManagerWorker(app, queueService);
+  const stopCrmEnquirySyncRelay = startCrmEnquirySyncRelay(queueService);
+  app.addHook("onClose", async () => stopCrmEnquirySyncRelay());
   console.info("[platform.worker] queue manager ready");
   console.info("[platform.boot] bootstrap completed");
 

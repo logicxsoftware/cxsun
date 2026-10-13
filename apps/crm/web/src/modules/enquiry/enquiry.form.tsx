@@ -73,10 +73,26 @@ export function EnquiryForm({
   const [value, setValue] = useState<EnquirySavePayload>(() =>
     record ? fromRecord(record) : emptyEnquiry(statuses, priorities)
   );
+  const createDefaultsInitialized = useRef(Boolean(record));
   const [issues, setIssues] = useState<Record<string, string>>({});
   const [dueDateInvalid, setDueDateInvalid] = useState(false);
   const escapeNavigation = useRef(false);
   const keyboardLookup = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (record) {
+      createDefaultsInitialized.current = false;
+      return;
+    }
+    if (createDefaultsInitialized.current || !statuses.length || !priorities.length) return;
+    setValue((current) => ({
+      ...current,
+      statusId:
+        current.statusId || String(statuses.find((item) => item.code === "new")?.id ?? ""),
+      priorityId:
+        current.priorityId || String(priorities.find((item) => item.code === "normal")?.id ?? "")
+    }));
+    createDefaultsInitialized.current = true;
+  }, [priorities, record, statuses]);
   useEffect(() => {
     if (record) return;
     const onKeyDown = (event: KeyboardEvent) => {

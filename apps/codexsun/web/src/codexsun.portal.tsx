@@ -1,0 +1,75 @@
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@cxsun/ui/components/button";
+import { WorkspaceFormBanner } from "@cxsun/ui/workspace/upsert";
+import { formatDateTime } from "@cxsun/ui/workspace";
+import {
+  CodexsunWorkspace,
+  useCodexsunContext,
+  type CodexsunGateway,
+  type CodexsunSurface
+} from "./modules/requirements";
+import { CodexsunDevicesWorkspace } from "./modules/devices";
+import { useCodexsunSync } from "./sync";
+
+export function CodexsunPortal({
+  gateway,
+  surface
+}: {
+  gateway: CodexsunGateway;
+  surface: CodexsunSurface;
+}) {
+  const context = useCodexsunContext(gateway);
+  const scope = context.data
+    ? { tenantUuid: context.data.tenantUuid, actorEmail: context.data.actorEmail }
+    : null;
+  const sync = useCodexsunSync({ gateway, scope });
+  const [offline, setOffline] = useState(
+    () => typeof navigator !== "undefined" && !navigator.onLine
+  );
+  useEffect(() => {
+    const update = () => setOffline(!navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (sync.lastSyncedAt)
+      void queryClient.invalidateQueries({ queryKey: ["codexsun", "requirements"] });
+  }, [sync.lastSyncedAt, queryClient]);
+  const kind = surface === "frontdesk" ? "web" : surface === "workspace" ? "desktop" : "mobile";
+  return (
+    <CodexsunWorkspace
+      gateway={gateway}
+      surface={surface}
+      offline={offline || context.isError}
+      cachedRequirements={sync.cachedRequirements}
+      {...(sync.available ? { saveDraft: sync.saveDraft } : {})}
+      devicePanel={
+        <div className="space-y-3">
+          <WorkspaceFormBanner title="Device sync" tone={sync.error ? "warning" : "info"}>
+            <p>
+              {sync.syncing ? "Syncing with cloud…" : `${sync.pending} drafts waiting to sync.`}
+              {sync.lastSyncedAt ? ` Last sync: ${formatDateTime(sync.lastSyncedAt)}.` : ""}
+            </p>
+            {sync.error && <p>{sync.error}</p>}
+            <Button
+              variant="outline"
+              disabled={!scope || sync.syncing}
+              onClick={() => void sync.retry()}
+            >
+              Sync now
+            </Button>
+          </WorkspaceFormBanner>
+          {scope && context.data?.permissions["codexsun.devices.view"] && (
+            <CodexsunDevicesWorkspace gateway={gateway} scope={scope} kind={kind} />
+          )}
+        </div>
+      }
+    />
+  );
+}

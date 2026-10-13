@@ -1,6 +1,6 @@
 {
   "name": "cxsun",
-  "version": "1.0.88",
+  "version": "1.0.89",
   "private": true,
   "packageManager": "npm@12.2.0",
   "description": "CODEXSUN",
@@ -117,7 +117,15 @@
     "docs:check": "node tools/check-docs-content.mjs",
     "docs:catalog": "node tools/check-docs-content.mjs --refresh-hashes",
     "test:docs": "node --import tsx --test apps/docs/api/src/modules/knowledge/knowledge.content.test.ts apps/zetro/api/src/modules/chat/chat.docs.test.ts devkits/zuno/api/src/modules/diagnostics/diagnostics.docs.test.ts",
-    "test:e2e:docs": "tsx tools/e2e/docs-knowledge.e2e.ts"
+    "test:e2e:docs": "tsx tools/e2e/docs-knowledge.e2e.ts",
+    "test:codexsun": "tsx --test apps/codexsun/api/src/modules/**/*.test.ts apps/codexsun/web/src/sync/sync.spec.ts apps/platform/web/src/app/codexsun-app-registry.test.ts",
+    "test:e2e:codexsun": "tsx apps/codexsun/api/src/codexsun.e2e.ts",
+    "verify:codexsun": "node tools/check-module-boundaries.mjs codexsun && npm run typecheck -w @cxsun/codexsun-api && npm run typecheck -w @cxsun/codexsun-web && npm run test:codexsun && npm run test:e2e:codexsun && npm run build -w @cxsun/codexsun-api && npm run build -w @cxsun/platform-web && npm run dependencies:check",
+    "crm:mobile:run": "node tools/crm-mobile.mjs run",
+    "crm:mobile:apk:debug": "node tools/crm-mobile.mjs build-debug",
+    "crm:mobile:apk:release": "node tools/crm-mobile.mjs build-release",
+    "crm:mobile:analyze": "node tools/crm-mobile.mjs analyze",
+    "crm:mobile:test": "node tools/crm-mobile.mjs test"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

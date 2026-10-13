@@ -5,6 +5,7 @@ import { registerContractRoute } from "@cxsun/framework/http";
 import { AppError } from "@cxsun/framework/errors";
 import type {} from "@cxsun/framework/api";
 import { EnquiryRepository } from "./enquiry.repository.js";
+import { EnquirySyncRepository } from "./enquiry.sync.repository.js";
 import { EnquiryService, type EnquiryRelations } from "./enquiry.service.js";
 import { EnquiryReadService, type EnquiryRemoteSource } from "./enquiry.read-source.js";
 import type { EnquiryDatabase } from "./enquiry.types.js";
@@ -19,7 +20,6 @@ import {
   localViewRecord,
   indiaDate,
   localViewComment,
-  remoteInput,
   remoteViewComments,
   remoteViewScopeSummary,
   remoteViewRecord,
@@ -60,33 +60,37 @@ const recordSchema = inputSchema.extend({
   updatedAt: z.string()
 });
 const referenceSchema = z.string().trim().min(1).max(191);
-const viewInputSchema = inputSchema.omit({
-  listInId: true,
-  statusId: true,
-  priorityId: true,
-  assignedUserId: true
-}).extend({
-  listInId: referenceSchema.nullable(),
-  statusId: referenceSchema,
-  priorityId: referenceSchema,
-  assignedUserId: referenceSchema.nullable()
-});
-const viewRecordSchema = recordSchema.omit({
-  id: true,
-  enquiryNo: true,
-  listInId: true,
-  statusId: true,
-  priorityId: true,
-  assignedUserId: true
-}).extend({
-  id: referenceSchema,
-  enquiryNo: referenceSchema,
-  listInId: referenceSchema.nullable(),
-  statusId: referenceSchema,
-  priorityId: referenceSchema,
-  assignedUserId: referenceSchema.nullable(),
-  assignedToName: nullableText
-});
+const viewInputSchema = inputSchema
+  .omit({
+    listInId: true,
+    statusId: true,
+    priorityId: true,
+    assignedUserId: true
+  })
+  .extend({
+    listInId: referenceSchema.nullable(),
+    statusId: referenceSchema,
+    priorityId: referenceSchema,
+    assignedUserId: referenceSchema.nullable()
+  });
+const viewRecordSchema = recordSchema
+  .omit({
+    id: true,
+    enquiryNo: true,
+    listInId: true,
+    statusId: true,
+    priorityId: true,
+    assignedUserId: true
+  })
+  .extend({
+    id: referenceSchema,
+    enquiryNo: referenceSchema,
+    listInId: referenceSchema.nullable(),
+    statusId: referenceSchema,
+    priorityId: referenceSchema,
+    assignedUserId: referenceSchema.nullable(),
+    assignedToName: nullableText
+  });
 const viewIdSchema = z.object({ id: referenceSchema });
 const localId = (value: string) => {
   const id = Number(value);
@@ -246,11 +250,13 @@ const livePageSchema = z.object({
   items: z.array(liveRecordSchema)
 });
 const liveNameSchema = z.object({ name: z.string().trim().min(1).max(191) });
-const reportQuerySchema = listQuerySchema.pick({
-  fromAt: true,
-  toAt: true,
-  assignedUserId: true
-}).extend({ view: z.enum(["list-in", "creator", "assignee", "status"]).default("list-in") });
+const reportQuerySchema = listQuerySchema
+  .pick({
+    fromAt: true,
+    toAt: true,
+    assignedUserId: true
+  })
+  .extend({ view: z.enum(["list-in", "creator", "assignee", "status"]).default("list-in") });
 const reportRowSchema = z.object({
   listInId: referenceSchema.nullable(),
   listIn: nullableText,
@@ -311,6 +317,13 @@ export type EnquiryRequestContext = {
   relations: EnquiryRelations;
   remote: EnquiryRemoteSource;
   listUsers: () => Promise<Array<{ id: number; name: string; email: string; status: string }>>;
+  queueSyncEvent?: (event: { id: number; correlationId: string }) => Promise<void>;
+  resolveLocalReference?: (
+    kind: "list-in" | "status" | "priority",
+    value: string
+  ) => Promise<number>;
+  resolveLocalAssignee?: (value: string | null) => Promise<number | null>;
+  localEnquiryIdForRemote?: (name: string) => Promise<number | null>;
 };
 
 export function registerEnquiryRoutes(
@@ -331,22 +344,34 @@ export function registerEnquiryRoutes(
     await current.read.assertLocal();
     return current;
   };
-  const remotePayload = async (
-    scope: EnquiryRequestContext,
-    input: EnquiryViewInput,
-    current?: Awaited<ReturnType<EnquiryRemoteSource["get"]>>
+  const queueLatestSync = async (
+    current: Awaited<ReturnType<typeof service>>,
+    enquiryId: number
   ) => {
-    const contactName = input.contactId
-      ? (await scope.relations.contact(input.contactId))?.name ?? null
-      : input.capturedName;
-    const options = await scope.remote.options();
-    const customer = contactName
-      ? options.customers.find((item) => item.name === contactName || item.code === contactName)
-      : null;
-    return remoteInput(
-      { ...input, capturedName: customer?.code ?? null },
-      current
+    if (!current.scope.queueSyncEvent) return;
+    const event = await new EnquirySyncRepository(current.scope.database).latestEvent(
+      enquiryId,
+      current.scope.actorEmail
     );
+    if (event)
+      await current.scope.queueSyncEvent({ id: event.id, correlationId: event.correlation_id });
+  };
+  const localInputForScope = async (scope: EnquiryRequestContext, input: EnquiryViewInput) => {
+    if (!scope.resolveLocalReference || !scope.resolveLocalAssignee) return localInput(input);
+    const [listInId, statusId, priorityId, assignedUserId] = await Promise.all([
+      input.listInId === null ? null : scope.resolveLocalReference("list-in", input.listInId),
+      scope.resolveLocalReference("status", input.statusId),
+      scope.resolveLocalReference("priority", input.priorityId),
+      scope.resolveLocalAssignee(input.assignedUserId)
+    ]);
+    return { ...input, listInId, statusId, priorityId, assignedUserId };
+  };
+  const localEnquiryId = async (scope: EnquiryRequestContext, value: string) => {
+    if (/^\d+$/u.test(value)) return localId(value);
+    const id = await scope.localEnquiryIdForRemote?.(value);
+    if (!id)
+      throw AppError.conflict("Import this Frappe enquiry into the local CRM before editing it.");
+    return id;
   };
   registerContractRoute(app, {
     method: "POST",
@@ -359,16 +384,34 @@ export function registerEnquiryRoutes(
     handler: async ({ params, body, request }) => {
       const { scope, read } = await service(request);
       if ((await read.source()) === "frappe") {
-        if (!scope.remote.createOption) throw new Error("The selected enquiry source cannot create options.");
+        if (!scope.remote.createOption)
+          throw new Error("The selected enquiry source cannot create options.");
         return scope.remote.createOption(params.kind, body.name);
       }
       const input = { name: body.name, sortOrder: 1000 };
-      const record = params.kind === "list-in"
-        ? await new ListInService(new ListInRepository(scope.database)).create(input, scope.actorEmail)
-        : params.kind === "status"
-          ? await new StatusService(new StatusRepository(scope.database)).create(input, scope.actorEmail)
-          : await new PriorityService(new PriorityRepository(scope.database)).create(input, scope.actorEmail);
-      return { id: String(record.id), name: record.name, code: "code" in record && typeof record.code === "string" ? record.code : record.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") };
+      const record =
+        params.kind === "list-in"
+          ? await new ListInService(new ListInRepository(scope.database)).create(
+              input,
+              scope.actorEmail
+            )
+          : params.kind === "status"
+            ? await new StatusService(new StatusRepository(scope.database)).create(
+                input,
+                scope.actorEmail
+              )
+            : await new PriorityService(new PriorityRepository(scope.database)).create(
+                input,
+                scope.actorEmail
+              );
+      return {
+        id: String(record.id),
+        name: record.name,
+        code:
+          "code" in record && typeof record.code === "string"
+            ? record.code
+            : record.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+      };
     }
   });
   registerContractRoute(app, {
@@ -376,10 +419,38 @@ export function registerEnquiryRoutes(
     url: "/crm/enquiries/options",
     schemas: {
       response: z.object({
-        lists: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string(), code: z.string().optional() })),
-        statuses: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string(), code: z.string().optional() })),
-        priorities: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string(), code: z.string().optional() })),
-        users: z.array(z.object({ id: referenceSchema, name: z.string(), email: z.string().optional(), status: z.string() })),
+        lists: z.array(
+          z.object({
+            id: referenceSchema,
+            name: z.string(),
+            status: z.string(),
+            code: z.string().optional()
+          })
+        ),
+        statuses: z.array(
+          z.object({
+            id: referenceSchema,
+            name: z.string(),
+            status: z.string(),
+            code: z.string().optional()
+          })
+        ),
+        priorities: z.array(
+          z.object({
+            id: referenceSchema,
+            name: z.string(),
+            status: z.string(),
+            code: z.string().optional()
+          })
+        ),
+        users: z.array(
+          z.object({
+            id: referenceSchema,
+            name: z.string(),
+            email: z.string().optional(),
+            status: z.string()
+          })
+        ),
         suppliers: z.array(z.object({ id: referenceSchema, name: z.string(), status: z.string() }))
       })
     },
@@ -389,16 +460,40 @@ export function registerEnquiryRoutes(
         const options = await scope.remote.options();
         return {
           lists: options.groups.map((name) => ({ id: name, name, status: "active" })),
-          statuses: options.statuses.map((name) => ({ id: name, name, code: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), status: "active" })),
-          priorities: ["Normal", "Urgent"].map((name) => ({ id: name, name, code: name.toLowerCase(), status: "active" })),
-          users: options.employees.map((employee) => ({ id: employee.code, name: employee.name, status: "active" })),
-          suppliers: options.suppliers.map((supplier) => ({ id: supplier.code, name: supplier.name, status: "active" }))
+          statuses: options.statuses.map((name) => ({
+            id: name,
+            name,
+            code: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            status: "active"
+          })),
+          priorities: ["Normal", "Urgent"].map((name) => ({
+            id: name,
+            name,
+            code: name.toLowerCase(),
+            status: "active"
+          })),
+          users: options.employees.map((employee) => ({
+            id: employee.code,
+            name: employee.name,
+            status: "active"
+          })),
+          suppliers: options.suppliers.map((supplier) => ({
+            id: supplier.code,
+            name: supplier.name,
+            status: "active"
+          }))
         };
       }
       const [lists, statuses, priorities, users] = await Promise.all([
         scope.database.selectFrom("crm_enquiry_lists").select(["id", "name", "status"]).execute(),
-        scope.database.selectFrom("crm_enquiry_statuses").select(["id", "name", "code", "status"]).execute(),
-        scope.database.selectFrom("crm_enquiry_priorities").select(["id", "name", "code", "status"]).execute(),
+        scope.database
+          .selectFrom("crm_enquiry_statuses")
+          .select(["id", "name", "code", "status"])
+          .execute(),
+        scope.database
+          .selectFrom("crm_enquiry_priorities")
+          .select(["id", "name", "code", "status"])
+          .execute(),
         scope.listUsers()
       ]);
       return {
@@ -585,15 +680,19 @@ export function registerEnquiryRoutes(
       const rows = await current.scope.remote.report({
         view: query.view,
         ...(query.fromAt ? { fromDate: indiaDate(query.fromAt) } : {}),
-        ...(query.toAt ? { toDate: indiaDate(new Date(new Date(query.toAt).getTime() - 1).toISOString()) } : {}),
-        ...(query.assignedUserId && query.assignedUserId !== "none" ? { assignee: query.assignedUserId } : {})
+        ...(query.toAt
+          ? { toDate: indiaDate(new Date(new Date(query.toAt).getTime() - 1).toISOString()) }
+          : {}),
+        ...(query.assignedUserId && query.assignedUserId !== "none"
+          ? { assignee: query.assignedUserId }
+          : {})
       });
       return rows.map((row) => {
         const status = row.status?.toLowerCase().replace(/[^a-z0-9]+/g, "-") ?? "none";
         return {
           listInId: query.view === "list-in" ? row.group : null,
           listIn: query.view === "list-in" ? row.group : null,
-          createdBy: query.view === "creator" ? row.group ?? "—" : "—",
+          createdBy: query.view === "creator" ? (row.group ?? "—") : "—",
           assignedUserId: query.view === "assignee" ? row.group : null,
           status,
           statusName: row.status ?? "Unspecified",
@@ -713,13 +812,49 @@ export function registerEnquiryRoutes(
   });
   registerContractRoute(app, {
     method: "GET",
+    url: "/crm/enquiries/:id/sync-status",
+    schemas: {
+      params: viewIdSchema,
+      response: z.array(
+        z.object({
+          id: referenceSchema,
+          eventType: z.enum(["enquiry-upsert", "comment-add", "job-upsert", "estimate-upsert"]),
+          status: z.enum(["pending", "processing", "synced", "retry", "failed"]),
+          attempts: z.number().int().nonnegative(),
+          remoteName: nullableText,
+          lastError: nullableText,
+          createdAt: z.string(),
+          validation: z
+            .object({
+              status: z.enum(["valid", "invalid", "warning"]),
+              errors: z.array(z.string()),
+              checkedAt: z.string()
+            })
+            .nullable()
+        })
+      )
+    },
+    handler: async ({ params, request }) => {
+      const current = await service(request);
+      const id = await localEnquiryId(current.scope, params.id);
+      await current.enquiry.get(id);
+      return new EnquirySyncRepository(current.scope.database).listForEnquiry(id);
+    }
+  });
+  registerContractRoute(app, {
+    method: "GET",
     url: "/crm/enquiries/:id",
     schemas: { params: viewIdSchema, response: viewRecordSchema },
     handler: async ({ params, request }) => {
       const current = await service(request);
-      return (await current.read.source()) === "local"
-        ? localViewRecord(await current.enquiry.get(localId(params.id)))
-        : remoteViewRecord(await current.scope.remote.get(params.id));
+      const localIdValue = /^\d+$/u.test(params.id)
+        ? localId(params.id)
+        : await current.scope.localEnquiryIdForRemote?.(params.id);
+      return localIdValue
+        ? localViewRecord(await current.enquiry.get(localIdValue))
+        : (await current.read.source()) === "local"
+          ? localViewRecord(await current.enquiry.get(localId(params.id)))
+          : remoteViewRecord(await current.scope.remote.get(params.id));
     }
   });
   registerContractRoute(app, {
@@ -728,9 +863,13 @@ export function registerEnquiryRoutes(
     schemas: { body: viewInputSchema, response: viewRecordSchema },
     handler: async ({ body, request }) => {
       const current = await service(request);
-      return (await current.read.source()) === "local"
-        ? localViewRecord(await current.enquiry.create(localInput(body), current.scope.actorEmail))
-        : remoteViewRecord(await current.scope.remote.create(await remotePayload(current.scope, body)));
+      const input =
+        (await current.read.source()) === "local"
+          ? localInput(body)
+          : await localInputForScope(current.scope, body);
+      const saved = await current.enquiry.create(input, current.scope.actorEmail);
+      await queueLatestSync(current, saved.id);
+      return localViewRecord(saved);
     }
   });
   registerContractRoute(app, {
@@ -739,62 +878,80 @@ export function registerEnquiryRoutes(
     schemas: { body: viewInputSchema, params: viewIdSchema, response: viewRecordSchema },
     handler: async ({ body, params, request }) => {
       const current = await service(request);
-      return (await current.read.source()) === "local"
-        ? localViewRecord(
-            await current.enquiry.update(localId(params.id), localInput(body), current.scope.actorEmail)
-          )
-        : remoteViewRecord(
-            await current.scope.remote.update(
-              params.id,
-              await remotePayload(current.scope, body, await current.scope.remote.get(params.id))
-            )
-          );
+      const id = await localEnquiryId(current.scope, params.id);
+      const input =
+        (await current.read.source()) === "local"
+          ? localInput(body)
+          : await localInputForScope(current.scope, body);
+      const saved = await current.enquiry.update(id, input, current.scope.actorEmail);
+      await queueLatestSync(current, id);
+      return localViewRecord(saved);
     }
   });
   registerContractRoute(app, {
     method: "PATCH",
     url: "/crm/enquiries/:id/properties",
     schemas: {
-      body: viewInputSchema.pick({
-        listInId: true,
-        priorityId: true,
-        assignedUserId: true,
-        dueDate: true,
-        statusId: true,
-        closedReason: true
-      }).partial().refine((value) => Object.keys(value).length > 0),
+      body: viewInputSchema
+        .pick({
+          listInId: true,
+          priorityId: true,
+          assignedUserId: true,
+          dueDate: true,
+          statusId: true,
+          closedReason: true
+        })
+        .partial()
+        .refine((value) => Object.keys(value).length > 0),
       params: viewIdSchema,
       response: viewRecordSchema
     },
     handler: async ({ body, params, request }) => {
       const current = await service(request);
-      if ((await current.read.source()) === "local") {
+      {
+        const id = await localEnquiryId(current.scope, params.id);
+        const isLocal = (await current.read.source()) === "local";
         const patch = {
           ...(body.listInId !== undefined
-            ? { listInId: body.listInId === null ? null : localId(body.listInId) }
+            ? {
+                listInId:
+                  body.listInId === null
+                    ? null
+                    : isLocal
+                      ? localId(body.listInId)
+                      : await current.scope.resolveLocalReference!("list-in", body.listInId)
+              }
             : {}),
-          ...(body.priorityId !== undefined ? { priorityId: localId(body.priorityId) } : {}),
+          ...(body.priorityId !== undefined
+            ? {
+                priorityId: isLocal
+                  ? localId(body.priorityId)
+                  : await current.scope.resolveLocalReference!("priority", body.priorityId)
+              }
+            : {}),
           ...(body.assignedUserId !== undefined
-            ? { assignedUserId: body.assignedUserId === null ? null : localId(body.assignedUserId) }
+            ? {
+                assignedUserId: isLocal
+                  ? body.assignedUserId === null
+                    ? null
+                    : localId(body.assignedUserId)
+                  : await current.scope.resolveLocalAssignee!(body.assignedUserId)
+              }
             : {}),
-          ...(body.statusId !== undefined ? { statusId: localId(body.statusId) } : {}),
+          ...(body.statusId !== undefined
+            ? {
+                statusId: isLocal
+                  ? localId(body.statusId)
+                  : await current.scope.resolveLocalReference!("status", body.statusId)
+              }
+            : {}),
           ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
           ...(body.closedReason !== undefined ? { closedReason: body.closedReason } : {})
         };
-        return localViewRecord(
-          await current.enquiry.updateProperties(localId(params.id), patch, current.scope.actorEmail)
-        );
+        const saved = await current.enquiry.updateProperties(id, patch, current.scope.actorEmail);
+        await queueLatestSync(current, id);
+        return localViewRecord(saved);
       }
-      return remoteViewRecord(
-        await current.scope.remote.update(params.id, {
-          ...(body.listInId !== undefined ? { group: body.listInId } : {}),
-          ...(body.priorityId !== undefined ? { priority: body.priorityId } : {}),
-          ...(body.assignedUserId !== undefined ? { assigneeCode: body.assignedUserId } : {}),
-          ...(body.statusId !== undefined ? { status: body.statusId } : {}),
-          ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
-          ...(body.closedReason !== undefined ? { statusDetails: body.closedReason } : {})
-        })
-      );
     }
   });
   registerContractRoute(app, {
@@ -803,11 +960,10 @@ export function registerEnquiryRoutes(
     schemas: { params: viewIdSchema, response: viewRecordSchema },
     handler: async ({ params, request }) => {
       const current = await service(request);
-      return (await current.read.source()) === "local"
-        ? localViewRecord(
-            await current.enquiry.openNewCall(localId(params.id), current.scope.actorEmail)
-          )
-        : remoteViewRecord(await current.scope.remote.openNewCall(params.id));
+      const id = await localEnquiryId(current.scope, params.id);
+      const saved = await current.enquiry.openNewCall(id, current.scope.actorEmail);
+      await queueLatestSync(current, id);
+      return localViewRecord(saved);
     }
   });
   registerContractRoute(app, {
@@ -816,9 +972,14 @@ export function registerEnquiryRoutes(
     schemas: { params: viewIdSchema, response: z.array(viewCommentSchema) },
     handler: async ({ params, request }) => {
       const current = await service(request);
-      return (await current.read.source()) === "local"
-        ? (await current.enquiry.listComments(localId(params.id))).map(localViewComment)
-        : remoteViewComments(await current.scope.remote.get(params.id));
+      const id = /^\d+$/u.test(params.id)
+        ? localId(params.id)
+        : await current.scope.localEnquiryIdForRemote?.(params.id);
+      return id
+        ? (await current.enquiry.listComments(id)).map(localViewComment)
+        : (await current.read.source()) === "local"
+          ? (await current.enquiry.listComments(localId(params.id))).map(localViewComment)
+          : remoteViewComments(await current.scope.remote.get(params.id));
     }
   });
   registerContractRoute(app, {
@@ -827,18 +988,18 @@ export function registerEnquiryRoutes(
     schemas: { params: viewIdSchema, body: viewCommentInputSchema, response: viewCommentSchema },
     handler: async ({ params, body, request }) => {
       const current = await service(request);
-      if ((await current.read.source()) === "local") {
-        return localViewComment(await current.enquiry.addComment(
-          localId(params.id),
+      {
+        const enquiryId = await localEnquiryId(current.scope, params.id);
+        const saved = await current.enquiry.addComment(
+          enquiryId,
           body.body,
           body.parentId === null ? null : localId(body.parentId),
           current.scope.actorEmail,
           body.bodyFormat
-        ));
+        );
+        await queueLatestSync(current, enquiryId);
+        return localViewComment(saved);
       }
-      const updated = await current.scope.remote.addMessage(params.id, body.body, body.parentId);
-      const comments = remoteViewComments(updated);
-      return comments.at(-1)!;
     }
   });
   registerEnquiryWorkRoutes(app, async (request) => {

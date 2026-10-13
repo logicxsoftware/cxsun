@@ -133,6 +133,8 @@ export type EnquiryDatabase = ListInDatabase &
   StatusDatabase &
   PriorityDatabase & {
     crm_enquiries: EnquiryRow;
+    crm_enquiry_sync_events: EnquirySyncEventRow;
+    crm_enquiry_sync_validation: EnquirySyncValidationRow;
     crm_enquiry_number_sequence: { id: number; next_no: number };
     crm_enquiry_comments: EnquiryCommentRow;
     crm_enquiry_jobs: EnquiryJobRow;
@@ -140,6 +142,33 @@ export type EnquiryDatabase = ListInDatabase &
     crm_enquiry_activity: EnquiryActivityRow;
     crm_enquiry_alerts: EnquiryAlertRow;
   };
+
+export type EnquirySyncEventRow = {
+  id: Generated<number>;
+  uuid: Generated<string>;
+  enquiry_id: number;
+  event_type: "enquiry-upsert" | "comment-add" | "job-upsert" | "estimate-upsert";
+  entity_id: number | null;
+  actor_email: string;
+  correlation_id: string;
+  idempotency_key: string;
+  status: "pending" | "processing" | "synced" | "retry" | "failed";
+  attempts: Generated<number>;
+  available_at: ColumnType<string, string | undefined, string>;
+  remote_name: string | null;
+  last_error: string | null;
+  created_at: ColumnType<string, string | undefined, never>;
+  updated_at: ColumnType<string, string | undefined, string>;
+};
+
+export type EnquirySyncValidationRow = {
+  id: Generated<number>;
+  uuid: Generated<string>;
+  event_id: number;
+  validation_status: "valid" | "invalid" | "warning";
+  errors_json: string;
+  checked_at: ColumnType<string, string | undefined, string>;
+};
 
 export type EnquiryAlertRow = {
   id: Generated<number>;

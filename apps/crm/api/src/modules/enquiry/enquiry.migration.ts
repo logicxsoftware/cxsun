@@ -172,6 +172,50 @@ async function addEnquiryListIndexes(database: Kysely<EnquiryDatabase>) {
   }
 }
 
+async function addEnquiryFrappeSyncLedger(database: Kysely<EnquiryDatabase>) {
+  await sql
+    .raw(
+      `CREATE TABLE IF NOT EXISTS crm_enquiry_sync_events (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    enquiry_id INT NOT NULL,
+    event_type VARCHAR(32) NOT NULL,
+    entity_id INT NULL,
+    actor_email VARCHAR(191) NOT NULL,
+    correlation_id VARCHAR(96) NOT NULL,
+    idempotency_key VARCHAR(191) NOT NULL,
+    status VARCHAR(24) NOT NULL DEFAULT 'pending',
+    attempts INT NOT NULL DEFAULT 0,
+    available_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    remote_name VARCHAR(191) NULL,
+    last_error TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY crm_enquiry_sync_events_idempotency_uq (idempotency_key),
+    KEY crm_enquiry_sync_events_pending_idx (status, available_at, id),
+    KEY crm_enquiry_sync_events_enquiry_idx (enquiry_id, id),
+    CONSTRAINT crm_enquiry_sync_events_enquiry_fk FOREIGN KEY (enquiry_id)
+      REFERENCES crm_enquiries (id) ON DELETE RESTRICT
+  ) ENGINE=InnoDB`
+    )
+    .execute(database);
+  await sql
+    .raw(
+      `CREATE TABLE IF NOT EXISTS crm_enquiry_sync_validation (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    event_id INT NOT NULL,
+    validation_status VARCHAR(24) NOT NULL,
+    errors_json JSON NOT NULL,
+    checked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY crm_enquiry_sync_validation_event_idx (event_id, id),
+    CONSTRAINT crm_enquiry_sync_validation_event_fk FOREIGN KEY (event_id)
+      REFERENCES crm_enquiry_sync_events (id) ON DELETE RESTRICT
+  ) ENGINE=InnoDB`
+    )
+    .execute(database);
+}
+
 async function addEnquiryComments(database: Kysely<EnquiryDatabase>) {
   await sql
     .raw(
@@ -465,6 +509,13 @@ export const enquiryMigrationBatch: MigrationBatch<EnquiryDatabase> = {
       name: "crm.enquiry.list-indexes-v11",
       up: addEnquiryListIndexes,
       version: 11
+    },
+    {
+      checksum: "crm.enquiry.frappe-sync-ledger-v12:v1",
+      description: "Track local enquiry sync events and backend validation outcomes.",
+      name: "crm.enquiry.frappe-sync-ledger-v12",
+      up: addEnquiryFrappeSyncLedger,
+      version: 12
     }
   ]
 };

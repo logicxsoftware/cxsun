@@ -302,6 +302,14 @@ export async function requestFrappe<T>(
       statusCode: 502
     });
   }
+  if (response.status === 400 || response.status === 422) {
+    throw AppError.validation(
+      "Frappe rejected the enquiry data. Check required fields and mapped status, priority, list, employee, and supplier values."
+    );
+  }
+  if (response.status === 404) {
+    throw AppError.validation("Frappe could not find a referenced record or DocType.");
+  }
   if (!response.ok) throw upstreamError(`Frappe returned HTTP ${response.status}.`);
   if (response.status === 204 || method === "DELETE") return {} as T;
   const data = await readResponse(response);

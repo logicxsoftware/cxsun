@@ -20,6 +20,14 @@ function stack({
 }
 
 export const productStackContract = Object.freeze({
+  codexsun: stack({
+    databaseScopes: ["platform-master", "tenant-core", "tenant-codexsun"],
+    formula: ["framework", "platform", "core", "codexsun"],
+    foundationServices: [],
+    ownedDatabaseScopes: ["tenant-codexsun"],
+    productServices: ["platform-api", "platform-web"],
+    releaseTagPrefix: "v-cxsun-assistant-"
+  }),
   billing: stack({
     databaseScopes: ["platform-master", "tenant-core", "tenant-billing"],
     formula: ["framework", "platform", "core", "billing"],
@@ -34,7 +42,8 @@ export function affectedProductStacks(paths) {
   const affected = new Set();
   for (const input of paths) {
     const path = String(input).replace(/\\/gu, "/");
-    if (path.startsWith("apps/billing/")) affected.add("billing");
+    if (path.startsWith("apps/codexsun/")) affected.add("codexsun");
+    else if (path.startsWith("apps/billing/")) affected.add("billing");
     else if (
       path.startsWith("apps/platform/") ||
       path.startsWith("apps/core/") ||
