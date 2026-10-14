@@ -9,6 +9,14 @@ class CrmMobileApi {
 
   final Uri _baseUri;
 
+  String? get hostHeader => _resolveHostHeader(_baseUri);
+
+  static String? _resolveHostHeader(Uri baseUri) {
+    if (baseUri.host != '10.0.2.2') return null;
+    final port = baseUri.hasPort ? ':${baseUri.port}' : '';
+    return '127.0.0.1$port';
+  }
+
   Future<ApiHealth> health() async {
     return ApiHealth.fromJson(await _request('/health'));
   }
@@ -63,7 +71,12 @@ class CrmMobileApi {
     final data = await _request(
       '/crm/enquiries',
       accessToken: accessToken,
-      query: const {'scope': 'assigned', 'page': '1', 'pageSize': '100'},
+      query: const {
+        'scope': 'assigned',
+        'filter': 'active',
+        'page': '1',
+        'pageSize': '100',
+      },
     );
     if (data is! Map<String, dynamic> || data['items'] is! List) {
       throw const CrmMobileApiException('Unexpected jobs response.');
@@ -88,6 +101,7 @@ class CrmMobileApi {
   Future<List<CrmJob>> enquiries({
     required String accessToken,
     String scope = 'all',
+    String filter = 'all',
     String search = '',
     String? listInId,
     int page = 1,
@@ -95,6 +109,7 @@ class CrmMobileApi {
   }) async {
     final query = <String, String>{
       'scope': scope,
+      'filter': filter,
       'page': '$page',
       'pageSize': '$pageSize',
       if (search.trim().isNotEmpty) 'search': search.trim(),
@@ -149,7 +164,6 @@ class CrmMobileApi {
     } catch (_) {}
     return 0;
   }
-
 
   Future<List<CrmCustomerReference>> customerReferences({
     required String accessToken,
@@ -220,6 +234,47 @@ class CrmMobileApi {
       'jobs': related[1],
       'activities': related[2],
     });
+  }
+
+  Future<List<CrmEnquiryLocation>> enquiryLocations({
+    required String accessToken,
+    required String enquiryId,
+  }) async {
+    final data = await _request(
+      '/crm/enquiries/${Uri.encodeComponent(enquiryId)}/locations',
+      accessToken: accessToken,
+    );
+    if (data is! Map<String, dynamic> || data['items'] is! List) {
+      throw const CrmMobileApiException(
+        'Unexpected enquiry locations response.',
+      );
+    }
+    return (data['items'] as List)
+        .whereType<Map<String, dynamic>>()
+        .map(CrmEnquiryLocation.fromJson)
+        .toList();
+  }
+
+  Future<CrmEnquiryLocation> logEnquiryLocation({
+    required String accessToken,
+    required String enquiryId,
+    required double latitude,
+    required double longitude,
+    required double? accuracyMeters,
+    required DateTime capturedAt,
+  }) async {
+    final data = await _request(
+      '/crm/enquiries/${Uri.encodeComponent(enquiryId)}/locations',
+      accessToken: accessToken,
+      method: 'POST',
+      body: {
+        'latitude': latitude,
+        'longitude': longitude,
+        'accuracyMeters': accuracyMeters,
+        'capturedAt': capturedAt.toUtc().toIso8601String(),
+      },
+    );
+    return CrmEnquiryLocation.fromJson(data as Map<String, dynamic>);
   }
 
   Future<List<CrmMobileEnquiryMatch>> mobileEnquiries({
@@ -523,16 +578,53 @@ class CrmMobileApi {
     return job(accessToken, id);
   }
 
+  Future<ClosureRequest?> latestClosureRequest({
+    required String accessToken,
+    required String id,
+  }) async {
+    final data = await _request(
+      '/crm/enquiries/${Uri.encodeComponent(id)}/closure-requests/latest',
+      accessToken: accessToken,
+    );
+    if (data is! Map<String, dynamic>) {
+      throw const CrmMobileApiException('Unexpected closure request response.');
+    }
+    final item = data['item'];
+    if (item == null) return null;
+    if (item is! Map<String, dynamic>) {
+      throw const CrmMobileApiException('Unexpected closure request response.');
+    }
+    return ClosureRequest.fromJson(item);
+  }
+
+  Future<ClosureRequest> requestClosure({
+    required String accessToken,
+    required String id,
+    String note = '',
+  }) async {
+    final data = await _request(
+      '/crm/enquiries/${Uri.encodeComponent(id)}/closure-requests',
+      accessToken: accessToken,
+      method: 'POST',
+      body: {'note': note},
+    );
+    if (data is! Map<String, dynamic>) {
+      throw const CrmMobileApiException('Unexpected closure request response.');
+    }
+    return ClosureRequest.fromJson(data);
+  }
+
   Future<List<MessagingConversation>> conversations({
     required String accessToken,
     required String currentEmail,
   }) async {
     final data = await _request(
-      '/messaging/conversations',
+      '/chat/channels',
       accessToken: accessToken,
+      query: const {'limit': '100'},
     );
     if (data is! List) {
-      throw const CrmMobileApiException('Unexpected conversations response.');
+      throw const CrmMobileApiException('Unexpected channels response.');
     }
     return data
         .whereType<Map<String, dynamic>>()
@@ -545,9 +637,9 @@ class CrmMobileApi {
     String search = '',
   }) async {
     final data = await _request(
-      '/messaging/contacts',
+      '/chat/users',
       accessToken: accessToken,
-      query: {'search': search},
+      query: {if (search.trim().isNotEmpty) 'search': search.trim()},
     );
     if (data is! List) {
       throw const CrmMobileApiException('Unexpected contacts response.');
@@ -563,13 +655,28 @@ class CrmMobileApi {
     required String currentEmail,
     required MessagingContact contact,
   }) async {
+    try {
+      final existingChannels = await conversations(
+        accessToken: accessToken,
+        currentEmail: currentEmail,
+      );
+      for (final conv in existingChannels) {
+        if (conv.kind == 'dm' &&
+            (conv.title.toLowerCase() == contact.name.toLowerCase() ||
+                conv.title.toLowerCase() == contact.email.toLowerCase())) {
+          return conv;
+        }
+      }
+    } catch (_) {}
+
     final data = await _request(
-      '/messaging/conversations',
+      '/chat/channels',
       accessToken: accessToken,
       method: 'POST',
       body: {
-        'memberIds': [contact.id],
-        'type': 'DIRECT',
+        'name': contact.name.isNotEmpty ? contact.name : contact.email,
+        'kind': 'dm',
+        'members': [contact.email],
       },
     );
     return MessagingConversation.fromJson(
@@ -580,12 +687,13 @@ class CrmMobileApi {
 
   Future<List<MessagingMessage>> messages(
     String accessToken,
-    int conversationId,
+    dynamic conversationId,
   ) async {
+    final channelUuid = conversationId.toString();
     final data = await _request(
-      '/messaging/conversations/$conversationId/messages',
+      '/chat/messages',
       accessToken: accessToken,
-      query: const {'limit': '100'},
+      query: {'channelUuid': channelUuid, 'limit': '100'},
     );
     if (data is! List) {
       throw const CrmMobileApiException('Unexpected messages response.');
@@ -598,34 +706,31 @@ class CrmMobileApi {
 
   Future<MessagingMessage> sendMessage({
     required String accessToken,
-    required int conversationId,
+    required dynamic conversationId,
     required String content,
   }) async {
+    final channelUuid = conversationId.toString();
     return MessagingMessage.fromJson(
       await _request(
-        '/messaging/conversations/$conversationId/messages',
+        '/chat/messages',
         accessToken: accessToken,
         method: 'POST',
-        body: {
-          'clientMessageId':
-              '${DateTime.now().microsecondsSinceEpoch}-$conversationId',
-          'content': content,
-          'type': 'TEXT',
-        },
+        body: {'channelUuid': channelUuid, 'body': content},
       ) as Map<String, dynamic>,
     );
   }
 
   Future<void> markConversationRead({
     required String accessToken,
-    required int conversationId,
-    required int messageId,
+    required dynamic conversationId,
+    int? messageId,
   }) async {
+    final channelUuid = conversationId.toString();
     await _request(
-      '/messaging/conversations/$conversationId/read',
+      '/chat/channels/$channelUuid/read',
       accessToken: accessToken,
       method: 'POST',
-      body: {'messageId': messageId},
+      body: {},
     );
   }
 
@@ -642,9 +747,12 @@ class CrmMobileApi {
       _baseUri.replace(path: '${_baseUri.path}$path', queryParameters: query),
     );
     request.headers['Accept'] = 'application/json';
+    final host = hostHeader;
+    if (host != null) request.headers['Host'] = host;
     if (requestBearerToken) request.headers['x-auth-token-delivery'] = 'bearer';
     if (accessToken != null) {
       request.headers['Authorization'] = 'Bearer $accessToken';
+      request.headers['x-company-id'] = '1';
     }
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
@@ -658,7 +766,8 @@ class CrmMobileApi {
       final error = payload['error'];
       final message = switch (error) {
         String msg => msg,
-        Map<String, dynamic> err => err['message'] as String? ?? 'Request failed.',
+        Map<String, dynamic> err =>
+          err['message'] as String? ?? 'Request failed.',
         _ => payload['message'] as String? ?? 'Request failed.',
       };
       throw CrmMobileApiException(message);
@@ -758,7 +867,8 @@ class UserProfile {
     final email = json['email'] as String? ?? '';
     final explicitRole = json['role'] as String?;
     final userType = json['userType'] as String?;
-    final derivedRole = explicitRole ??
+    final derivedRole =
+        explicitRole ??
         ((userType == 'tenant' || email.toLowerCase().startsWith('admin@'))
             ? 'admin'
             : 'user');
@@ -774,6 +884,55 @@ class CrmMobileApiException implements Exception {
   const CrmMobileApiException(this.message);
 
   final String message;
+}
+
+class ClosureRequest {
+  const ClosureRequest({
+    required this.id,
+    required this.status,
+    required this.requestedAt,
+    this.reviewNote,
+  });
+
+  final int id;
+  final String status;
+  final String requestedAt;
+  final String? reviewNote;
+
+  factory ClosureRequest.fromJson(Map<String, dynamic> json) => ClosureRequest(
+    id: json['id'] as int,
+    status: json['status'] as String,
+    requestedAt: json['requestedAt'] as String,
+    reviewNote: json['reviewNote'] as String?,
+  );
+}
+
+class CrmEnquiryLocation {
+  const CrmEnquiryLocation({
+    required this.id,
+    required this.latitude,
+    required this.longitude,
+    required this.capturedAt,
+    required this.createdBy,
+    this.accuracyMeters,
+  });
+
+  final int id;
+  final double latitude;
+  final double longitude;
+  final DateTime capturedAt;
+  final String createdBy;
+  final double? accuracyMeters;
+
+  factory CrmEnquiryLocation.fromJson(Map<String, dynamic> json) =>
+      CrmEnquiryLocation(
+        id: (json['id'] as num).toInt(),
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        capturedAt: DateTime.parse(json['capturedAt'] as String),
+        createdBy: json['createdBy'] as String? ?? '',
+        accuracyMeters: (json['accuracyMeters'] as num?)?.toDouble(),
+      );
 }
 
 class CrmCallEnquiryFormData {
@@ -1240,17 +1399,23 @@ String _plainTextComment(String value) {
 class MessagingConversation {
   const MessagingConversation({
     required this.id,
+    required this.uuid,
     required this.title,
     required this.preview,
     required this.updatedAt,
     required this.unreadCount,
+    this.kind = 'channel',
   });
 
   final int id;
+  final String uuid;
   final String title;
   final String preview;
   final DateTime updatedAt;
   final int unreadCount;
+  final String kind;
+
+  String get channelIdentifier => uuid.isNotEmpty ? uuid : '$id';
 
   factory MessagingConversation.fromJson(
     Map<String, dynamic> json,
@@ -1260,18 +1425,39 @@ class MessagingConversation {
     final members = (json['members'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
         .toList();
-    return MessagingConversation(
-      id: json['id'] as int,
-      title:
-          json['title'] as String? ??
-          (members.isEmpty
+    final id = json['id'] is int
+        ? json['id'] as int
+        : (int.tryParse('${json['id']}') ?? 0);
+    final uuid = json['uuid'] as String? ?? (id > 0 ? '$id' : '');
+    final name = json['name'] as String? ?? json['title'] as String?;
+    final title = (name != null && name.isNotEmpty)
+        ? name
+        : (members.isEmpty
               ? 'Conversation'
-              : _otherMemberName(members, currentEmail)),
-      preview: last?['content'] as String? ?? 'No messages yet',
-      updatedAt:
-          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
-          DateTime.now(),
-      unreadCount: json['unreadCount'] as int? ?? 0,
+              : _otherMemberName(members, currentEmail));
+    final preview =
+        json['lastMessagePreview'] as String? ??
+        last?['content'] as String? ??
+        last?['body'] as String? ??
+        'No messages yet';
+    final updatedAt =
+        DateTime.tryParse(
+          json['lastMessageAt'] as String? ??
+              json['updatedAt'] as String? ??
+              '',
+        ) ??
+        DateTime.now();
+    final unreadCount = json['unreadCount'] as int? ?? 0;
+    final kind = json['kind'] as String? ?? 'channel';
+
+    return MessagingConversation(
+      id: id,
+      uuid: uuid,
+      title: title,
+      preview: preview,
+      updatedAt: updatedAt,
+      unreadCount: unreadCount,
+      kind: kind,
     );
   }
 }
@@ -1287,17 +1473,25 @@ class MessagingContact {
   final String name;
   final String email;
 
-  factory MessagingContact.fromJson(Map<String, dynamic> json) =>
-      MessagingContact(
-        id: json['id'] as int,
-        name: json['name'] as String? ?? 'CRM user',
-        email: json['email'] as String? ?? '',
-      );
+  factory MessagingContact.fromJson(Map<String, dynamic> json) {
+    final email = json['email'] as String? ?? '';
+    final rawId = json['id'];
+    final id = rawId is int
+        ? rawId
+        : (int.tryParse('$rawId') ?? email.hashCode.abs());
+    return MessagingContact(
+      id: id,
+      name: json['name'] as String? ?? 'CRM user',
+      email: email,
+    );
+  }
 }
 
 class MessagingMessage {
   const MessagingMessage({
     required this.id,
+    required this.uuid,
+    required this.channelUuid,
     required this.senderName,
     required this.senderEmail,
     required this.content,
@@ -1306,23 +1500,40 @@ class MessagingMessage {
   });
 
   final int id;
+  final String uuid;
+  final String channelUuid;
   final String senderName;
   final String senderEmail;
   final String content;
   final DateTime createdAt;
   final String status;
 
-  factory MessagingMessage.fromJson(Map<String, dynamic> json) =>
-      MessagingMessage(
-        id: json['id'] as int,
-        senderName: json['senderName'] as String? ?? 'User',
-        senderEmail: json['senderEmail'] as String? ?? '',
-        content: json['content'] as String? ?? '',
-        createdAt:
-            DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-            DateTime.now(),
-        status: json['status'] as String? ?? 'SENT',
-      );
+  factory MessagingMessage.fromJson(Map<String, dynamic> json) {
+    final senderEmail =
+        (json['senderEmail'] ?? json['sender_email'] ?? '') as String;
+    final senderName =
+        json['senderName'] as String? ??
+        (senderEmail.isNotEmpty ? senderEmail.split('@').first : 'User');
+    final content = (json['body'] ?? json['content'] ?? '') as String;
+    final rawId = json['id'];
+    final id = rawId is int ? rawId : (int.tryParse('$rawId') ?? 0);
+    final uuid = json['uuid'] as String? ?? (id > 0 ? '$id' : '');
+    final channelUuid =
+        (json['channelUuid'] ?? json['channel_uuid'] ?? '') as String;
+
+    return MessagingMessage(
+      id: id,
+      uuid: uuid,
+      channelUuid: channelUuid,
+      senderName: senderName,
+      senderEmail: senderEmail,
+      content: content,
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      status: json['status'] as String? ?? 'active',
+    );
+  }
 }
 
 String _dateLabel(String? value) {

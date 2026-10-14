@@ -12,6 +12,7 @@ import {
   listEnquiryComments,
   listEnquiryEstimates,
   listEnquiryJobs,
+  listEnquiryLocations,
   listTenantUsers
 } from "./enquiry.services";
 import type { EnquiryColumnFilters, EnquiryReportFilters } from "./enquiry.types";
@@ -28,6 +29,8 @@ export const enquiryJobsQueryKey = (id: string) => ["crm", "enquiry", id, "jobs"
 export const enquiryEstimatesQueryKey = (id: string) =>
   ["crm", "enquiry", id, "estimates"] as const;
 export const enquiryActivityQueryKey = (id: string) => ["crm", "enquiry", id, "activity"] as const;
+export const enquiryLocationsQueryKey = (id: string) =>
+  ["crm", "enquiry", id, "locations"] as const;
 
 export const useEnquirySummary = (enabled = true) =>
   useQuery({
@@ -62,9 +65,18 @@ export const useEnquiryPage = (options: {
     ],
     queryFn: () => listEnquiryPage(options)
   });
-export const useEnquiryReport = (filters: EnquiryReportFilters, view: "list-in" | "creator" | "assignee" | "status") =>
+export const useEnquiryReport = (
+  filters: EnquiryReportFilters,
+  view: "list-in" | "creator" | "assignee" | "status"
+) =>
   useQuery({
-    queryKey: [...enquiryReportQueryKey, view, filters.fromDate, filters.toDate, filters.assignedUserId],
+    queryKey: [
+      ...enquiryReportQueryKey,
+      view,
+      filters.fromDate,
+      filters.toDate,
+      filters.assignedUserId
+    ],
     queryFn: () => listEnquiryReport(filters, view)
   });
 export const useEnquiryOverviewActivity = () =>
@@ -123,3 +135,5 @@ export const useEnquiryEstimates = (id: string) =>
   useQuery({ queryKey: enquiryEstimatesQueryKey(id), queryFn: () => listEnquiryEstimates(id) });
 export const useEnquiryActivity = (id: string) =>
   useQuery({ queryKey: enquiryActivityQueryKey(id), queryFn: () => listEnquiryActivity(id) });
+export const useEnquiryLocations = (id: string) =>
+  useQuery({ queryKey: enquiryLocationsQueryKey(id), queryFn: () => listEnquiryLocations(id) });

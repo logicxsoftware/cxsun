@@ -3,6 +3,7 @@ import test from "node:test";
 
 const storage = { getItem: () => null, removeItem: () => undefined };
 Object.assign(globalThis, {
+  React: (await import("react")).default,
   localStorage: storage,
   sessionStorage: storage,
   window: { __CXSUN_RUNTIME_CONFIG__: { VITE_PLATFORM_API_URL: "http://127.0.0.1:7020/api" } }

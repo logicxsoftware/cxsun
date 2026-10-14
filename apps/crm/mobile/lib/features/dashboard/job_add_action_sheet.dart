@@ -14,6 +14,8 @@ enum JobAddAction {
 Future<JobAddAction?> showJobAddActions(
   BuildContext context, {
   required bool isJobRunning,
+  bool closurePending = false,
+  bool closureApproved = false,
   String? timerLabel,
 }) {
   return showModalBottomSheet<JobAddAction>(
@@ -63,11 +65,23 @@ Future<JobAddAction?> showJobAddActions(
                   icon: Icons.location_on_outlined,
                   label: 'Log location',
                 ),
-                _ActionTile(
-                  action: JobAddAction.markCompleted,
-                  icon: Icons.task_alt_outlined,
-                  label: 'Mark completed',
-                ),
+                if (closurePending || closureApproved)
+                  _ActionTile(
+                    action: JobAddAction.markCompleted,
+                    icon: closureApproved
+                        ? Icons.task_alt
+                        : Icons.hourglass_top_rounded,
+                    label: closureApproved
+                        ? 'Completion approved'
+                        : 'Waiting for approval',
+                    enabled: false,
+                  )
+                else
+                  _ActionTile(
+                    action: JobAddAction.markCompleted,
+                    icon: Icons.task_alt_outlined,
+                    label: 'Mark completed',
+                  ),
                 _ActionTile(
                   action: JobAddAction.charges,
                   icon: Icons.receipt_long_outlined,
@@ -93,12 +107,14 @@ class _ActionTile extends StatelessWidget {
     required this.icon,
     required this.label,
     this.timerLabel,
+    this.enabled = true,
   });
 
   final JobAddAction action;
   final IconData icon;
   final String label;
   final String? timerLabel;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) => ListTile(
@@ -112,7 +128,7 @@ class _ActionTile extends StatelessWidget {
         ],
       ],
     ),
-    onTap: () => Navigator.of(context).pop(action),
+    onTap: enabled ? () => Navigator.of(context).pop(action) : null,
   );
 }
 

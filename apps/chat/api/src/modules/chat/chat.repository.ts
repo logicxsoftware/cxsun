@@ -159,7 +159,7 @@ export class ChatRepository {
       await context.database
         .updateTable("chat_channel_reads")
         .set({
-          last_read_at: new Date().toISOString().slice(0, 19).replace("T", " "),
+          last_read_at: sql`CURRENT_TIMESTAMP`,
           updated_by: context.actorEmail
         })
         .where("id", "=", Number(existing.id))
@@ -171,7 +171,7 @@ export class ChatRepository {
           channel_id: channel.id,
           company_id: context.companyId,
           created_by: context.actorEmail,
-          last_read_at: new Date().toISOString().slice(0, 19).replace("T", " "),
+          last_read_at: sql`CURRENT_TIMESTAMP`,
           status: "active",
           updated_by: context.actorEmail,
           user_email: context.actorEmail.toLowerCase(),

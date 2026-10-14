@@ -13,7 +13,8 @@ const landingApps = new Set([
   "hrms",
   "docs",
   "himsx",
-  "codexsun"
+  "codexsun",
+  "sites"
 ]);
 
 export class DefaultCompanyService {

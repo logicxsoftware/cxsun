@@ -34,6 +34,7 @@ export type EnquiryRecord = EnquiryInput & {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  closurePending?: boolean;
 };
 
 export type EnquiryListScope = "all" | "assigned" | "created";

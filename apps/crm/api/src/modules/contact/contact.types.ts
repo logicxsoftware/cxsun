@@ -1,11 +1,11 @@
 export type CrmContactProxyMethod = "DELETE" | "GET" | "POST" | "PUT";
 
 export type CrmContactLookupName =
-  | "address-types"
-  | "bank-names"
+  | "addressTypes"
+  | "bankNames"
   | "cities"
-  | "contact-groups"
-  | "contact-types"
+  | "contactGroups"
+  | "contactTypes"
   | "countries"
   | "districts"
   | "pincodes"

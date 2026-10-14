@@ -139,6 +139,11 @@ export function useSalesFormController({
   );
   const [billingAddressChoice, setBillingAddressChoice] = useState("");
   const [shippingAddressChoice, setShippingAddressChoice] = useState("");
+  const [shippingAddressMode, setShippingAddressMode] = useState<"same" | "other">(
+    sale && sale.shippingContactId !== sale.customerId ? "other" : "same"
+  );
+  const [shippingContactId, setShippingContactId] = useState(sale?.shippingContactId ?? 0);
+  const [shippingContactName, setShippingContactName] = useState(sale?.shippingContactName ?? "");
 
   useEffect(() => {
     if (sale || !contextQuery.data) return;
@@ -267,6 +272,24 @@ export function useSalesFormController({
     () => buildSaleAddressChoices(selectedContact?.record),
     [selectedContact?.record]
   );
+  const selectedShippingContact = useMemo(
+    () =>
+      (shippingContactId
+        ? (contactsQuery.data ?? []).find(
+            (option) => Number(option.record?.id ?? 0) === shippingContactId
+          )
+        : undefined) ??
+      (contactsQuery.data ?? []).find(
+        (option) => option.value === shippingContactName || option.label === shippingContactName
+      ),
+    [contactsQuery.data, shippingContactId, shippingContactName]
+  );
+  const shippingContactAddressChoices = useMemo(
+    () => buildSaleAddressChoices(selectedShippingContact?.record),
+    [selectedShippingContact?.record]
+  );
+  const effectiveShippingChoices =
+    shippingAddressMode === "other" ? shippingContactAddressChoices : contactAddressChoices;
   const itemTotals = useMemo(
     () => computeSaleTotals(form.items, form.taxType),
     [form.items, form.taxType]
@@ -295,13 +318,26 @@ export function useSalesFormController({
       setBillingAddressChoice(billing.value);
       setBillingAddressDraft(billing.draft);
     }
-    if (shipping) {
+    if (shippingAddressMode !== "other" && shipping) {
       setShippingAddressChoice(shipping.value);
       setShippingAddressDraft(shipping.draft);
     }
     setForm((current) => {
       const nextBillingAddress = billing?.description ?? current.billingAddress;
       const nextBillingAddressId = billing?.addressId || current.billingAddressId;
+      if (shippingAddressMode === "other") {
+        if (
+          current.billingAddress === nextBillingAddress &&
+          current.billingAddressId === nextBillingAddressId
+        ) {
+          return current;
+        }
+        return {
+          ...current,
+          billingAddress: nextBillingAddress,
+          billingAddressId: nextBillingAddressId
+        };
+      }
       const nextShippingAddress = shipping?.description ?? current.shippingAddress;
       const nextShippingAddressId = shipping?.addressId || current.shippingAddressId;
       if (
@@ -320,7 +356,31 @@ export function useSalesFormController({
         shippingAddressId: nextShippingAddressId
       };
     });
-  }, [contactAddressChoices, form.billingAddressId, form.shippingAddressId]);
+  }, [contactAddressChoices, form.billingAddressId, form.shippingAddressId, shippingAddressMode]);
+
+  useEffect(() => {
+    if (shippingAddressMode !== "other") return;
+    if (!shippingContactAddressChoices.length) return;
+    const resolved =
+      shippingContactAddressChoices.find((choice) => choice.addressId === form.shippingAddressId) ??
+      findPreferredSaleAddress(shippingContactAddressChoices, "Shipping");
+    if (!resolved) return;
+    setShippingAddressChoice(resolved.value);
+    setShippingAddressDraft(resolved.draft);
+    setForm((current) => {
+      if (
+        current.shippingAddress === resolved.description &&
+        current.shippingAddressId === resolved.addressId
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        shippingAddress: resolved.description,
+        shippingAddressId: resolved.addressId
+      };
+    });
+  }, [shippingAddressMode, shippingContactAddressChoices, form.shippingAddressId]);
 
   function patch(next: Partial<SaleSavePayload>) {
     setForm((current) => ({ ...current, ...next }));
@@ -374,7 +434,7 @@ export function useSalesFormController({
     const preferredShipping = findPreferredSaleAddress(choices, "Shipping");
     if (preferredBilling)
       applyAddressDraft("billing", preferredBilling.draft, preferredBilling.value);
-    if (preferredShipping)
+    if (shippingAddressMode !== "other" && preferredShipping)
       applyAddressDraft("shipping", preferredShipping.draft, preferredShipping.value);
   }
 
@@ -384,6 +444,32 @@ export function useSalesFormController({
       customerName: option?.label ?? value
     });
     if (option?.record) applyContactAddresses(option.record);
+  }
+
+  function applyShippingAddressMode(mode: "same" | "other") {
+    setShippingAddressMode(mode);
+    if (mode === "same") {
+      setShippingContactId(0);
+      setShippingContactName("");
+      const preferredShipping = findPreferredSaleAddress(contactAddressChoices, "Shipping");
+      if (preferredShipping)
+        applyAddressDraft("shipping", preferredShipping.draft, preferredShipping.value);
+      return;
+    }
+    setShippingAddressChoice("");
+    setForm((current) => ({ ...current, shippingAddress: "", shippingAddressId: 0 }));
+  }
+
+  function applyShippingContactSelection(value: string, option?: SaleLookupOption | null) {
+    setShippingContactId(Number(option?.record?.id ?? 0));
+    setShippingContactName(option?.label ?? value);
+    setShippingAddressChoice("");
+    setForm((current) => ({ ...current, shippingAddress: "", shippingAddressId: 0 }));
+    if (!option?.record) return;
+    const choices = buildSaleAddressChoices(option.record);
+    const preferredShipping = findPreferredSaleAddress(choices, "Shipping");
+    if (preferredShipping)
+      applyAddressDraft("shipping", preferredShipping.draft, preferredShipping.value);
   }
 
   function applyRoundOff(value: string) {
@@ -587,6 +673,11 @@ export function useSalesFormController({
     setEditingAddressKind,
     applyAddressDraft,
     shippingAddressChoice,
+    shippingAddressMode,
+    applyShippingAddressMode,
+    applyShippingContactSelection,
+    selectedShippingContact,
+    effectiveShippingChoices,
     eway,
     patchEway,
     clearEway,

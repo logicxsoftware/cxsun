@@ -290,6 +290,46 @@ try {
   assert.equal(sale.items.length, 1);
   assert.equal(sale.items[0]?.description, "");
 
+  if (!salesComplianceOnly) {
+    const deliveryContact = await runWithCoreDatabase(databaseName, () =>
+      requestData(
+        api!,
+        "POST",
+        "/core/master/contacts",
+        databaseName,
+        { name: "E2E Delivery Contact", typeId: references.contactTypeId },
+        timings
+      )
+    );
+    const deliveryAddressId = Number((deliveryContact.addresses as ApiRecord[])[0]?.id);
+    assert.ok(deliveryAddressId > 0);
+    const deliveredSale = await requestData(
+      api,
+      "PUT",
+      `/billing/sales/${sale.id}`,
+      databaseName,
+      {
+        ...salePayload,
+        shippingAddress: "E2E Delivery Contact address",
+        shippingAddressId: deliveryAddressId
+      },
+      timings
+    );
+    assert.equal(deliveredSale.shippingContactId, Number(deliveryContact.id));
+    assert.equal(deliveredSale.shippingContactName, "E2E Delivery Contact");
+    assert.equal(deliveredSale.shippingAddressId, deliveryAddressId);
+    const reopenedSale = await requestData(
+      api,
+      "GET",
+      `/billing/sales/${sale.id}`,
+      databaseName,
+      undefined,
+      timings
+    );
+    assert.equal(reopenedSale.shippingContactName, "E2E Delivery Contact");
+    await requestData(api, "PUT", `/billing/sales/${sale.id}`, databaseName, salePayload, timings);
+  }
+
   const listedSales = await requestList(api, "/billing/sales", databaseName, timings);
   assert.equal(
     listedSales.some((entry) => entry.id === sale.id),

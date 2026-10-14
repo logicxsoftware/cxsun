@@ -30,6 +30,7 @@ export type EnquiryRecord = EnquirySavePayload & {
   createdAt: string;
   updatedAt: string;
   assignedToName: string | null;
+  closurePending?: boolean;
 };
 
 export type EnquiryPage = {
@@ -168,6 +169,15 @@ export type EnquiryActivity = {
   details: string;
   createdBy: string;
   createdAt: string;
+};
+
+export type EnquiryLocation = {
+  id: number;
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number | null;
+  capturedAt: string;
+  createdBy: string;
 };
 
 export type EnquiryPropertyPatch = Partial<

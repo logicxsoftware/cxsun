@@ -53,7 +53,7 @@ function AppGrid({ items }: { items: TopMenuAppItem[] }) {
     <div className="grid grid-cols-3 gap-1 rounded-2xl bg-background p-2 shadow-sm">
       {items.map((item) => (
         <DropdownMenuItem
-          asChild={Boolean(item.url && !item.onSelect)}
+          asChild
           className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl p-2 text-center"
           key={item.title}
           {...(item.onSelect
@@ -93,7 +93,7 @@ function AppTile({ item }: { item: TopMenuAppItem }) {
           </span>
         ) : null}
       </div>
-      <span className="w-full truncate text-xs font-medium">{item.title}</span>
+      <span className="w-full truncate text-center text-xs font-medium">{item.title}</span>
     </>
   );
 }

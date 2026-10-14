@@ -204,7 +204,11 @@ export function EnquiryProperties({
               showCreateWhenEmpty
               showAllOptionsOnFocus
               options={statuses
-                .filter((item) => item.status === "active")
+                .filter(
+                  (item) =>
+                    item.status === "active" &&
+                    (record.status === "closed" || item.code !== "closed")
+                )
                 .map((item) => ({
                   label: item.name,
                   value: String(item.id),

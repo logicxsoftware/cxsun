@@ -26,7 +26,8 @@ export type PlatformApp = {
     | "hrms"
     | "docs"
     | "himsx"
-    | "codexsun";
+    | "codexsun"
+    | "sites";
   uuid: string;
 };
 export type PlatformAppSavePayload = Omit<PlatformApp, "id" | "uuid">;

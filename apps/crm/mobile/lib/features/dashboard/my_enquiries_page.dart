@@ -62,7 +62,8 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
       itemBuilder: (context) => [
         const PopupMenuItem(value: '', child: Text('All lists')),
         ...?snapshot.data?.groups.map(
-          (group) => PopupMenuItem(value: group.value, child: Text(group.label)),
+          (group) =>
+              PopupMenuItem(value: group.value, child: Text(group.label)),
         ),
       ],
     ),
@@ -72,10 +73,9 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
     future: _formData,
     builder: (context, snapshot) => PopupMenuButton<String>(
       tooltip: 'Filter status',
-      enabled: snapshot.hasData && (snapshot.data?.statuses.isNotEmpty ?? false),
-      icon: Icon(
-        _statusFilter.isEmpty ? Icons.flag_outlined : Icons.flag,
-      ),
+      enabled:
+          snapshot.hasData && (snapshot.data?.statuses.isNotEmpty ?? false),
+      icon: Icon(_statusFilter.isEmpty ? Icons.flag_outlined : Icons.flag),
       onSelected: (value) => setState(() {
         _statusFilter = value;
         _enquiries = _load();
@@ -253,21 +253,13 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
     try {
       return await widget.api.enquiries(
         accessToken: token,
-        scope: 'all',
+        scope: 'assigned',
+        filter: 'active',
         search: _searchQuery,
         listInId: listId,
       );
     } on CrmMobileApiException {
-      final lists = await Future.wait([
-        widget.api.assignedJobs(token),
-        widget.api.createdEnquiries(token),
-      ]);
-      final byId = <String, CrmJob>{};
-      for (final enquiry in lists.expand((items) => items)) {
-        byId.putIfAbsent(enquiry.sourceId, () => enquiry);
-      }
-      return byId.values.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return widget.api.assignedJobs(token);
     }
   }
 
@@ -299,7 +291,8 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
       filtered = filtered
           .where(
             (enquiry) =>
-                enquiry.list.trim().toLowerCase() == _listFilter.toLowerCase() ||
+                enquiry.list.trim().toLowerCase() ==
+                    _listFilter.toLowerCase() ||
                 enquiry.listInId == _listFilter,
           )
           .toList();

@@ -10,7 +10,7 @@ class MobileNotificationService extends ChangeNotifier {
   MobileNotificationService({required this.api, required this.session});
 
   final CrmMobileApi api;
-  final UserSession session;
+  UserSession session;
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   final Set<int> _knownNotificationIds = {};
@@ -18,6 +18,12 @@ class MobileNotificationService extends ChangeNotifier {
   var _assignmentCount = 0;
 
   int get assignmentCount => _assignmentCount;
+
+  void updateSession(UserSession updatedSession) {
+    if (session.accessToken == updatedSession.accessToken) return;
+    session = updatedSession;
+    unawaited(_refresh(isInitial: true));
+  }
 
   Future<void> start() async {
     await _initialize();

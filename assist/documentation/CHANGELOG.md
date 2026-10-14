@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.96
+Current version: 1.0.97
 
-Release tag: v-1.0.96
+Release tag: v-1.0.97
 
-Changelog label: v 1.0.96
+Changelog label: v 1.0.97
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,6 +20,22 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.97
+
+### [v 1.0.97] 2026-10-14 7:46 pm - CRM mobile job comment flow
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.97.
+- Removed the 90-second mobile job-start delay so Start and Stop send their local CRM requests immediately.
+- Removed the persisted pending-start countdown and its restore flow to prevent a delayed start after reopening the app.
+- Added a mobile widget test that verifies both actions show their server returned comments.
+- Passed the CRM mobile analyzer and all 22 mobile widget tests. Built and installed the Android debug app. Live action verification remains pending because the emulator was locked at the PIN screen.
+
 ## v-1.0.96
 
 ### [v 1.0.96] 2026-10-14 12:43 pm - refine on frappe sync
@@ -27,10 +43,16 @@ Records UI, API, service logic, tooling, packaging, and documentation changes.
 #### Database Changes
 
 - Database update: Yes (auto-check).
+- Added repeatable CRM contact permission seeds; existing tenant databases need the normal tenant seed run to receive these grants.
+- Mobile location, charges, and collected amounts now add enquiry comments; start/stop and completion comments remain server-written and the completion comment appears after the feed refresh.
 
 #### App Codebase Changes
 
 - Bumped workspace version to 1.0.96.
+- Corrected CRM contact lookup response keys to match the form contract, kept lookup creation URLs stable, and added defensive defaults for missing lookup arrays.
+- Routed CRM contact requests through `crm.contact.*` authorization and seeded the corresponding contact permissions.
+- Added contact lookup contract regression tests.
+- Fixed amount-dialog controller disposal during its close animation and covered mobile action comments in widget tests.
 
 ## v-1.0.95
 

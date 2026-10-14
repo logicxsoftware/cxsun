@@ -68,6 +68,63 @@ test("CRM contacts forwards create payloads to Core", async () => {
   await app.close();
 });
 
+test("CRM contact lookups use the frontend lookup contract keys", async () => {
+  const app = Fastify();
+  const paths = [
+    "/core/common/contacts/contact-types",
+    "/core/common/contacts/contact-groups",
+    "/core/common/contacts/address-types",
+    "/core/common/contacts/bank-names",
+    "/core/common/location/countries",
+    "/core/common/location/states",
+    "/core/common/location/districts",
+    "/core/common/location/cities",
+    "/core/common/location/pincodes"
+  ];
+  for (const path of paths) {
+    app.get(path, async () => ({ success: true, data: [{ id: 1, name: path }] }));
+  }
+  registerCrmContactRoutes(app, async () => undefined);
+
+  const response = await app.inject({ method: "GET", url: "/crm/contacts/lookups" });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(Object.keys(response.json().data), [
+    "contactTypes",
+    "contactGroups",
+    "addressTypes",
+    "bankNames",
+    "countries",
+    "states",
+    "districts",
+    "cities",
+    "pincodes"
+  ]);
+  assert.deepEqual(response.json().data.contactTypes, [{ id: 1, name: paths[0] }]);
+  await app.close();
+});
+
+test("CRM contact lookup creation keeps its kebab-case endpoint", async () => {
+  const app = Fastify();
+  let created: unknown;
+  app.post("/core/common/contacts/contact-types", async (request) => {
+    created = request.body;
+    return { success: true, data: { id: 2, name: "Supplier" } };
+  });
+  registerCrmContactRoutes(app, async () => undefined);
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/crm/contacts/lookups/contact-types",
+    payload: { name: "Supplier" }
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(created, { name: "Supplier" });
+  assert.deepEqual(response.json().data, { id: 2, name: "Supplier" });
+  await app.close();
+});
+
 test("CRM contacts preserves expired-session errors from Core", async () => {
   const app = Fastify();
   app.setErrorHandler((error, _request, reply) => {

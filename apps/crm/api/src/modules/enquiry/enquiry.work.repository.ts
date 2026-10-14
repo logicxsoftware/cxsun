@@ -1,6 +1,6 @@
 import { AppError } from "@cxsun/framework/errors";
 import { type Kysely, type Selectable } from "kysely";
-import { insertEnquiryActivity } from "./enquiry.repository.js";
+import { insertEnquiryActivity, insertEnquiryComment } from "./enquiry.repository.js";
 import type {
   EnquiryActivity,
   EnquiryActivityRow,
@@ -53,6 +53,7 @@ export class EnquiryWorkRepository {
         `Job started by ${employee}`,
         actor
       );
+      await insertEnquiryComment(transaction, enquiryId, `Job started by ${employee}.`, actor);
       return Number(result.insertId);
     });
     return this.getJob(enquiryId, id);
@@ -87,6 +88,7 @@ export class EnquiryWorkRepository {
         `Job #${jobId} stopped`,
         actor
       );
+      await insertEnquiryComment(transaction, enquiryId, `Job #${jobId} stopped.`, actor);
     });
     return this.getJob(enquiryId, jobId);
   }
@@ -141,6 +143,12 @@ export class EnquiryWorkRepository {
         enquiryId,
         jobId ? "job-updated" : "job-created",
         `Job #${savedId} ${jobId ? "updated" : "created"}`,
+        actor
+      );
+      await insertEnquiryComment(
+        transaction,
+        enquiryId,
+        `Job #${savedId} ${jobId ? "updated" : "created"}.`,
         actor
       );
       return savedId;

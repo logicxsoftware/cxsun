@@ -11,13 +11,11 @@ import {
   CreditCardIcon,
   FileTextIcon,
   Globe2Icon,
-  HashIcon,
   InboxIcon,
   LandmarkIcon,
   LayersIcon,
   MailIcon,
   MapPinnedIcon,
-  MegaphoneIcon,
   MessageCircleIcon,
   MessagesSquareIcon,
   NotebookPenIcon,
@@ -38,6 +36,7 @@ import {
   Trash2Icon,
   type LucideIcon
 } from "lucide-react";
+import { CrmBrandIcon } from "./crm-brand-icon";
 import type { SidemenuItem } from "@cxsun/ui/blocks/menu/sidemenu/sub/sidemenu-section";
 
 export type PlatformAppId =
@@ -61,7 +60,8 @@ export type PlatformAppId =
   | "hrms"
   | "docs"
   | "himsx"
-  | "codexsun";
+  | "codexsun"
+  | "sites";
 
 export type PlatformAppRootPage =
   | "application.overview"
@@ -85,7 +85,11 @@ export type PlatformAppRootPage =
   | "hrms.employees"
   | "docs.overview"
   | "himsx.overview"
-  | "codexsun.frontdesk";
+  | "codexsun.frontdesk"
+  | "sites.overview"
+  | "sites.studio"
+  | "sites.sites"
+  | "sites.guide";
 
 export type BillingNavigationFeatures = {
   exportSales: boolean;
@@ -94,6 +98,14 @@ export type BillingNavigationFeatures = {
 
 export type CrmNavigationCounts = { assigned: number; created: number; all: number };
 
+export type ChatNavigationCounts = {
+  direct?: number;
+  groups?: number;
+  channels?: number;
+  broadcast?: number;
+  total?: number;
+};
+
 export type PlatformAppDefinition = {
   accentClass: string;
   alwaysEnabled: boolean;
@@ -101,6 +113,7 @@ export type PlatformAppDefinition = {
   description: string;
   id: PlatformAppId;
   icon: LucideIcon;
+  iconSrc?: string;
   label: string;
   moduleKey: string;
   stack:
@@ -124,7 +137,8 @@ export type PlatformAppDefinition = {
     | "hrms"
     | "docs"
     | "himsx"
-    | "codexsun";
+    | "codexsun"
+    | "sites";
 };
 
 export const defaultTenantModuleKeys = [
@@ -145,7 +159,8 @@ export const defaultTenantModuleKeys = [
   "hrms",
   "docs",
   "himsx",
-  "codexsun"
+  "codexsun",
+  "sites"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
@@ -194,6 +209,17 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     defaultLanding: false,
     description:
       "Hospital Information Management System. Hospital information and administrative operations."
+  },
+  {
+    id: "sites",
+    label: "Site Studio",
+    moduleKey: "sites",
+    stack: "sites",
+    icon: Globe2Icon,
+    accentClass: "bg-sky-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Site Studio CMS portal for multi-client portfolio websites (Wix / Shopify style)."
   },
   {
     id: "q-cafe",
@@ -311,7 +337,8 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     alwaysEnabled: false,
     defaultLanding: false,
     description: "Customer relationships and sales opportunities.",
-    icon: ContactRoundIcon,
+    icon: CrmBrandIcon,
+    iconSrc: "/logo/app-icon.png",
     id: "crm",
     label: "CRM",
     moduleKey: "crm",
@@ -424,6 +451,7 @@ export function defaultLandingApp(value: unknown, moduleKeys: string[]): Platfor
 
 export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
   if (appId === "codexsun") return "codexsun.frontdesk";
+  if (appId === "sites") return "sites.overview";
   if (appId === "himsx") return "himsx.overview";
   if (appId === "docs") return "docs.overview";
   if (appId === "hrms") return "hrms.overview";
@@ -456,7 +484,8 @@ export function appMenuFor(
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts,
-  billingEnabled = false
+  billingEnabled = false,
+  chatCounts?: ChatNavigationCounts
 ): SidemenuItem {
   if (appId === "codexsun")
     return {
@@ -534,6 +563,32 @@ export function appMenuFor(
           title: "Getting Started",
           isActive: activePage === "himsx.guide",
           onSelect: () => onSelect("himsx.guide")
+        }
+      ]
+    };
+  if (appId === "sites")
+    return {
+      icon: Globe2Icon,
+      title: "Site Studio",
+      isActive: activePage.startsWith("sites."),
+      items: [
+        {
+          icon: LayoutDashboardIcon,
+          title: "Studio Dashboard",
+          isActive: activePage === "sites.overview" || activePage === "sites.studio",
+          onSelect: () => onSelect("sites.overview")
+        },
+        {
+          icon: Globe2Icon,
+          title: "Client Portfolios",
+          isActive: activePage === "sites.sites",
+          onSelect: () => onSelect("sites.sites")
+        },
+        {
+          icon: FileTextIcon,
+          title: "Guide",
+          isActive: activePage === "sites.guide",
+          onSelect: () => onSelect("sites.guide")
         }
       ]
     };
@@ -625,6 +680,11 @@ export function appMenuFor(
           title: "Activities",
           isActive: activePage === "crm.activities",
           onSelect: () => onSelect("crm.activities")
+        },
+        {
+          title: "Closure Approvals",
+          isActive: activePage === "crm.closures",
+          onSelect: () => onSelect("crm.closures")
         },
         {
           title: "Call Logs",
@@ -732,11 +792,13 @@ export function appMenuFor(
     };
   }
   if (appId === "chat") {
+    const unread = chatCounts?.total ?? chatCounts?.direct;
     return {
       icon: MessagesSquareIcon,
       isActive: activePage.startsWith("chat"),
       onSelect: () => onSelect("chat.direct"),
-      title: "Chat"
+      title: "Chat",
+      count: unread && unread > 0 ? unread : undefined
     };
   }
   if (appId === "accounts") {
@@ -985,7 +1047,8 @@ export function appMenuItemsFor(
   onSelect: (page: string) => void,
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts,
-  billingEnabled = false
+  billingEnabled = false,
+  chatCounts?: ChatNavigationCounts
 ): SidemenuItem[] {
   if (appId === "codexsun") return codexsunMenuItems(activePage, onSelect);
   if (appId === "hrms")
@@ -1043,6 +1106,27 @@ export function appMenuItemsFor(
         title: "Getting Started",
         isActive: activePage === "himsx.guide",
         onSelect: () => onSelect("himsx.guide")
+      }
+    ];
+  if (appId === "sites")
+    return [
+      {
+        icon: LayoutDashboardIcon,
+        title: "Studio Dashboard",
+        isActive: activePage === "sites.overview" || activePage === "sites.studio",
+        onSelect: () => onSelect("sites.overview")
+      },
+      {
+        icon: Globe2Icon,
+        title: "Client Portfolios",
+        isActive: activePage === "sites.sites",
+        onSelect: () => onSelect("sites.sites")
+      },
+      {
+        icon: FileTextIcon,
+        title: "Guide",
+        isActive: activePage === "sites.guide",
+        onSelect: () => onSelect("sites.guide")
       }
     ];
   if (appId === "q-cafe") {
@@ -1248,6 +1332,12 @@ export function appMenuItemsFor(
         title: "Activities"
       },
       {
+        icon: NotebookPenIcon,
+        isActive: activePage === "crm.closures",
+        onSelect: () => onSelect("crm.closures"),
+        title: "Closure Approvals"
+      },
+      {
         icon: PhoneCallIcon,
         isActive: activePage === "crm.call-logs",
         onSelect: () => onSelect("crm.call-logs"),
@@ -1408,30 +1498,14 @@ export function appMenuItemsFor(
     ];
   }
   if (appId === "chat") {
+    const unread = chatCounts?.total ?? chatCounts?.direct;
     return [
       {
         icon: MessageCircleIcon,
-        isActive: activePage === "chat.direct" || activePage === "chat.overview",
+        isActive: activePage.startsWith("chat"),
         onSelect: () => onSelect("chat.direct"),
-        title: "Direct Chat"
-      },
-      {
-        icon: UsersIcon,
-        isActive: activePage === "chat.groups",
-        onSelect: () => onSelect("chat.groups"),
-        title: "Group"
-      },
-      {
-        icon: HashIcon,
-        isActive: activePage === "chat.channels",
-        onSelect: () => onSelect("chat.channels"),
-        title: "Channel"
-      },
-      {
-        icon: MegaphoneIcon,
-        isActive: activePage === "chat.broadcast",
-        onSelect: () => onSelect("chat.broadcast"),
-        title: "Broadcast"
+        title: "Chat",
+        count: unread && unread > 0 ? unread : undefined
       }
     ];
   }

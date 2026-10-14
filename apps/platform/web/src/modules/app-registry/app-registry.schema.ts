@@ -24,6 +24,7 @@ export const appRegistrySchema = z.object({
     "hrms",
     "docs",
     "himsx",
-    "codexsun"
+    "codexsun",
+    "sites"
   ])
 });

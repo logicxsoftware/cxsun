@@ -132,11 +132,11 @@ export function ChatWorkspace({
   );
 
   const panelTitle = useMemo(() => {
-    if (filterKind === "dm") return "Direct Chats";
+    if (filterKind === "dm") return "Chat";
     if (filterKind === "group") return "Groups";
     if (filterKind === "channel") return "Channels";
     if (filterKind === "broadcast") return "Broadcasts";
-    return "Chats";
+    return "Chat";
   }, [filterKind]);
 
   const messages = chat.messages.data ?? [];
@@ -155,7 +155,7 @@ export function ChatWorkspace({
   useEffect(() => {
     if (selected) void chat.markRead.mutateAsync(selected.uuid).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.uuid]);
+  }, [selected?.uuid, messages.length]);
 
   useEffect(() => {
     setDraft("");
@@ -178,6 +178,9 @@ export function ChatWorkspace({
 
   function select(channel: ChatChannel) {
     setSelected(channel);
+    if (channel.unreadCount > 0) {
+      void chat.markRead.mutateAsync(channel.uuid).catch(() => undefined);
+    }
   }
 
   function notifyTyping() {

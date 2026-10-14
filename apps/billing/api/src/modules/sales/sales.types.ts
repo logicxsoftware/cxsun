@@ -92,6 +92,9 @@ export type Sale = {
   salesLedger: string;
   shippingAddress: string;
   shippingAddressId: number;
+  shippingContactId: number;
+  shippingContactName: string;
+  shippingContactGstin: string;
   status: SaleStatus;
   subtotal: number;
   taxAmount: number;

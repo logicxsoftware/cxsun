@@ -343,14 +343,14 @@ function SalePrintPage({
             <div className="min-h-[5rem] border-l border-slate-300 px-1.5 py-1">
               <div className="font-medium">Buyer (Ship to)</div>
               <div className="mt-1 text-[11px] font-semibold tracking-wide">
-                M/s. {sale.customerName}
+                M/s. {sale.shippingContactName || sale.customerName}
               </div>
               <div className="mt-1 whitespace-pre-wrap">
                 {shippingAddress.address || "Address not set"}
               </div>
               <div className="mt-1 grid grid-cols-[max-content_1fr] gap-x-1">
                 <span>GSTIN/UIN :</span>
-                <span>{sale.customerGstin || "-"}</span>
+                <span>{sale.shippingContactGstin || "-"}</span>
                 <span>State Name :</span>
                 <span>{shippingAddress.state || "-"}</span>
               </div>

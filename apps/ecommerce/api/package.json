@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/ecommerce-api",
-  "version": "1.0.96",
+  "version": "1.0.97",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,9 +12,9 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/core-api": "^1.0.96",
-    "@cxsun/framework": "^1.0.96",
-    "@cxsun/frappe-api": "^1.0.96",
+    "@cxsun/core-api": "^1.0.97",
+    "@cxsun/framework": "^1.0.97",
+    "@cxsun/frappe-api": "^1.0.97",
     "fastify": "^5.12.5",
     "kysely": "^0.29.6",
     "sharp": "^0.35.5",

@@ -16,12 +16,13 @@ class DashboardJobsFeed extends ChangeNotifier with WidgetsBindingObserver {
   static const _refreshInterval = Duration(seconds: 12);
 
   final CrmMobileApi api;
-  final UserSession session;
+  UserSession session;
   final List<CrmJob> _jobs = [];
   Timer? _timer;
   bool _isLoading = true;
   bool _isRefreshing = false;
   String? _error;
+  var _sessionGeneration = 0;
 
   List<CrmJob> get jobs => List.unmodifiable(_jobs);
   bool get isLoading => _isLoading;
@@ -35,21 +36,35 @@ class DashboardJobsFeed extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> refresh() async {
     if (_isRefreshing) return;
     _isRefreshing = true;
+    final generation = _sessionGeneration;
     try {
       final updated = await _loadEnquiries();
+      if (generation != _sessionGeneration) return;
       _jobs
         ..clear()
         ..addAll(updated);
       _error = null;
     } on Object catch (error) {
+      if (generation != _sessionGeneration) return;
       _error = error is CrmMobileApiException
           ? error.message
           : 'Could not refresh live dashboard data.';
     } finally {
-      _isLoading = false;
-      _isRefreshing = false;
-      notifyListeners();
+      if (generation == _sessionGeneration) {
+        _isLoading = false;
+        _isRefreshing = false;
+        notifyListeners();
+      }
     }
+  }
+
+  void updateSession(UserSession updatedSession) {
+    if (session.accessToken == updatedSession.accessToken) return;
+    session = updatedSession;
+    _sessionGeneration += 1;
+    _isRefreshing = false;
+    _isLoading = _jobs.isEmpty;
+    unawaited(refresh());
   }
 
   @override
@@ -74,19 +89,11 @@ class DashboardJobsFeed extends ChangeNotifier with WidgetsBindingObserver {
     try {
       return await api.enquiries(
         accessToken: session.accessToken,
-        scope: 'all',
+        scope: 'assigned',
+        filter: 'active',
       );
     } on CrmMobileApiException {
-      final lists = await Future.wait([
-        api.assignedJobs(session.accessToken),
-        api.createdEnquiries(session.accessToken),
-      ]);
-      final byId = <String, CrmJob>{};
-      for (final enquiry in lists.expand((items) => items)) {
-        byId.putIfAbsent(enquiry.sourceId, () => enquiry);
-      }
-      return byId.values.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return api.assignedJobs(session.accessToken);
     }
   }
 

@@ -16,4 +16,4 @@ npm run crm:mobile:apk:release -- --api-url=https://crm.example.com
 
 Optional build inputs are `--client-name="Client Name"`, `--application-id=in.example.crm`, `--corporate-id=CLIENTCODE`, `--logo-asset=assets/crm-logo.png`, and `--android-brand-asset=crm`. The API URL is the API base URL, without an app-specific `/crm` path. The default display name is `CRM` across supported platforms.
 
-The CRM screens use local CRM APIs for enquiries, comments, work jobs, and activities. An administrator can manually sync a selected Android call-log entry and its comments to the local CRM database. Mobile CRM actions do not send records to Frappe.
+The CRM screens use local CRM APIs for enquiries, comments, work jobs, and activities. Starting or stopping a job and requesting completion add comments on the server; location logging, charges, and collected amounts post comments from the mobile app. An administrator can manually sync a selected Android call-log entry and its comments to the local CRM database. Mobile CRM actions do not send records to Frappe.

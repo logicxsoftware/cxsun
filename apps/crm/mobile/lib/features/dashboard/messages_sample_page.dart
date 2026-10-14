@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/api/crm_mobile_api.dart';
@@ -351,34 +353,58 @@ class _ConversationThread extends StatefulWidget {
 
 class _ConversationThreadState extends State<_ConversationThread> {
   final _composer = TextEditingController();
+  final _scrollController = ScrollController();
   late Future<List<MessagingMessage>> _messages;
+  Timer? _pollingTimer;
   var _isSending = false;
 
   @override
   void initState() {
     super.initState();
     _messages = _loadMessages();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted && !_isSending) {
+        _pollMessages();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
+    _scrollController.dispose();
     _composer.dispose();
     super.dispose();
   }
 
   Future<List<MessagingMessage>> _loadMessages() async {
+    final channelId = widget.conversation.channelIdentifier;
     final messages = await widget.api.messages(
       widget.session.accessToken,
-      widget.conversation.id,
+      channelId,
     );
     if (messages.isNotEmpty) {
       await widget.api.markConversationRead(
         accessToken: widget.session.accessToken,
-        conversationId: widget.conversation.id,
-        messageId: messages.first.id,
+        conversationId: channelId,
+        messageId: messages.last.id,
       );
     }
-    return messages.reversed.toList(growable: false);
+    _scrollToBottom();
+    return messages;
+  }
+
+  Future<void> _pollMessages() async {
+    try {
+      final channelId = widget.conversation.channelIdentifier;
+      final messages = await widget.api.messages(
+        widget.session.accessToken,
+        channelId,
+      );
+      if (mounted) {
+        setState(() => _messages = Future.value(messages));
+      }
+    } catch (_) {}
   }
 
   void _refresh() => setState(() => _messages = _loadMessages());
@@ -390,18 +416,32 @@ class _ConversationThreadState extends State<_ConversationThread> {
     try {
       await widget.api.sendMessage(
         accessToken: widget.session.accessToken,
-        conversationId: widget.conversation.id,
+        conversationId: widget.conversation.channelIdentifier,
         content: content,
       );
       _composer.clear();
       _refresh();
+      _scrollToBottom();
     } on CrmMobileApiException catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(error.message)));
+      }
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
@@ -428,7 +468,13 @@ class _ConversationThreadState extends State<_ConversationThread> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 final messages = snapshot.data!;
+                if (messages.isEmpty) {
+                  return const Center(
+                    child: Text('No messages yet. Say hello!'),
+                  );
+                }
                 return ListView.separated(
+                  controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
                   itemCount: messages.length,
                   separatorBuilder: (context, index) =>

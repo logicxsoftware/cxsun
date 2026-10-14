@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 
+import '../api/crm_mobile_api.dart';
 import '../config/app_config.dart';
 
 class SecureSessionStore {
@@ -18,6 +19,10 @@ class SecureSessionStore {
   static const _pinHashKey = 'pin_hash';
   static const _biometricKey = 'biometric_enabled';
   static const _emailKey = 'last_email';
+  static const _passwordKey = 'saved_password';
+  static const _corporateIdKey = 'corporate_id';
+  static const _profileNameKey = 'profile_name';
+  static const _profileRoleKey = 'profile_role';
   static const _lastActivityAtKey = 'last_activity_at';
   static const _legacyAuthenticatedAtKey = 'full_auth_at';
 
@@ -26,32 +31,65 @@ class SecureSessionStore {
   Future<StoredSession?> readSession() async {
     final token = await _read(_tokenKey);
     final pinHash = await _read(_pinHashKey);
+    final email = await _read(_emailKey) ?? '';
     final lastActivityAt = DateTime.tryParse(
       await _read(_lastActivityAtKey) ??
           await _read(_legacyAuthenticatedAtKey) ??
           '',
-    );
-    if (token == null || pinHash == null || lastActivityAt == null) return null;
+    ) ?? DateTime.now().toUtc();
+    if (token == null && pinHash == null && email.isEmpty) return null;
+    final name = await _read(_profileNameKey) ?? '';
+    final role = await _read(_profileRoleKey) ?? '';
+    final corporateId = await _read(_corporateIdKey) ?? '';
+    final savedPassword = await _read(_passwordKey) ?? '';
     return StoredSession(
-      accessToken: token,
-      email: await _read(_emailKey) ?? '',
+      accessToken: token ?? '',
+      email: email,
       lastActivityAt: lastActivityAt,
       biometricEnabled: await _read(_biometricKey) == 'true',
+      name: name,
+      role: role.isNotEmpty ? role : 'user',
+      corporateId: corporateId,
+      savedPassword: savedPassword,
     );
   }
 
   Future<String?> lastEmail() => _read(_emailKey);
 
-  Future<bool> hasPin() async => await _read(_pinHashKey) != null;
+  Future<bool> hasPin() async {
+    final pinHash = await _read(_pinHashKey);
+    return pinHash != null && pinHash.isNotEmpty;
+  }
 
   Future<void> saveLogin({
     required String email,
     required String accessToken,
+    UserProfile? profile,
+    String? corporateId,
+    String? password,
   }) async {
-    await Future.wait([
+    final writes = <Future<void>>[
       _write(_tokenKey, accessToken),
       _write(_emailKey, email),
       touchActivity(),
+    ];
+    if (profile != null) {
+      writes.add(_write(_profileNameKey, profile.name));
+      writes.add(_write(_profileRoleKey, profile.role));
+    }
+    if (corporateId != null && corporateId.isNotEmpty) {
+      writes.add(_write(_corporateIdKey, corporateId));
+    }
+    if (password != null && password.isNotEmpty) {
+      writes.add(_write(_passwordKey, password));
+    }
+    await Future.wait(writes);
+  }
+
+  Future<void> saveProfile(UserProfile profile) async {
+    await Future.wait([
+      _write(_profileNameKey, profile.name),
+      _write(_profileRoleKey, profile.role),
     ]);
   }
 
@@ -112,6 +150,10 @@ class SecureSessionStore {
         _delete(_pinHashKey),
         _delete(_biometricKey),
         _delete(_emailKey),
+        _delete(_passwordKey),
+        _delete(_corporateIdKey),
+        _delete(_profileNameKey),
+        _delete(_profileRoleKey),
       ]);
     }
   }
@@ -159,10 +201,24 @@ class StoredSession {
     required this.email,
     required this.lastActivityAt,
     required this.biometricEnabled,
+    this.name = '',
+    this.role = 'user',
+    this.corporateId = '',
+    this.savedPassword = '',
   });
 
   final String accessToken;
   final String email;
   final DateTime lastActivityAt;
   final bool biometricEnabled;
+  final String name;
+  final String role;
+  final String corporateId;
+  final String savedPassword;
+
+  UserProfile get profile => UserProfile(
+        email: email,
+        name: name.isNotEmpty ? name : (email.isNotEmpty ? email : 'User'),
+        role: role.isNotEmpty ? role : 'user',
+      );
 }

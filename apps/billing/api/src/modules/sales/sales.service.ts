@@ -282,7 +282,7 @@ export class SalesService {
       !references.financialYear && "Invoice date is outside the selected active Financial Year.",
       !references.customer && "Customer is inactive or missing.",
       !references.billingAddress && "Billing address does not belong to the selected customer.",
-      !references.shippingAddress && "Shipping address does not belong to the selected customer.",
+      !references.shippingAddress && "Shipping address must belong to an active contact.",
       !references.workOrder && "Work order is inactive or missing.",
       !references.ledger && "Sales ledger is inactive or missing.",
       !references.currency && "Currency is inactive or missing."

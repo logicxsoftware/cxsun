@@ -8,7 +8,8 @@ const statuses = new Map([
   [1, { name: "New", code: "new" }],
   [2, { name: "Open", code: "open" }],
   [3, { name: "Won", code: "won" }],
-  [4, { name: "Re-open", code: "reopen" }]
+  [4, { name: "Re-open", code: "reopen" }],
+  [5, { name: "Closed", code: "closed" }]
 ]);
 
 function record(statusId = 2): EnquiryRecord {
@@ -114,6 +115,27 @@ test("list scope and detail access use the server actor", async () => {
   await assert.rejects(service.get(7), /cannot view this enquiry/i);
 });
 
+test("enquiry list marks rows with a pending closure request", async () => {
+  const repository = {
+    listPage: async () => ({ items: [record()], total: 1, statusCounts: [] })
+  } as unknown as EnquiryRepository;
+  const service = new EnquiryService(
+    repository,
+    relations,
+    { actorEmail: "creator@example.com", actorUserId: 2, canViewAll: false },
+    async (ids) => new Set(ids)
+  );
+
+  const page = await service.listPage({
+    scope: "assigned",
+    page: 1,
+    pageSize: 100,
+    search: "",
+    filter: "all"
+  });
+  assert.equal(page.items[0]?.closurePending, true);
+});
+
 test("report uses the same server actor and all-enquiries scope", async () => {
   let options: EnquiryListOptions | undefined;
   const repository = {
@@ -172,5 +194,23 @@ test("completed status requires an outcome reason and re-open transition", async
   await assert.rejects(
     service.updateProperties(7, { statusId: 3, closedReason: "Done" }, "creator@example.com"),
     /open this new call/i
+  );
+});
+
+test("closed status is applied only by closure approval", async () => {
+  const current = record();
+  const repository = {
+    get: async () => current,
+    update: async (_id: number, input: EnquiryInput) => ({ ...current, ...input })
+  } as unknown as EnquiryRepository;
+  const service = new EnquiryService(repository, relations, {
+    actorEmail: "creator@example.com",
+    actorUserId: 2,
+    canViewAll: false
+  });
+
+  await assert.rejects(
+    service.updateProperties(7, { statusId: 5, closedReason: "Finished" }, "creator@example.com"),
+    /closure approval workflow/i
   );
 });

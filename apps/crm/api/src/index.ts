@@ -1,5 +1,9 @@
 export { enquiryModule, seedEnquiryModule } from "./modules/enquiry/index.js";
 export { activitiesModule } from "./modules/activities/index.js";
+export { closureModule } from "./modules/closure/index.js";
+export type { ClosureDatabase, ClosureRequest } from "./modules/closure/index.js";
+export { enquiryLocationModule } from "./modules/enquiry-location/index.js";
+export type { EnquiryLocationDatabase, EnquiryLocation } from "./modules/enquiry-location/index.js";
 export { callLogModule } from "./modules/call-log/index.js";
 export type { ActivitiesDatabase } from "./modules/activities/index.js";
 export type { EnquiryRequestContext, EnquiryDatabase } from "./modules/enquiry/index.js";

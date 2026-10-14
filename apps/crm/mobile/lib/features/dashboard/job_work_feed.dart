@@ -4,14 +4,20 @@ import '../../core/api/crm_mobile_api.dart';
 import 'job_duration.dart';
 
 class JobWorkFeed extends StatelessWidget {
-  const JobWorkFeed({required this.job, required this.session, super.key});
+  const JobWorkFeed({
+    required this.job,
+    required this.session,
+    this.locations = const [],
+    super.key,
+  });
 
   final CrmJob job;
   final UserSession session;
+  final List<CrmEnquiryLocation> locations;
 
   @override
   Widget build(BuildContext context) {
-    final entries = _WorkFeedEntry.fromJob(job, session);
+    final entries = _WorkFeedEntry.fromJob(job, session, locations);
     if (entries.isEmpty) {
       return const Center(child: Text('No comments or job records yet.'));
     }
@@ -42,7 +48,11 @@ class _WorkFeedEntry {
   final DateTime createdAt;
   final String? durationLabel;
 
-  static List<_WorkFeedEntry> fromJob(CrmJob job, UserSession session) {
+  static List<_WorkFeedEntry> fromJob(
+    CrmJob job,
+    UserSession session,
+    List<CrmEnquiryLocation> locations,
+  ) {
     final entries = <_WorkFeedEntry>[
       ...job.comments.map(
         (comment) => _WorkFeedEntry(
@@ -64,6 +74,17 @@ class _WorkFeedEntry {
           author: execution.employee,
           createdAt: execution.createdAt,
           durationLabel: formatJobDuration(execution),
+        ),
+      ),
+      ...locations.map(
+        (location) => _WorkFeedEntry(
+          icon: Icons.location_on_outlined,
+          title: 'Location logged',
+          detail:
+              '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}'
+              '${location.accuracyMeters == null ? '' : ' · ±${location.accuracyMeters!.round()} m'}',
+          author: _author(location.createdBy, session),
+          createdAt: location.capturedAt,
         ),
       ),
     ]..sort((left, right) => right.createdAt.compareTo(left.createdAt));

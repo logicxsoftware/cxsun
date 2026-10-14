@@ -55,7 +55,7 @@ export function ChatUserPickerModal({
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="text-lg font-semibold flex items-center gap-2">
             <Users className="size-5 text-primary" />
-            New direct chat
+            New chat
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground mt-0.5">
             Select a team member to start a one-on-one conversation.

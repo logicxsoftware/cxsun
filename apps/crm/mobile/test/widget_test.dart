@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:cxsun_crm_mobile/core/api/crm_mobile_api.dart';
 import 'package:cxsun_crm_mobile/core/auth/secure_session_store.dart';
@@ -10,15 +10,19 @@ import 'package:cxsun_crm_mobile/app/dashboard_navigation.dart';
 import 'package:cxsun_crm_mobile/features/auth/login_page.dart';
 import 'package:cxsun_crm_mobile/features/auth/pin_auth_pages.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/dashboard_list_page.dart';
+import 'package:cxsun_crm_mobile/features/dashboard/dashboard_jobs_feed.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/dashboard_page.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/job_detail_page.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/job_duration.dart';
-import 'package:cxsun_crm_mobile/features/dashboard/job_start_countdown.dart';
-import 'package:cxsun_crm_mobile/features/dashboard/job_start_store.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/messages_sample_page.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/my_enquiries_page.dart';
 
 void main() {
+  test('uses the local development host for Android emulator API calls', () {
+    expect(CrmMobileApi('http://10.0.2.2:7010').hostHeader, '127.0.0.1:7010');
+    expect(CrmMobileApi('https://crm.example.com').hostHeader, isNull);
+  });
+
   test('resets the session after ten inactive days', () {
     final store = SecureSessionStore();
     final current = StoredSession(
@@ -74,6 +78,22 @@ void main() {
     });
 
     expect(comment.comment, 'Test & verify\nSecond line\nDone ✓');
+  });
+
+  test('maps enquiry location coordinates and capture time', () {
+    final location = CrmEnquiryLocation.fromJson({
+      'id': 5,
+      'latitude': 13.0827,
+      'longitude': 80.2707,
+      'accuracyMeters': 8.5,
+      'capturedAt': '2026-10-14T12:00:00.000Z',
+      'createdBy': 'worker@example.com',
+    });
+
+    expect(location.latitude, 13.0827);
+    expect(location.longitude, 80.2707);
+    expect(location.accuracyMeters, 8.5);
+    expect(location.capturedAt.toUtc(), DateTime.utc(2026, 10, 14, 12));
   });
 
   test('maps CRM job executions and enquiry activities', () {
@@ -223,75 +243,12 @@ void main() {
     );
   });
 
-  test('keeps a queued job start cancellable before it is recorded', () {
-    const jobId = 'test-pending-job';
-    final countdown = JobStartCountdown.instance;
-    var recorded = false;
-
-    expect(
-      countdown.start(
-        jobId: jobId,
-        onElapsed: () async {
-          recorded = true;
-        },
-      ),
-      isTrue,
-    );
-    expect(countdown.label(jobId), matches(RegExp(r'^[01] sec$')));
-    expect(countdown.isPending(jobId), isTrue);
-    expect(countdown.isCancellable(jobId), isTrue);
-
-    countdown.cancel(jobId);
-
-    expect(countdown.isPending(jobId), isFalse);
-    expect(recorded, isFalse);
-  });
-
-  test('stores pending job deadlines in encrypted device state', () async {
-    const channel = MethodChannel('in.cxsun.crm_mobile/secure-session');
-    final values = <String, String>{};
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async {
-          final key = call.arguments['key'] as String;
-          switch (call.method) {
-            case 'read':
-              return values[key];
-            case 'write':
-              values[key] = call.arguments['value'] as String;
-              return null;
-            case 'delete':
-              values.remove(key);
-              return null;
-          }
-          return null;
-        });
-    addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null),
-    );
-
-    final store = JobStartStore(SecureSessionStore(channel: channel));
-    final deadline = DateTime.now().add(const Duration(seconds: 90));
-    await store.write([PersistedJobStart(jobId: '762', deadline: deadline)]);
-
-    final restored = await store.read();
-    expect(restored, hasLength(1));
-    expect(restored.single.jobId, '762');
-    expect(
-      restored.single.deadline.difference(deadline).inSeconds.abs(),
-      lessThanOrEqualTo(1),
-    );
-
-    await store.write(const []);
-    expect(await store.read(), isEmpty);
-  });
-
   testWidgets('shows the CRM sign-in screen', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: LoginPage(
           api: CrmMobileApi('http://127.0.0.1:7010'),
-          onSignedIn: (_) {},
+          onSignedIn: (session, {corporateId, password}) {},
         ),
       ),
     );
@@ -424,10 +381,11 @@ void main() {
   testWidgets('shows the job detail comments and reply flow', (
     WidgetTester tester,
   ) async {
+    final fakeApi = _FakeCrmMobileApi();
     await tester.pumpWidget(
       MaterialApp(
         home: JobDetailPage(
-          api: _FakeCrmMobileApi(),
+          api: fakeApi,
           session: const UserSession(
             accessToken: 'test-token',
             profile: UserProfile(
@@ -437,6 +395,18 @@ void main() {
             ),
           ),
           initialJob: _testCrmJob,
+          capturePosition: () async => Position(
+            latitude: 13.0827,
+            longitude: 80.2707,
+            timestamp: DateTime(2026, 10, 14),
+            accuracy: 8.5,
+            altitude: 0,
+            altitudeAccuracy: 0,
+            heading: 0,
+            headingAccuracy: 0,
+            speed: 0,
+            speedAccuracy: 0,
+          ),
           enquiry: const DashboardListItem(
             enquiryNumber: '762',
             title: 'ROG Asus Adopter 240W',
@@ -465,8 +435,36 @@ void main() {
     expect(find.text('Mark completed'), findsOneWidget);
     expect(find.text('Charges'), findsOneWidget);
     expect(find.text('Collected Rs.'), findsOneWidget);
-    Navigator.of(tester.element(find.text('Scan document'))).pop();
+    await tester.tap(find.text('Log location'));
     await tester.pumpAndSettle();
+    expect(fakeApi.postedComments, contains('Location logged from mobile.'));
+
+    await tester.tap(find.byTooltip('Add action'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Charges'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '1250');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(fakeApi.postedComments, contains('Charges: ₹1250'));
+
+    await tester.tap(find.byTooltip('Add action'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Collected Rs.'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '500');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(fakeApi.postedComments, contains('Collected: ₹500'));
+
+    await tester.tap(find.byTooltip('Add action'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark completed'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Completion sent. Waiting for web approval.'),
+      findsOneWidget,
+    );
 
     await tester.enterText(
       find.byType(TextField),
@@ -476,6 +474,56 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Customer asked for a quotation update.'), findsOneWidget);
+  });
+
+  testWidgets('starts and stops jobs immediately and shows system comments', (
+    WidgetTester tester,
+  ) async {
+    final api = _FakeCrmMobileApi();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: JobDetailPage(
+          api: api,
+          session: const UserSession(
+            accessToken: 'test-token',
+            profile: UserProfile(
+              email: 'vijay@example.com',
+              name: 'Vijay Anand',
+              role: 'user',
+            ),
+          ),
+          initialJob: _testCrmJob,
+          enquiry: const DashboardListItem(
+            enquiryNumber: '762',
+            title: 'ROG Asus Adopter 240W',
+            customer: 'Vee Cee Exports',
+            list: 'Spares',
+            assignedTo: 'Vijay Anand',
+            dueDate: '03 Aug',
+            createdBy: 'Vijay Anand',
+            createdAgo: '3 days ago',
+            lastAction: 'Awaiting customer confirmation',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add action'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start job'));
+    await tester.pumpAndSettle();
+
+    expect(api.startJobCalls, 1);
+    expect(find.text('Job started by Vijay Anand.'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Add action'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Stop job').first);
+    await tester.pumpAndSettle();
+
+    expect(api.stopJobCalls, 1);
+    expect(find.text('Job #762 stopped.'), findsOneWidget);
   });
 
   testWidgets('shows the live Messages loading state', (
@@ -522,6 +570,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(fakeApi.requestedEnquiryScope, 'assigned');
+    expect(fakeApi.requestedEnquiryFilter, 'active');
     expect(find.text('ROG Asus Adopter 240W'), findsOneWidget);
 
     final searchField = find.byType(TextField);
@@ -535,6 +585,62 @@ void main() {
     await tester.enterText(searchField, 'ROG');
     await tester.pumpAndSettle();
     expect(find.text('ROG Asus Adopter 240W'), findsOneWidget);
+  });
+
+  testWidgets('loads only assigned enquiries for the home dashboard', (
+    WidgetTester tester,
+  ) async {
+    final fakeApi = _FakeCrmMobileApi();
+    final session = const UserSession(
+      accessToken: 'test-token',
+      profile: UserProfile(
+        email: 'vijay@example.com',
+        name: 'Vijay Anand',
+        role: 'user',
+      ),
+    );
+    final feed = DashboardJobsFeed(api: fakeApi, session: session);
+
+    await feed.refresh();
+
+    expect(fakeApi.requestedEnquiryScope, 'assigned');
+    expect(fakeApi.requestedEnquiryFilter, 'active');
+    expect(feed.jobs.single.sourceId, _testCrmJob.sourceId);
+    feed.dispose();
+  });
+
+  testWidgets('refreshes dashboard enquiries after the session is renewed', (
+    WidgetTester tester,
+  ) async {
+    final fakeApi = _FakeCrmMobileApi();
+    final session = const UserSession(
+      accessToken: 'old-token',
+      profile: UserProfile(
+        email: 'vijay@example.com',
+        name: 'Vijay Anand',
+        role: 'user',
+      ),
+    );
+    final feed = DashboardJobsFeed(api: fakeApi, session: session);
+    await feed.refresh();
+
+    feed.updateSession(
+      const UserSession(
+        accessToken: 'renewed-token',
+        profile: UserProfile(
+          email: 'vijay@example.com',
+          name: 'Vijay Anand',
+          role: 'user',
+        ),
+      ),
+    );
+    await tester.runAsync(() async {
+      await Future<void>.delayed(Duration.zero);
+    });
+
+    expect(fakeApi.lastEnquiriesAccessToken, 'renewed-token');
+    expect(feed.error, isNull);
+    feed.dispose();
   });
 
   testWidgets('supports open call and dynamic status update in JobDetailPage', (
@@ -634,6 +740,13 @@ class _FakeCrmMobileApi extends CrmMobileApi {
   _FakeCrmMobileApi() : super('http://127.0.0.1:7010');
 
   CrmJob _job = _testCrmJob;
+  ClosureRequest? _closureRequest;
+  final List<String> postedComments = [];
+  var startJobCalls = 0;
+  var stopJobCalls = 0;
+  String? requestedEnquiryScope;
+  String? requestedEnquiryFilter;
+  String? lastEnquiriesAccessToken;
 
   @override
   Future<List<CrmJob>> assignedJobs(String accessToken) async => [_job];
@@ -654,11 +767,17 @@ class _FakeCrmMobileApi extends CrmMobileApi {
   Future<List<CrmJob>> enquiries({
     required String accessToken,
     String scope = 'all',
+    String filter = 'all',
     String search = '',
     String? listInId,
     int page = 1,
     int pageSize = 100,
-  }) async => [_job];
+  }) async {
+    requestedEnquiryScope = scope;
+    requestedEnquiryFilter = filter;
+    lastEnquiriesAccessToken = accessToken;
+    return [_job];
+  }
 
   @override
   Future<CrmJob> openNewCall({
@@ -699,7 +818,11 @@ class _FakeCrmMobileApi extends CrmMobileApi {
     if (statusId != null) {
       final statuses = const [
         CrmCallEnquiryStatus(id: 'st-1', name: 'Open', code: 'OPEN'),
-        CrmCallEnquiryStatus(id: 'st-2', name: 'In Progress', code: 'IN_PROGRESS'),
+        CrmCallEnquiryStatus(
+          id: 'st-2',
+          name: 'In Progress',
+          code: 'IN_PROGRESS',
+        ),
         CrmCallEnquiryStatus(id: 'st-3', name: 'Won', code: 'WON'),
       ];
       final match = statuses.where((s) => s.id == statusId).firstOrNull;
@@ -737,7 +860,11 @@ class _FakeCrmMobileApi extends CrmMobileApi {
     assignees: [],
     statuses: [
       CrmCallEnquiryStatus(id: 'st-1', name: 'Open', code: 'OPEN'),
-      CrmCallEnquiryStatus(id: 'st-2', name: 'In Progress', code: 'IN_PROGRESS'),
+      CrmCallEnquiryStatus(
+        id: 'st-2',
+        name: 'In Progress',
+        code: 'IN_PROGRESS',
+      ),
       CrmCallEnquiryStatus(id: 'st-3', name: 'Won', code: 'WON'),
     ],
     priorities: [
@@ -749,11 +876,152 @@ class _FakeCrmMobileApi extends CrmMobileApi {
   Future<CrmJob> job(String accessToken, String id) async => _job;
 
   @override
+  Future<CrmJob> startJob({
+    required String accessToken,
+    required String id,
+  }) async {
+    startJobCalls++;
+    const comment = 'Job started by Vijay Anand.';
+    postedComments.add(comment);
+    final execution = CrmJobExecution(
+      name: 'JOB-1',
+      employee: 'Vijay Anand',
+      createdAt: DateTime.now(),
+      date: null,
+      startTime: DateTime.now().toIso8601String(),
+      stopTime: null,
+      hours: 0,
+      employeeCostPerHour: 0,
+      totalCost: 0,
+      status: 'Running',
+    );
+    _job = _copyJob(
+      comments: [..._job.comments, _systemComment(comment)],
+      jobs: [..._job.jobs, execution],
+      lastAction: comment,
+    );
+    return _job;
+  }
+
+  @override
+  Future<CrmJob> stopJob({
+    required String accessToken,
+    required String id,
+    required String jobName,
+  }) async {
+    stopJobCalls++;
+    final comment = 'Job #762 stopped.';
+    postedComments.add(comment);
+    final jobs = _job.jobs
+        .map(
+          (job) => job.name == jobName
+              ? CrmJobExecution(
+                  name: job.name,
+                  employee: job.employee,
+                  createdAt: job.createdAt,
+                  date: job.date,
+                  startTime: job.startTime,
+                  stopTime: DateTime.now().toIso8601String(),
+                  hours: job.hours,
+                  employeeCostPerHour: job.employeeCostPerHour,
+                  totalCost: job.totalCost,
+                  status: 'Completed',
+                )
+              : job,
+        )
+        .toList();
+    _job = _copyJob(
+      comments: [..._job.comments, _systemComment(comment)],
+      jobs: jobs,
+      lastAction: comment,
+    );
+    return _job;
+  }
+
+  CrmComment _systemComment(String text) => CrmComment(
+    id: 'comment-${postedComments.length}',
+    comment: text,
+    createdAt: DateTime.now(),
+    createdByUserId: 'vijay@example.com',
+  );
+
+  CrmJob _copyJob({
+    required List<CrmComment> comments,
+    required List<CrmJobExecution> jobs,
+    required String lastAction,
+  }) => CrmJob(
+    id: _job.id,
+    sourceId: _job.sourceId,
+    number: _job.number,
+    title: _job.title,
+    customer: _job.customer,
+    mobile: _job.mobile,
+    assignedTo: _job.assignedTo,
+    list: _job.list,
+    dueDate: _job.dueDate,
+    createdBy: _job.createdBy,
+    createdAt: _job.createdAt,
+    lastAction: lastAction,
+    status: _job.status,
+    priority: _job.priority,
+    statusId: _job.statusId,
+    priorityId: _job.priorityId,
+    listInId: _job.listInId,
+    comments: comments,
+    jobs: jobs,
+    activities: _job.activities,
+  );
+
+  @override
+  Future<List<CrmEnquiryLocation>> enquiryLocations({
+    required String accessToken,
+    required String enquiryId,
+  }) async => [];
+
+  @override
+  Future<CrmEnquiryLocation> logEnquiryLocation({
+    required String accessToken,
+    required String enquiryId,
+    required double latitude,
+    required double longitude,
+    required double? accuracyMeters,
+    required DateTime capturedAt,
+  }) async => CrmEnquiryLocation(
+    id: 9,
+    latitude: latitude,
+    longitude: longitude,
+    capturedAt: capturedAt,
+    createdBy: 'vijay@example.com',
+    accuracyMeters: accuracyMeters,
+  );
+
+  @override
+  Future<ClosureRequest?> latestClosureRequest({
+    required String accessToken,
+    required String id,
+  }) async => _closureRequest;
+
+  @override
+  Future<ClosureRequest> requestClosure({
+    required String accessToken,
+    required String id,
+    String note = '',
+  }) async {
+    _closureRequest = ClosureRequest(
+      id: 91,
+      status: 'pending',
+      requestedAt: DateTime.now().toIso8601String(),
+    );
+    return _closureRequest!;
+  }
+
+  @override
   Future<CrmJob> addJobComment({
     required String accessToken,
     required String id,
     required String comment,
   }) async {
+    postedComments.add(comment);
     _job = CrmJob(
       id: _job.id,
       sourceId: _job.sourceId,

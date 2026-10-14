@@ -9,12 +9,18 @@ import { seedStatusMaster } from "./modules/status/index.js";
 import type { StatusDatabase } from "./modules/status/index.js";
 import { seedPriorityMaster } from "./modules/priority/index.js";
 import type { PriorityDatabase } from "./modules/priority/index.js";
+import { seedClosurePermissions } from "./modules/closure/index.js";
+import { seedCrmContactPermissions } from "./modules/contact/index.js";
 
 export async function seedCrmTenantDatabase(database: Kysely<EnquiryDatabase>) {
   await seedListInMaster(database as unknown as Kysely<ListInDatabase>);
   await seedStatusMaster(database as unknown as Kysely<StatusDatabase>);
   await seedPriorityMaster(database as unknown as Kysely<PriorityDatabase>);
   await seedEnquiryModule(database);
+  await seedClosurePermissions(
+    database as unknown as Kysely<import("./modules/closure/index.js").ClosureDatabase>
+  );
   await seedCallLogPermissions(database);
+  await seedCrmContactPermissions(database);
   await seedContact360Database(database);
 }

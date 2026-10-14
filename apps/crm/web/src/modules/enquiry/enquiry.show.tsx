@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Activity, MessageSquare, ReceiptText, Timer } from "lucide-react";
+import { Activity, MapPin, MessageSquare, ReceiptText, Timer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { GlobalLoader } from "@cxsun/ui/components/global-loader";
@@ -10,26 +10,31 @@ import { WorkspaceShowLayout } from "@cxsun/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
 import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { CrmColorLabel, CrmStatusBadge } from "../../crm-colors";
+import { EnquiryClosureCard } from "../closure";
 import { EnquiryActivityPanel } from "./enquiry.activity";
 import { EnquiryComments } from "./enquiry.comments";
 import { EnquiryEstimates } from "./enquiry.estimates";
 import {
   enquiryActivityQueryKey,
+  enquiryDetailQueryKey,
+  enquiriesQueryKey,
   enquiryJobsQueryKey,
   useEnquiryActivity,
   useEnquiryComments,
   useEnquiryDetail,
   useEnquiryEstimates,
-  useEnquiryJobs
+  useEnquiryJobs,
+  useEnquiryLocations
 } from "./enquiry.hooks";
 import { EnquiryJobs } from "./enquiry.jobs";
+import { EnquiryLocations } from "./enquiry.locations";
 import { EnquiryProperties } from "./enquiry.properties";
 import { startEnquiryJob, stopEnquiryJob } from "./enquiry.services";
 import { enquiryTableText } from "./enquiry.table-text";
 import { whatsappUrl } from "./enquiry.view-utils";
 import type { EnquiryLookup, EnquiryMasterLookup, EnquiryRecord } from "./enquiry.types";
 
-type EnquiryTab = "comments" | "jobs" | "estimate" | "activity";
+type EnquiryTab = "comments" | "jobs" | "estimate" | "activity" | "locations";
 
 export function EnquiryShow({
   id,
@@ -55,6 +60,7 @@ export function EnquiryShow({
   const jobs = useEnquiryJobs(id);
   const estimates = useEnquiryEstimates(id);
   const activity = useEnquiryActivity(id);
+  const locations = useEnquiryLocations(id);
   const record = enquiry.data;
   const contact = contacts.find((item) => item.id === record?.contactId);
   const mobile = contact?.primaryPhone || record?.capturedPhone || null;
@@ -122,6 +128,24 @@ export function EnquiryShow({
       value: "activity",
       label: <TabLabel icon={<Activity className="size-4" />} label="Activity" />,
       content: <EnquiryActivityPanel activity={activity.data ?? []} loading={activity.isLoading} />
+    },
+    {
+      value: "locations",
+      label: (
+        <TabLabel
+          icon={<MapPin className="size-4" />}
+          label="Locations"
+          count={locations.data?.length ?? 0}
+        />
+      ),
+      content: (
+        <EnquiryLocations
+          locations={locations.data ?? []}
+          loading={locations.isLoading}
+          error={locations.error}
+          onRetry={() => void locations.refetch()}
+        />
+      )
     }
   ];
   if (!record && !error) {
@@ -201,6 +225,19 @@ export function EnquiryShow({
               statuses={statuses}
               priorities={priorities}
             />
+            <div className="xl:col-start-2 xl:row-start-2">
+              <EnquiryClosureCard
+                enquiryId={record.id}
+                enquiryStatus={record.status}
+                onChanged={() =>
+                  Promise.all([
+                    client.invalidateQueries({ queryKey: enquiryDetailQueryKey(id) }),
+                    client.invalidateQueries({ queryKey: enquiryActivityQueryKey(id) }),
+                    client.invalidateQueries({ queryKey: enquiriesQueryKey })
+                  ])
+                }
+              />
+            </div>
           </WorkspaceShowLayout>
         </>
       ) : null}

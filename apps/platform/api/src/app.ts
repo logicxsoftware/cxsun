@@ -1,3 +1,4 @@
+import { sql } from "kysely";
 import { codexsunApiModuleKeys } from "@cxsun/codexsun-api";
 import {
   hrmsOverviewModule,
@@ -13,6 +14,7 @@ import {
   docsOverviewModule
 } from "@cxsun/docs-api";
 import { himsxOverviewModule } from "@cxsun/himsx-api";
+import { siteModule, sitesOverviewModule } from "@cxsun/sites-api";
 import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxsun/framework/api";
 import { randomBytes } from "node:crypto";
 import { registerModules } from "@cxsun/framework/modules";
@@ -38,6 +40,8 @@ import {
 import {
   enquiryModule,
   activitiesModule,
+  closureModule,
+  enquiryLocationModule,
   callLogModule,
   crmContactModule,
   registerContact360Modules,
@@ -234,6 +238,8 @@ export async function createApp() {
             ...codexsunApiModuleKeys,
             docsKnowledgeModule.key,
             himsxOverviewModule.key,
+            sitesOverviewModule.key,
+            siteModule.key,
 
             ...ecommerceModuleKeys,
             logicxErpOverviewModule.key,
@@ -531,9 +537,11 @@ export async function createApp() {
                 path === `${collection}/live` ||
                 /^\/crm\/enquiries\/options\/(list-in|status|priority)$/u.test(path))
             ? "create"
-            : isCallLogWrite
+            : request.method === "POST" && /^\/crm\/contacts\/lookups\//u.test(path)
               ? "create"
-              : "update";
+              : isCallLogWrite
+                ? "create"
+                : "update";
     if (action === "view" && ["list-in", "status", "priority"].includes(resource)) {
       try {
         await context.authorize(`crm.${resource}.view`);
@@ -625,6 +633,63 @@ export async function createApp() {
       canViewAll
     };
   });
+  await closureModule.register(app, async (request) => {
+    const context = await crmAccess(request, "enquiry", "/crm/enquiries");
+    const actor = await context.database
+      .selectFrom("app_users")
+      .select("id")
+      .where("email", "=", context.actorEmail)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    let canViewAll = false;
+    try {
+      await context.authorize("crm.enquiry.view-all");
+      canViewAll = true;
+    } catch (error) {
+      if (!(error instanceof AppError) || error.code !== "FORBIDDEN") throw error;
+    }
+    let canReview = false;
+    try {
+      await context.authorize("crm.closure.review");
+      canReview = true;
+    } catch (error) {
+      if (!(error instanceof AppError) || error.code !== "FORBIDDEN") throw error;
+    }
+    return {
+      database: context.database as unknown as import("kysely").Kysely<
+        import("@cxsun/crm-api").ClosureDatabase
+      >,
+      actorEmail: context.actorEmail,
+      actorUserId: actor?.id ?? null,
+      canViewAll,
+      canReview
+    };
+  });
+  await enquiryLocationModule.register(app, async (request) => {
+    const context = await crmAccess(request, "enquiry", "/crm/enquiries");
+    if (request.method === "POST") await context.authorize("crm.enquiry.update");
+    const actor = await context.database
+      .selectFrom("app_users")
+      .select("id")
+      .where("email", "=", context.actorEmail)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    let canViewAll = false;
+    try {
+      await context.authorize("crm.enquiry.view-all");
+      canViewAll = true;
+    } catch (error) {
+      if (!(error instanceof AppError) || error.code !== "FORBIDDEN") throw error;
+    }
+    return {
+      database: context.database as unknown as import("kysely").Kysely<
+        import("@cxsun/crm-api").EnquiryLocationDatabase
+      >,
+      actorEmail: context.actorEmail,
+      actorUserId: actor?.id ?? null,
+      canViewAll
+    };
+  });
   await enquiryModule.register(app, async (request) => {
     const context = await crmAccess(request, "enquiry", "/crm/enquiries");
     const actor = await context.database
@@ -651,19 +716,24 @@ export async function createApp() {
           .selectFrom("app_users")
           .select(["id", "name", "email", "status"])
           .where("status", "=", "active")
-          .execute()
+          .execute(),
+      pendingClosureLookup: async (enquiryIds) => {
+        if (enquiryIds.length === 0) return new Set<number>();
+        const closureDatabase = context.database as unknown as import("kysely").Kysely<
+          import("@cxsun/crm-api").ClosureDatabase
+        >;
+        const pending = await closureDatabase
+          .selectFrom("crm_closure_requests")
+          .select("enquiry_id")
+          .where("status", "=", "pending")
+          .where("enquiry_id", "in", enquiryIds)
+          .execute();
+        return new Set(pending.map((row) => row.enquiry_id));
+      }
     };
   });
   crmContactModule.register(app, async (request) => {
-    const context = tenantAccessContext(request);
-    const enabled = await context.database
-      .selectFrom("app_module_settings")
-      .select("id")
-      .where("module_key", "=", "crm")
-      .where("enabled", "=", true)
-      .where("status", "=", "active")
-      .executeTakeFirst();
-    if (!enabled) throw AppError.forbidden("CRM is not enabled for this tenant.");
+    await crmAccess(request, "contact", "/crm/contacts");
   });
   registerContact360Modules(app, async (request, resource) => {
     const context = await crmAccess(request, resource, `/crm/${resource}`);
@@ -1656,6 +1726,40 @@ export async function createApp() {
       tenant: { code: tenant.tenantCode, name: tenant.tenantName }
     };
   });
+  await sitesOverviewModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "sites")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("Sites is not enabled for this tenant.");
+    const tenant = await new TenantRepository().findByIdOrCode(context.tenantId);
+    if (!tenant) throw AppError.notFound("Tenant was not found.");
+    return {
+      actorEmail: context.actorEmail,
+      authorize: context.authorize,
+      tenant: { code: tenant.tenantCode, name: tenant.tenantName }
+    };
+  });
+  await siteModule.register(app, async (request) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "sites")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("Sites is not enabled for this tenant.");
+    return {
+      actorEmail: context.actorEmail,
+      database: context.database,
+      tenantId: context.tenantId
+    };
+  });
   await ecommerceOverviewModule.register(app, async (request) => {
     const context = tenantAccessContext(request);
     const enabled = await context.database
@@ -1838,7 +1942,27 @@ async function notesContext(request: FastifyRequest) {
 async function chatContext(request: FastifyRequest) {
   const context = tenantAccessContext(request);
   const header = request.headers["x-company-id"];
-  const companyId = Number(Array.isArray(header) ? header[0] : header);
+  let companyId = Number(Array.isArray(header) ? header[0] : header);
+  if (!Number.isInteger(companyId) || companyId <= 0) {
+    const defaultCompanyId = request.authContext?.session?.context?.defaultCompany?.companyId;
+    if (typeof defaultCompanyId === "number" && defaultCompanyId > 0) {
+      companyId = defaultCompanyId;
+    } else {
+      try {
+        const rows = await sql<{
+          company_id: number;
+        }>`SELECT company_id FROM company ORDER BY company_id ASC LIMIT 1`.execute(
+          context.database
+        );
+        const firstCompany = rows.rows[0];
+        if (firstCompany && firstCompany.company_id > 0) {
+          companyId = firstCompany.company_id;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
   if (!Number.isInteger(companyId) || companyId <= 0) {
     throw AppError.validation("x-company-id is required for Chat access.");
   }

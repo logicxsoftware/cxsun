@@ -7,7 +7,6 @@ import 'dashboard_list_page.dart';
 import 'job_duration.dart';
 import 'dashboard_jobs_feed.dart';
 import 'job_detail_page.dart';
-import 'job_start_countdown.dart';
 
 class DashboardHome extends StatelessWidget {
   const DashboardHome({
@@ -16,6 +15,7 @@ class DashboardHome extends StatelessWidget {
     required this.onOpenList,
     required this.onOpenActions,
     required this.jobsFeed,
+    this.onReauthenticate,
     super.key,
   });
 
@@ -24,17 +24,55 @@ class DashboardHome extends StatelessWidget {
   final ValueChanged<int> onOpenList;
   final Future<void> Function() onOpenActions;
   final DashboardJobsFeed jobsFeed;
+  final VoidCallback? onReauthenticate;
 
   @override
   Widget build(BuildContext context) {
     final greeting = _Greeting.forTime(DateTime.now());
     final firstName = session.profile.name.split(' ').first;
     return ListenableBuilder(
-      listenable: Listenable.merge([jobsFeed, JobStartCountdown.instance]),
+      listenable: jobsFeed,
       builder: (context, child) {
         if (jobsFeed.error != null && jobsFeed.jobs.isEmpty) {
-          return const Center(
-            child: Text('Could not load live dashboard data.'),
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cloud_off_outlined, size: 32),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Could not load live dashboard data.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    jobsFeed.error!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.tonalIcon(
+                    onPressed: jobsFeed.refresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Retry'),
+                  ),
+                  if (jobsFeed.error!.contains(
+                        'not valid for the requested domain',
+                      ) &&
+                      onReauthenticate != null) ...[
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: onReauthenticate,
+                      icon: const Icon(Icons.login_rounded),
+                      label: const Text('Sign in again'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           );
         }
         if (jobsFeed.isLoading && jobsFeed.jobs.isEmpty) {
@@ -42,7 +80,6 @@ class DashboardHome extends StatelessWidget {
         }
         final jobs = jobsFeed.jobs;
         final runningJob = _runningJob(jobs);
-        final pendingJob = _pendingJob(jobs);
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           children: [
@@ -76,12 +113,6 @@ class DashboardHome extends StatelessWidget {
                 job: runningJob,
                 onOpenJob: () => _openJob(context, runningJob),
               ),
-            ] else if (pendingJob != null) ...[
-              const SizedBox(height: 18),
-              _PendingJobCard(
-                job: pendingJob,
-                onOpenJob: () => _openJob(context, pendingJob),
-              ),
             ],
           ],
         );
@@ -109,83 +140,6 @@ CrmJob? _runningJob(List<CrmJob> jobs) {
     if (job.jobs.any((execution) => execution.isRunning)) return job;
   }
   return null;
-}
-
-CrmJob? _pendingJob(List<CrmJob> jobs) {
-  final countdown = JobStartCountdown.instance;
-  for (final job in jobs) {
-    if (countdown.isPending(job.sourceId)) return job;
-  }
-  return null;
-}
-
-class _PendingJobCard extends StatelessWidget {
-  const _PendingJobCard({required this.job, required this.onOpenJob});
-
-  final CrmJob job;
-  final VoidCallback onOpenJob;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Semantics(
-      button: true,
-      label: 'Open pending job start ${job.title}',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onOpenJob,
-        child: Ink(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFCF9FD),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFD6B5E8)),
-          ),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                backgroundColor: Color(0xFFF0E2FA),
-                foregroundColor: Color(0xFF682A82),
-                child: Icon(Icons.hourglass_top_rounded),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Starting job',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: const Color(0xFF682A82),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      job.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                JobStartCountdown.instance.label(job.sourceId),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: const Color(0xFF682A82),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _RunningJobCard extends StatefulWidget {

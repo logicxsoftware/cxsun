@@ -30,7 +30,8 @@ export type Tenant = {
     | "hrms"
     | "docs"
     | "himsx"
-    | "codexsun";
+    | "codexsun"
+    | "sites";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;

@@ -8,6 +8,7 @@ export function landingAppChoices(enabledApps: PlatformAppId[]) {
     .map((app) => ({
       description: app.description,
       icon: app.icon,
+      ...(app.iconSrc ? { iconSrc: app.iconSrc } : {}),
       iconClass:
         app.id === "zetro" ? "border border-border bg-white" : `${app.accentClass} text-white`,
       id: app.id,

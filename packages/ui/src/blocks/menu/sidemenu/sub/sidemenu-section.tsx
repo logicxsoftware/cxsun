@@ -60,7 +60,9 @@ export function SidemenuSection({ items, title }: { items: SidemenuItem[]; title
                     <SidebarMenuButton tooltip={item.title}>
                       <item.icon />
                       <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-                      {item.count !== undefined ? <CountBadge count={item.count} /> : null}
+                      {item.count !== undefined && item.count > 0 ? (
+                        <CountBadge count={item.count} />
+                      ) : null}
                       <SidemenuChevron className="group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-45" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
@@ -70,17 +72,29 @@ export function SidemenuSection({ items, title }: { items: SidemenuItem[]; title
                       <button type="button" onClick={item.onSelect}>
                         <item.icon />
                         <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-                        {item.count !== undefined ? <CountBadge count={item.count} /> : null}
+                        {item.count !== undefined && item.count > 0 ? (
+                          <CountBadge count={item.count} />
+                        ) : null}
                       </button>
                     ) : (
                       <a href={item.url ?? "#"}>
                         <item.icon />
                         <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-                        {item.count !== undefined ? <CountBadge count={item.count} /> : null}
+                        {item.count !== undefined && item.count > 0 ? (
+                          <CountBadge count={item.count} />
+                        ) : null}
                       </a>
                     )}
                   </SidebarMenuButton>
                 )}
+                {item.count !== undefined && item.count > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -top-1 -right-1 z-20 hidden size-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white shadow-2xs group-data-[collapsible=icon]:flex"
+                  >
+                    {item.count > 9 ? "9+" : item.count}
+                  </span>
+                ) : null}
                 {hasItems ? (
                   <CollapsibleContent>
                     <SidebarMenuSub>
@@ -179,6 +193,7 @@ function SidemenuSubItemNode({ item }: { item: SidemenuSubItem }) {
 }
 
 function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
   return (
     <span className="ml-auto rounded-full border bg-background px-1.5 text-[10px] tabular-nums text-muted-foreground group-data-[collapsible=icon]:hidden">
       {count}

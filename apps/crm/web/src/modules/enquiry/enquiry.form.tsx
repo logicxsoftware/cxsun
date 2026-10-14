@@ -86,8 +86,7 @@ export function EnquiryForm({
     if (createDefaultsInitialized.current || !statuses.length || !priorities.length) return;
     setValue((current) => ({
       ...current,
-      statusId:
-        current.statusId || String(statuses.find((item) => item.code === "new")?.id ?? ""),
+      statusId: current.statusId || String(statuses.find((item) => item.code === "new")?.id ?? ""),
       priorityId:
         current.priorityId || String(priorities.find((item) => item.code === "normal")?.id ?? "")
     }));
@@ -321,9 +320,7 @@ export function EnquiryForm({
                       invalid={Boolean(issues.listInId)}
                       onCreate={createMaster.listIn}
                       onTextChange={() => set("listInId", null)}
-                      onValueChange={(selected) =>
-                        set("listInId", selected || null)
-                      }
+                      onValueChange={(selected) => set("listInId", selected || null)}
                     />
                     {issues.listInId ? <FieldError>{issues.listInId}</FieldError> : null}
                   </WorkspaceFormField>
@@ -335,9 +332,7 @@ export function EnquiryForm({
                         .map((item) => ({ value: String(item.id), label: item.name }))}
                       placeholder="Unassigned"
                       value={value.assignedUserId ? String(value.assignedUserId) : ""}
-                      onValueChange={(selected) =>
-                        set("assignedUserId", selected || null)
-                      }
+                      onValueChange={(selected) => set("assignedUserId", selected || null)}
                     />
                   </WorkspaceFormField>
                   <WorkspaceFormField label="Priority" className="enquiry-nav-field">
@@ -370,7 +365,11 @@ export function EnquiryForm({
                       showCreateWhenEmpty
                       showAllOptionsOnFocus
                       options={statuses
-                        .filter((item) => item.status === "active")
+                        .filter(
+                          (item) =>
+                            item.status === "active" &&
+                            (record?.status === "closed" || item.code !== "closed")
+                        )
                         .map((item) => ({
                           label: item.name,
                           value: String(item.id),

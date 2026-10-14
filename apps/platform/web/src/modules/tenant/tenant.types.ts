@@ -28,7 +28,8 @@ export type Tenant = {
     | "hrms"
     | "docs"
     | "himsx"
-    | "codexsun";
+    | "codexsun"
+    | "sites";
   id: number;
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
@@ -73,7 +74,8 @@ export type TenantSavePayload = {
     | "hrms"
     | "docs"
     | "himsx"
-    | "codexsun";
+    | "codexsun"
+    | "sites";
   mobile: string | null;
   payloadSettings: Record<string, unknown>;
   primaryDomain: string;

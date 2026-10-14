@@ -87,7 +87,8 @@ export type PlatformAppsTable = {
     | "hrms"
     | "docs"
     | "himsx"
-    | "codexsun";
+    | "codexsun"
+    | "sites";
   updated_at: TimestampColumn;
   uuid: string;
 };

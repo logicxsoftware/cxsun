@@ -7,6 +7,7 @@ import type {
   EnquiryEstimateSavePayload,
   EnquiryJob,
   EnquiryJobSavePayload,
+  EnquiryLocation,
   EnquiryLookup,
   EnquiryPage,
   EnquiryPropertyPatch,
@@ -49,7 +50,10 @@ export async function listEnquiryPage(options: {
   return request<EnquiryPage>(`/crm/enquiries?${query}`);
 }
 
-export function listEnquiryReport(filters: EnquiryReportFilters, view: "list-in" | "creator" | "assignee" | "status") {
+export function listEnquiryReport(
+  filters: EnquiryReportFilters,
+  view: "list-in" | "creator" | "assignee" | "status"
+) {
   const query = new URLSearchParams({ view });
   addDateRange(query, filters);
   if (filters.assignedUserId) query.set("assignedUserId", filters.assignedUserId);
@@ -74,7 +78,8 @@ export const getEnquirySummary = (today: string) =>
   request<EnquirySummary>(`/crm/enquiries/summary?today=${today}`);
 export const readEnquiryAlert = (id: number) =>
   request<{ read: boolean }>(`/crm/enquiries/alerts/${id}/read`, { method: "POST" });
-export const getEnquiry = (id: string) => request<EnquiryRecord>(`/crm/enquiries/${encodeURIComponent(id)}`);
+export const getEnquiry = (id: string) =>
+  request<EnquiryRecord>(`/crm/enquiries/${encodeURIComponent(id)}`);
 export const listEnquiryComments = (id: string) =>
   request<EnquiryComment[]>(`/crm/enquiries/${id}/comments`);
 export const createEnquiryComment = (
@@ -127,6 +132,10 @@ export const updateEnquiryEstimate = (
   });
 export const listEnquiryActivity = (id: string) =>
   request<EnquiryActivity[]>(`/crm/enquiries/${id}/activity`);
+export const listEnquiryLocations = async (id: string) => {
+  const result = await request<{ items: EnquiryLocation[] }>(`/crm/enquiries/${id}/locations`);
+  return result.items;
+};
 export const createEnquiry = (payload: EnquirySavePayload) =>
   request<EnquiryRecord>("/crm/enquiries", { method: "POST", body: JSON.stringify(payload) });
 export const updateEnquiry = (id: string, payload: EnquirySavePayload) =>

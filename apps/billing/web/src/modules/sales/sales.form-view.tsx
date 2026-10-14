@@ -81,6 +81,11 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
     setEditingAddressKind,
     applyAddressDraft,
     shippingAddressChoice,
+    shippingAddressMode,
+    applyShippingAddressMode,
+    applyShippingContactSelection,
+    selectedShippingContact,
+    effectiveShippingChoices,
     eway,
     patchEway,
     clearEway,
@@ -331,25 +336,70 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
       value: "address",
       label: "Address",
       content: (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <SaleAddressField
-            choices={contactAddressChoices}
-            description={form.billingAddress}
-            disabled={!selectedContact?.record}
-            label="Billing address"
-            selectedValue={billingAddressChoice}
-            onEdit={() => setEditingAddressKind("billing")}
-            onSelect={(choice) => applyAddressDraft("billing", choice.draft, choice.value)}
-          />
-          <SaleAddressField
-            choices={contactAddressChoices}
-            description={form.shippingAddress}
-            disabled={!selectedContact?.record}
-            label="Shipping address"
-            selectedValue={shippingAddressChoice}
-            onEdit={() => setEditingAddressKind("shipping")}
-            onSelect={(choice) => applyAddressDraft("shipping", choice.draft, choice.value)}
-          />
+        <div className="grid gap-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field label="Bill to / Ship to">
+              <WorkspaceSelect
+                value={shippingAddressMode}
+                options={[
+                  { label: "Bill to / Ship to same contact", value: "same" },
+                  { label: "Bill to / Ship to other contact", value: "other" }
+                ]}
+                onValueChange={(value) =>
+                  applyShippingAddressMode(value === "other" ? "other" : "same")
+                }
+              />
+            </Field>
+            {shippingAddressMode === "other" ? (
+              <Field label="Shipping contact" required>
+                <WorkspaceLookup
+                  emptyLabel="No contacts found. Select the delivery contact."
+                  loading={contactsQuery.isLoading}
+                  options={contactsQuery.data ?? []}
+                  placeholder="Search delivery contact"
+                  required
+                  value={selectedShippingContact?.label ?? ""}
+                  onTextChange={() => applyShippingContactSelection("", null)}
+                  onValueChange={(value, option) =>
+                    applyShippingContactSelection(
+                      value,
+                      option as SaleLookupOption | null | undefined
+                    )
+                  }
+                />
+              </Field>
+            ) : null}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <SaleAddressField
+              choices={contactAddressChoices}
+              description={form.billingAddress}
+              disabled={!selectedContact?.record}
+              label="Billing address"
+              selectedValue={billingAddressChoice}
+              onEdit={() => setEditingAddressKind("billing")}
+              onSelect={(choice) => applyAddressDraft("billing", choice.draft, choice.value)}
+            />
+            <SaleAddressField
+              choices={effectiveShippingChoices}
+              description={form.shippingAddress}
+              disabled={
+                shippingAddressMode === "other"
+                  ? !selectedShippingContact?.record
+                  : !selectedContact?.record
+              }
+              label={
+                shippingAddressMode === "other" &&
+                selectedShippingContact?.label &&
+                selectedContact?.label !== selectedShippingContact.label
+                  ? `Shipping address (${selectedShippingContact.label})`
+                  : "Shipping address"
+              }
+              selectedValue={shippingAddressChoice}
+              onEdit={() => setEditingAddressKind("shipping")}
+              onSelect={(choice) => applyAddressDraft("shipping", choice.draft, choice.value)}
+            />
+          </div>
         </div>
       )
     },
@@ -669,9 +719,16 @@ export function SalesFormView({ model }: { model: ReturnType<typeof useSalesForm
                   const kind = editingAddressKind;
                   const addressId =
                     kind === "billing" ? form.billingAddressId : form.shippingAddressId;
-                  const contactId = String(selectedContact?.record?.id ?? "");
+                  const contactId =
+                    kind === "shipping" && shippingAddressMode === "other"
+                      ? String(selectedShippingContact?.record?.id ?? "")
+                      : String(selectedContact?.record?.id ?? "");
                   if (!contactId) {
-                    toast.error("Select a contact before saving an address.");
+                    toast.error(
+                      kind === "shipping" && shippingAddressMode === "other"
+                        ? "Select a delivery contact before saving an address."
+                        : "Select a contact before saving an address."
+                    );
                     return;
                   }
                   const saved = await contactAddressSaveMutation.mutateAsync({

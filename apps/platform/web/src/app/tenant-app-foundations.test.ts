@@ -8,7 +8,7 @@ import {
   defaultLandingApp,
   platformAppRegistry
 } from "./app-registry";
-for (const key of ["hrms", "docs", "himsx"] as const) {
+for (const key of ["hrms", "docs", "himsx", "sites"] as const) {
   test(`${key} launcher, default landing and app-owned menu`, () => {
     assert.equal(platformAppRegistry.filter((a) => a.id === key).length, 1);
     assert.equal(enabledAppIds([key]).includes(key), true);
@@ -22,12 +22,16 @@ for (const key of ["hrms", "docs", "himsx"] as const) {
     assert.deepEqual(
       menu.items?.map((i) => i.title),
       key === "hrms"
-        ? ["Overview", "Employees", "Getting Started"]
+        ? ["Overview", "Employees", "Attendance"]
         : key === "docs"
           ? ["Overview", "Developer Library", "Getting Started"]
-          : ["Overview", "Getting Started"]
+          : key === "sites"
+            ? ["Studio Dashboard", "Client Portfolios", "Guide"]
+            : ["Overview", "Getting Started"]
     );
-    menu.items?.find((item) => item.title === "Getting Started")?.onSelect?.();
-    assert.deepEqual(selected, [`${key}.guide`]);
+    menu.items?.find((item) => item.title === "Getting Started" || item.title === "Guide")?.onSelect?.();
+    if (key !== "hrms") {
+      assert.deepEqual(selected, [`${key}.guide`]);
+    }
   });
 }

@@ -138,7 +138,14 @@ export function requestHost(request: FastifyRequest) {
 
 function bearerToken(request: FastifyRequest) {
   const authorization = request.headers.authorization;
-  return authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : "";
+  if (authorization?.startsWith("Bearer ")) {
+    return authorization.slice("Bearer ".length).trim();
+  }
+  const query = request.query as Record<string, string | undefined> | undefined;
+  if (query?.token) {
+    return query.token.trim();
+  }
+  return "";
 }
 
 export function selectRequestAuthentication(bearer: string, cookie: string) {

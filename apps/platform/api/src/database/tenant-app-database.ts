@@ -30,6 +30,15 @@ import {
 } from "@cxsun/docs-api";
 import { seedHimsxOverviewPermissions, type HimsxPermissionDatabase } from "@cxsun/himsx-api";
 import {
+  migrateSiteModule,
+  rollbackSiteModule,
+  seedSiteModule,
+  seedSitesOverviewPermissions,
+  siteMigration,
+  type SitesDatabase,
+  type SitesPermissionDatabase
+} from "@cxsun/sites-api";
+import {
   seedEcommerceOverviewPermissions,
   migrateEcommerceTenantDatabase,
   rollbackEcommerceTenantDatabase,
@@ -252,7 +261,12 @@ export function tenantDatabaseMigrationsFor(_tenant: Tenant) {
       description,
       name,
       statements: [`RUN ${name}`]
-    }))
+    })),
+    {
+      description: siteMigration.description,
+      name: siteMigration.name,
+      statements: [`RUN ${siteMigration.name}`]
+    }
   ];
 }
 
@@ -266,6 +280,10 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   if (tenant.enabledModuleKeys.includes("docs")) {
     await migrateKnowledgeDatabase(database as unknown as Kysely<KnowledgeDatabase>);
     provisionedApps.push("docs");
+  }
+  if (tenant.enabledModuleKeys.includes("sites")) {
+    await migrateSiteModule(database as unknown as Kysely<SitesDatabase>);
+    provisionedApps.push("sites");
   }
   await migrateProjectManagerDatabase(database as never);
   await migrateEcommerceTenantDatabase(database as unknown as Kysely<EcommerceDatabase>);
@@ -326,6 +344,11 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
   if (enabled.has("himsx")) {
     await seedHimsxOverviewPermissions(database as unknown as Kysely<HimsxPermissionDatabase>);
     seededApps.push("himsx");
+  }
+  if (enabled.has("sites")) {
+    await seedSitesOverviewPermissions(database as unknown as Kysely<SitesPermissionDatabase>);
+    await seedSiteModule(database as unknown as Kysely<SitesDatabase>);
+    seededApps.push("sites");
   }
 
   await seedCoreTenantDatabase(tenant.dbName);
@@ -409,6 +432,8 @@ export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase
     await rollbackCodexsunDatabase(database as unknown as Kysely<CodexsunDatabase>);
   if (enabled.has("docs"))
     await rollbackKnowledgeDatabase(database as unknown as Kysely<KnowledgeDatabase>);
+  if (enabled.has("sites"))
+    await rollbackSiteModule(database as unknown as Kysely<SitesDatabase>);
   if (enabled.has("platform.task-manager"))
     await rollbackTaskManagerTenantModule(database as never);
   if (enabled.has("mail")) await rollbackMailModule(database as never);

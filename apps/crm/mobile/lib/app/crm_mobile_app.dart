@@ -63,48 +63,48 @@ class _CrmMobileAppState extends State<CrmMobileApp>
 
   Future<void> _validateResumedSession() async {
     final stored = await _secureSession.readSession();
-    if (stored == null || !_secureSession.isActive(stored)) {
-      await _requirePassword();
-      return;
-    }
-    try {
-      final profile = await _api.session(stored.accessToken);
-      if (!mounted || _stage != _AuthStage.dashboard) return;
-      setState(() {
-        _session = UserSession(
-          accessToken: stored.accessToken,
-          profile: profile,
-        );
-      });
-      await _secureSession.touchActivity();
-    } catch (_) {
-      await _requirePassword();
-    }
+    if (stored == null || _stage != _AuthStage.dashboard) return;
+    await _ensureValidServerSession(stored);
   }
 
   Future<void> _loadLocalSession() async {
+    final hasPin = await _secureSession.hasPin();
     final stored = await _secureSession.readSession();
-    final email = await _secureSession.lastEmail() ?? '';
+    final email = await _secureSession.lastEmail() ?? stored?.email ?? '';
     if (!mounted) return;
-    if (stored == null || !_secureSession.isActive(stored)) {
-      await _secureSession.clearSession();
+    if (hasPin) {
       setState(() {
         _lastEmail = email;
-        _stage = _AuthStage.login;
+        _storedSession =
+            stored ??
+            StoredSession(
+              accessToken: '',
+              email: email,
+              lastActivityAt: DateTime.now().toUtc(),
+              biometricEnabled: false,
+            );
+        _stage = _AuthStage.unlock;
       });
       return;
     }
     setState(() {
-      _lastEmail = stored.email;
-      _storedSession = stored;
-      _stage = _AuthStage.unlock;
+      _lastEmail = email;
+      _storedSession = null;
+      _stage = _AuthStage.login;
     });
   }
 
-  Future<void> _signedIn(UserSession session) async {
+  Future<void> _signedIn(
+    UserSession session, {
+    String? password,
+    String? corporateId,
+  }) async {
     await _secureSession.saveLogin(
       email: session.profile.email,
       accessToken: session.accessToken,
+      profile: session.profile,
+      corporateId: corporateId,
+      password: password,
     );
     final hasPin = await _secureSession.hasPin();
     if (!mounted) return;
@@ -125,45 +125,79 @@ class _CrmMobileAppState extends State<CrmMobileApp>
 
   Future<bool> _unlockWithPin(String pin) async {
     if (!await _secureSession.verifyPin(pin)) return false;
-    return _restoreServerSession();
+    return _restoreUnlockedSession();
   }
 
   Future<bool> _unlockWithBiometric() async {
     if (!await _secureSession.authenticateBiometric()) return false;
-    return _restoreServerSession();
+    return _restoreUnlockedSession();
   }
 
-  Future<bool> _restoreServerSession() async {
-    final stored = _storedSession;
-    if (stored == null || !_secureSession.isActive(stored)) {
-      await _requirePassword();
-      return false;
-    }
-    try {
-      final profile = await _api.session(stored.accessToken);
-      if (!mounted) return false;
-      setState(() {
-        _session = UserSession(
-          accessToken: stored.accessToken,
-          profile: profile,
-        );
-        _stage = _AuthStage.dashboard;
-      });
-      await _secureSession.touchActivity();
-      _scheduleUpdateCheck();
-      return true;
-    } catch (_) {
-      await _requirePassword();
-      return false;
-    }
-  }
+  Future<bool> _restoreUnlockedSession() async {
+    final stored = _storedSession ?? await _secureSession.readSession();
+    if (stored == null) return false;
 
-  Future<void> _requirePassword() async {
-    await _secureSession.clearSession();
-    if (!mounted) return;
+    if (!mounted) return false;
     setState(() {
-      _session = null;
-      _storedSession = null;
+      _session = UserSession(
+        accessToken: stored.accessToken,
+        profile: stored.profile,
+      );
+      _stage = _AuthStage.dashboard;
+    });
+
+    await _secureSession.touchActivity();
+    _scheduleUpdateCheck();
+    unawaited(_ensureValidServerSession(stored));
+    return true;
+  }
+
+  Future<void> _ensureValidServerSession(StoredSession stored) async {
+    if (stored.accessToken.isNotEmpty) {
+      try {
+        final profile = await _api.session(stored.accessToken);
+        if (!mounted || _stage != _AuthStage.dashboard) return;
+        setState(() {
+          _session = UserSession(
+            accessToken: stored.accessToken,
+            profile: profile,
+          );
+        });
+        await _secureSession.saveProfile(profile);
+        await _secureSession.touchActivity();
+        return;
+      } catch (_) {
+        // Access token might be expired on the server; attempt silent renewal
+      }
+    }
+
+    if (stored.savedPassword.isNotEmpty && stored.email.isNotEmpty) {
+      try {
+        final renewed = await _api.signIn(
+          email: stored.email,
+          password: stored.savedPassword,
+          corporateId: stored.corporateId,
+        );
+        await _secureSession.saveLogin(
+          email: renewed.profile.email,
+          accessToken: renewed.accessToken,
+          profile: renewed.profile,
+          corporateId: stored.corporateId,
+          password: stored.savedPassword,
+        );
+        if (!mounted || _stage != _AuthStage.dashboard) return;
+        setState(() {
+          _session = renewed;
+        });
+        await _secureSession.touchActivity();
+      } catch (_) {
+        // Network unavailable or server error; keep active cached session
+      }
+    }
+  }
+
+  void _usePasswordLogin() {
+    setState(() {
       _stage = _AuthStage.login;
     });
   }
@@ -195,6 +229,8 @@ class _CrmMobileAppState extends State<CrmMobileApp>
             await _secureSession.saveLogin(
               email: renewed.profile.email,
               accessToken: renewed.accessToken,
+              profile: renewed.profile,
+              password: password,
             );
             _session = renewed;
             return null;
@@ -245,6 +281,8 @@ class _CrmMobileAppState extends State<CrmMobileApp>
       await _secureSession.saveLogin(
         email: session.profile.email,
         accessToken: accessToken,
+        profile: session.profile,
+        password: value.newPassword,
       );
       if (!mounted || !navigatorContext.mounted) return;
       setState(() {
@@ -381,11 +419,11 @@ class _CrmMobileAppState extends State<CrmMobileApp>
       case _AuthStage.unlock:
         final stored = _storedSession!;
         return PinUnlockPage(
-          email: stored.email,
+          email: stored.email.isNotEmpty ? stored.email : _lastEmail,
           biometricEnabled: stored.biometricEnabled,
           onPin: _unlockWithPin,
           onBiometric: _unlockWithBiometric,
-          onUsePassword: _requirePassword,
+          onUsePassword: _usePasswordLogin,
         );
       case _AuthStage.dashboard:
         return DashboardPage(
@@ -396,6 +434,7 @@ class _CrmMobileAppState extends State<CrmMobileApp>
           onChangePassword: _changePassword,
           onCheckForUpdate: () => _checkForUpdate(reportCurrent: true),
           onSignOut: _signOut,
+          onReauthenticate: _usePasswordLogin,
         );
     }
   }
@@ -514,4 +553,3 @@ class _AppRouteObserver extends NavigatorObserver {
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
       _schedule();
 }
-

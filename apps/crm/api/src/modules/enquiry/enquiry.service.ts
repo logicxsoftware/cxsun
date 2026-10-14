@@ -24,18 +24,29 @@ export type EnquiryRelations = {
   priority: (id: number) => Promise<{ name: string } | null>;
 };
 
+export type PendingClosureLookup = (enquiryIds: number[]) => Promise<Set<number>>;
+
 export class EnquiryService {
   constructor(
     private readonly repository: EnquiryRepository,
     private readonly relations: EnquiryRelations,
-    private readonly viewer: Pick<EnquiryListOptions, "actorEmail" | "actorUserId" | "canViewAll">
+    private readonly viewer: Pick<EnquiryListOptions, "actorEmail" | "actorUserId" | "canViewAll">,
+    private readonly pendingClosureLookup?: PendingClosureLookup
   ) {}
 
   async listPage(options: Omit<EnquiryListOptions, keyof typeof this.viewer>) {
     const page = await this.repository.listPage({ ...options, ...this.viewer });
+    const pendingIds = this.pendingClosureLookup
+      ? await this.pendingClosureLookup(page.items.map((record) => record.id))
+      : new Set<number>();
     return {
       ...page,
-      items: await Promise.all(page.items.map((record) => this.withContact(record)))
+      items: await Promise.all(
+        page.items.map(async (record) => ({
+          ...(await this.withContact(record)),
+          closurePending: pendingIds.has(record.id)
+        }))
+      )
     };
   }
 
@@ -69,10 +80,8 @@ export class EnquiryService {
       throw AppError.validation("Enter a 10-digit mobile number.");
     }
     const prepared = await this.prepare(input, null);
-    const record = await this.repository.create(
-      prepared,
-      actor,
-      (transaction) => this.resolveContact(prepared, transaction)
+    const record = await this.repository.create(prepared, actor, (transaction) =>
+      this.resolveContact(prepared, transaction)
     );
     if (!record) throw AppError.notFound("Enquiry could not be created.");
     return this.withContact(record);
@@ -204,6 +213,9 @@ export class EnquiryService {
     const status = await this.relations.status(input.statusId);
     if (!status) {
       throw AppError.validation("Select an active enquiry status.");
+    }
+    if (status.code === "closed" && current?.status !== "closed") {
+      throw AppError.validation("Enquiries must be closed through the closure approval workflow.");
     }
     const terminal = new Set(["won", "lost", "closed"]);
     if (current && current.status !== status.code) {

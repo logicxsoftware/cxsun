@@ -426,6 +426,19 @@ export class EnquiryRepository {
         .set({ ...toRow(prepared), updated_at: sql`UTC_TIMESTAMP()` })
         .where("id", "=", id)
         .execute();
+      if (previous.status_id !== prepared.statusId) {
+        const statuses = await transaction
+          .selectFrom("crm_enquiry_statuses")
+          .select(["id", "name"])
+          .where("id", "in", [previous.status_id, prepared.statusId])
+          .execute();
+        const statusNames = new Map(statuses.map((status) => [status.id, status.name]));
+        const from = statusNames.get(previous.status_id) ?? "Unknown";
+        const to = statusNames.get(prepared.statusId) ?? "Unknown";
+        const message = `Status changed from ${from} to ${to}.`;
+        await insertEnquiryActivity(transaction, id, "status-changed", message, actor);
+        await insertEnquiryComment(transaction, id, message, actor);
+      }
       if (previous.assigned_user_id !== prepared.assignedUserId && previous.assigned_user_id) {
         await transaction
           .updateTable("crm_enquiry_alerts")
@@ -457,7 +470,9 @@ export class EnquiryRepository {
           actor
         );
       }
-      await insertEnquiryActivity(transaction, id, "updated", details, actor);
+      if (previous.status_id === prepared.statusId) {
+        await insertEnquiryActivity(transaction, id, "updated", details, actor);
+      }
     });
     return this.get(id);
   }
@@ -665,6 +680,27 @@ export async function insertEnquiryActivity(
       enquiry_id: enquiryId,
       action,
       details,
+      status: "active",
+      created_by: actor,
+      created_at: sql`UTC_TIMESTAMP()`,
+      updated_at: sql`UTC_TIMESTAMP()`
+    })
+    .execute();
+}
+
+export async function insertEnquiryComment(
+  database: Kysely<EnquiryDatabase>,
+  enquiryId: number,
+  body: string,
+  actor: string
+) {
+  await database
+    .insertInto("crm_enquiry_comments")
+    .values({
+      enquiry_id: enquiryId,
+      parent_id: null,
+      body,
+      body_format: "plain",
       status: "active",
       created_by: actor,
       created_at: sql`UTC_TIMESTAMP()`,

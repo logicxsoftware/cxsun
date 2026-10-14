@@ -90,7 +90,11 @@ export function EnquiryList({
       accessorKey: "title",
       header: "Enquiry details",
       cell: ({ row }) =>
-        row.original.status === "new" ? (
+        row.original.closurePending ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-900 dark:border-orange-700 dark:bg-orange-950/40 dark:text-orange-200">
+            <BellRing className="size-3.5" /> Closure pending
+          </span>
+        ) : row.original.status === "new" ? (
           onOpenCall ? (
             <button
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-wait"

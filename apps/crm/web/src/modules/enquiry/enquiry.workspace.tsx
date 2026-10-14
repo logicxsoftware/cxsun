@@ -86,9 +86,7 @@ function EnquiryPage({
   const [search, setSearch] = useState("");
   const [showInlineFilters, setShowInlineFilters] = useState(false);
   const [columnFilters, setColumnFilters] = useState<EnquiryColumnFilters>({});
-  const [status, setStatus] = useState(
-    reportFilters?.filter ?? (scope === "assigned" ? "active" : "all")
-  );
+  const [status, setStatus] = useState(reportFilters?.filter ?? "active");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({});

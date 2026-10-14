@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/api/crm_mobile_api.dart';
-import '../../core/auth/secure_session_store.dart';
 import '../../core/config/app_config.dart';
 import '../../core/presentation/app_brand_logo.dart';
 import '../../core/messaging/live_message_notifications.dart';
@@ -15,8 +14,6 @@ import 'dashboard_home.dart';
 import 'dashboard_jobs_feed.dart';
 import 'dashboard_list_page.dart';
 import 'duty_page.dart';
-import 'job_start_countdown.dart';
-import 'job_start_store.dart';
 import 'messages_sample_page.dart';
 import 'my_enquiries_page.dart';
 import 'home_enquiry_form_page.dart';
@@ -28,6 +25,7 @@ class DashboardPage extends StatefulWidget {
     required this.session,
     required this.navigation,
     required this.onSignOut,
+    this.onReauthenticate,
     this.onResetPin,
     this.onCheckForUpdate,
     this.onChangePassword,
@@ -38,6 +36,7 @@ class DashboardPage extends StatefulWidget {
   final UserSession session;
   final DashboardNavigation navigation;
   final VoidCallback onSignOut;
+  final VoidCallback? onReauthenticate;
   final Future<void> Function()? onResetPin;
   final Future<void> Function()? onCheckForUpdate;
   final Future<void> Function()? onChangePassword;
@@ -54,7 +53,6 @@ class _DashboardPageState extends State<DashboardPage> {
   late final LiveMessageNotifications _messageNotifications;
   late final MobileNotificationService _mobileNotifications;
   late final DashboardJobsFeed _jobsFeed;
-  late final JobStartStore _jobStartStore;
 
   @override
   void initState() {
@@ -74,25 +72,10 @@ class _DashboardPageState extends State<DashboardPage> {
     widget.navigation.addListener(_onNavigationChanged);
     _messageNotifications.addListener(_updateBadges);
     _mobileNotifications.addListener(_updateBadges);
-    _jobStartStore = JobStartStore(SecureSessionStore());
-    unawaited(_restorePendingJobStarts());
     if (widget.enableLiveNotifications) {
       unawaited(_messageNotifications.start());
       unawaited(_mobileNotifications.start());
     }
-  }
-
-  Future<void> _restorePendingJobStarts() {
-    return JobStartCountdown.instance.restore(
-      store: _jobStartStore,
-      onElapsed: (jobId) async {
-        await widget.api.startJob(
-          accessToken: widget.session.accessToken,
-          id: jobId,
-        );
-        await _jobsFeed.refresh();
-      },
-    );
   }
 
   @override
@@ -104,6 +87,15 @@ class _DashboardPageState extends State<DashboardPage> {
     _mobileNotifications.dispose();
     _jobsFeed.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.session.accessToken == widget.session.accessToken) return;
+    _jobsFeed.updateSession(widget.session);
+    _messageNotifications.updateSession(widget.session);
+    _mobileNotifications.updateSession(widget.session);
   }
 
   @override
@@ -177,7 +169,10 @@ class _DashboardPageState extends State<DashboardPage> {
                   const PopupMenuDivider(),
                   PopupMenuItem(
                     value: _HomeMenuAction.signOut,
-                    child: const _HomeMenuItem(icon: Icons.logout, label: 'Sign out'),
+                    child: const _HomeMenuItem(
+                      icon: Icons.logout,
+                      label: 'Sign out',
+                    ),
                   ),
                 ],
               ),
@@ -203,15 +198,15 @@ class _DashboardPageState extends State<DashboardPage> {
         body: SafeArea(top: false, child: _buildBody()),
         floatingActionButton: switch (_selectedIndex) {
           0 => FloatingActionButton(
-              tooltip: 'Add',
-              onPressed: _showHomeAddMenu,
-              child: const Icon(Icons.add_rounded),
-            ),
+            tooltip: 'Add',
+            onPressed: _showHomeAddMenu,
+            child: const Icon(Icons.add_rounded),
+          ),
           1 => FloatingActionButton(
-              tooltip: 'New enquiry',
-              onPressed: _openNewEnquiryFromTab,
-              child: const Icon(Icons.add_rounded),
-            ),
+            tooltip: 'New enquiry',
+            onPressed: _openNewEnquiryFromTab,
+            child: const Icon(Icons.add_rounded),
+          ),
           _ => null,
         },
       ),
@@ -229,6 +224,7 @@ class _DashboardPageState extends State<DashboardPage> {
         jobsFeed: _jobsFeed,
         onOpenList: _selectDestination,
         onOpenActions: _openActions,
+        onReauthenticate: widget.onReauthenticate,
       );
     }
     if (_selectedIndex == 1) {

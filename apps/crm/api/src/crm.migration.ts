@@ -13,12 +13,19 @@ import { statusMigrationBatch, migrateStatusMaster } from "./modules/status/inde
 import type { StatusDatabase } from "./modules/status/index.js";
 import { priorityMigrationBatch, migratePriorityMaster } from "./modules/priority/index.js";
 import type { PriorityDatabase } from "./modules/priority/index.js";
+import { closureMigrationBatch, migrateClosureModule } from "./modules/closure/index.js";
+import {
+  enquiryLocationMigrationBatch,
+  migrateEnquiryLocationModule
+} from "./modules/enquiry-location/index.js";
 
 const batches = [
   listinMigrationBatch,
   statusMigrationBatch,
   priorityMigrationBatch,
   enquiryMigrationBatch,
+  closureMigrationBatch,
+  enquiryLocationMigrationBatch,
   callLogMigrationBatch,
   ...contact360MigrationBatches
 ];
@@ -32,6 +39,14 @@ export async function migrateCrmTenantDatabase(database: Kysely<EnquiryDatabase>
   await migrateStatusMaster(database as unknown as Kysely<StatusDatabase>);
   await migratePriorityMaster(database as unknown as Kysely<PriorityDatabase>);
   await migrateEnquiryDatabase(database);
+  await migrateClosureModule(
+    database as unknown as Kysely<import("./modules/closure/index.js").ClosureDatabase>
+  );
+  await migrateEnquiryLocationModule(
+    database as unknown as Kysely<
+      import("./modules/enquiry-location/index.js").EnquiryLocationDatabase
+    >
+  );
   await migrateCallLogModule(database as unknown as Kysely<unknown>);
   return migrateContact360Database(database);
 }

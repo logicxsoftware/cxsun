@@ -23,6 +23,7 @@ import {
   updateMessage
 } from "./chat.services";
 import type {
+  ChatChannel,
   ChatChannelSavePayload,
   ChatMemberSavePayload,
   ChatMessageSavePayload
@@ -65,7 +66,30 @@ export function useChatWorkspace(search: string, channelUuid: string | null) {
     }),
     markRead: useMutation({
       mutationFn: (id: string) => markChannelRead(id),
-      onSuccess: invalidate
+      onMutate: async (id: string) => {
+        await client.cancelQueries({ queryKey: [...chatQueryKey, "channels"] });
+        const previousData = client.getQueriesData<ChatChannel[]>({
+          queryKey: [...chatQueryKey, "channels"]
+        });
+        client.setQueriesData<ChatChannel[]>(
+          { queryKey: [...chatQueryKey, "channels"] },
+          (old) =>
+            old?.map((channel) =>
+              channel.uuid === id || String(channel.id) === id
+                ? { ...channel, unreadCount: 0 }
+                : channel
+            ) ?? []
+        );
+        return { previousData };
+      },
+      onError: (_err, _id, context) => {
+        if (context?.previousData) {
+          for (const [key, val] of context.previousData) {
+            client.setQueryData(key, val);
+          }
+        }
+      },
+      onSettled: invalidate
     }),
     createMessage: useMutation({
       mutationFn: (payload: ChatMessageSavePayload) => createMessage(payload),
@@ -206,4 +230,37 @@ export function useChatUsers(search = "") {
     queryKey: [...chatQueryKey, "users", search],
     queryFn: () => listChatUsers(search)
   });
+}
+
+export type ChatNavigationCounts = {
+  direct: number;
+  groups: number;
+  channels: number;
+  broadcast: number;
+  total: number;
+};
+
+export function useChatNavigationCounts(enabled = true): ChatNavigationCounts {
+  const query = useQuery({
+    queryKey: [...chatQueryKey, "channels", ""],
+    queryFn: () => listChannels(""),
+    enabled,
+    staleTime: 10_000
+  });
+  const channelList = query.data ?? [];
+  const direct = channelList
+    .filter((c) => c.kind === "dm")
+    .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const groups = channelList
+    .filter((c) => c.kind === "group")
+    .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const channels = channelList
+    .filter((c) => c.kind === "channel")
+    .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const broadcast = channelList
+    .filter((c) => c.kind === "broadcast")
+    .reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const total = direct + groups + channels + broadcast;
+
+  return { direct, groups, channels, broadcast, total };
 }

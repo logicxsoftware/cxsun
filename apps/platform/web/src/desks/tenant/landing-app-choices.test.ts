@@ -14,5 +14,6 @@ test("landing choices use the registered identity of every enabled app", () => {
     assert.equal(choice?.label, app.label);
     assert.equal(choice?.description, app.description);
     assert.ok(choice?.icon);
+    assert.equal(choice?.iconSrc, app.id === "crm" ? "/logo/app-icon.png" : undefined);
   }
 });

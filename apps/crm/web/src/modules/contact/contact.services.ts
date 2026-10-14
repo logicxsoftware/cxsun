@@ -50,7 +50,18 @@ export const forceDeleteContact = (id: number) =>
   contactRequest<ContactRecord>(`/${id}/force`, { method: "DELETE" });
 
 export async function listContactLookups(): Promise<ContactLookups> {
-  return crmRequest<ContactLookups>(`${contactPath}/lookups`);
+  const response = await crmRequest<Partial<ContactLookups>>(`${contactPath}/lookups`);
+  return {
+    addressTypes: Array.isArray(response.addressTypes) ? response.addressTypes : [],
+    bankNames: Array.isArray(response.bankNames) ? response.bankNames : [],
+    cities: Array.isArray(response.cities) ? response.cities : [],
+    contactGroups: Array.isArray(response.contactGroups) ? response.contactGroups : [],
+    contactTypes: Array.isArray(response.contactTypes) ? response.contactTypes : [],
+    countries: Array.isArray(response.countries) ? response.countries : [],
+    districts: Array.isArray(response.districts) ? response.districts : [],
+    pincodes: Array.isArray(response.pincodes) ? response.pincodes : [],
+    states: Array.isArray(response.states) ? response.states : []
+  };
 }
 
 export const createContactTypeLookup = (name: string) =>

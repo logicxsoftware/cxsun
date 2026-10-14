@@ -23,7 +23,8 @@ export const defaultTenantModuleKeys = [
   "hrms",
   "docs",
   "himsx",
-  "codexsun"
+  "codexsun",
+  "sites"
 ] as const;
 
 export const platformAppRegistry: PlatformAppDefinition[] = [
@@ -72,6 +73,18 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     defaultLanding: false,
     description:
       "Hospital Information Management System. Hospital information and administrative operations."
+  },
+  {
+    appId: "sites",
+    id: 0,
+    uuid: "",
+    label: "Site Studio",
+    moduleKey: "sites",
+    stack: "sites",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description:
+      "Site Studio CMS portal for multi-client portfolio websites (Wix / Shopify style)."
   },
   {
     appId: "q-cafe",

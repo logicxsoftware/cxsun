@@ -62,6 +62,33 @@ const apps = {
     command: process.execPath,
     args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort"]
   },
+  "sites-codexsun": {
+    displayName: "sites codexsun",
+    cwd: "apps/sites/clients",
+    envKey: "CXSUN_SITES_CODEXSUN_PORT",
+    defaultPort: 7130,
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort", "--mode", "codexsun"]
+  },
+  "sites-logicx": {
+    displayName: "sites logicx",
+    cwd: "apps/sites/clients",
+    envKey: "CXSUN_SITES_LOGICX_PORT",
+    defaultPort: 7131,
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort", "--mode", "logicx"]
+  },
+  "sites-techmedia": {
+    displayName: "sites techmedia",
+    cwd: "apps/sites/clients",
+    envKey: "CXSUN_SITES_TECHMEDIA_PORT",
+    defaultPort: 7132,
+    host: "127.0.0.1",
+    command: process.execPath,
+    args: [nodePackageBin("vite", "bin/vite.js"), "--strictPort", "--mode", "techmedia"]
+  },
   "platform-api": {
     displayName: "api",
     cwd: "apps/platform/api",

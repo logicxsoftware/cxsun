@@ -201,7 +201,12 @@ export class SalesRepository {
         EXISTS(SELECT 1 FROM core_financial_years WHERE id = ${input.financialYearId} AND id=${scope.financialYearId} AND status = 'active' AND ${input.issuedOn} BETWEEN start_date AND end_date) AS financialYear,
         EXISTS(SELECT 1 FROM core_contacts WHERE id = ${input.customerId} AND status = 'active') AS customer,
         EXISTS(SELECT 1 FROM core_contacts_addresses WHERE id = ${input.billingAddressId} AND parent_id = ${input.customerId}) AS billingAddress,
-        EXISTS(SELECT 1 FROM core_contacts_addresses WHERE id = ${input.shippingAddressId} AND parent_id = ${input.customerId}) AS shippingAddress,
+        EXISTS(
+          SELECT 1 FROM core_contacts_addresses address
+          INNER JOIN core_contacts contact ON contact.id = address.parent_id
+          WHERE address.id = ${input.shippingAddressId}
+            AND contact.status = 'active' AND contact.deleted_at IS NULL
+        ) AS shippingAddress,
         ${input.workOrderId ? sql`EXISTS(SELECT 1 FROM core_work_orders WHERE id = ${input.workOrderId} AND status = 'active')` : sql`1`} AS workOrder,
         ${input.ledgerId ? sql`EXISTS(SELECT 1 FROM core_ledgers WHERE id = ${input.ledgerId} AND status = 'active')` : sql`1`} AS ledger,
         EXISTS(SELECT 1 FROM core_currencies WHERE id = ${input.currencyId} AND status = 'active') AS currency
@@ -665,6 +670,9 @@ export class SalesRepository {
       salesLedger: row.ledger_name ?? "",
       shippingAddress: formatAddress(row, "shipping"),
       shippingAddressId: row.shipping_address_id,
+      shippingContactId: row.shipping_contact_id,
+      shippingContactName: row.shipping_contact_name,
+      shippingContactGstin: row.shipping_contact_gstin ?? "",
       status: row.status,
       subtotal: money(row.subtotal),
       taxAmount: money(row.tax_amount),

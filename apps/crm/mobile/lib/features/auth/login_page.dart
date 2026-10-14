@@ -13,7 +13,11 @@ class LoginPage extends StatefulWidget {
   });
 
   final CrmMobileApi api;
-  final ValueChanged<UserSession> onSignedIn;
+  final void Function(
+    UserSession session, {
+    String? password,
+    String? corporateId,
+  }) onSignedIn;
   final String initialEmail;
 
   @override
@@ -49,16 +53,23 @@ class _LoginPageState extends State<LoginPage> {
       _isSigningIn = true;
     });
     try {
+      final password = _password.text;
+      final corporateId = _corporateId.text.trim();
       final session = await widget.api.signIn(
         email: _email.text.trim(),
-        password: _password.text,
-        corporateId: _corporateId.text.trim(),
+        password: password,
+        corporateId: corporateId,
       );
-      widget.onSignedIn(session);
+      widget.onSignedIn(
+        session,
+        password: password,
+        corporateId: corporateId,
+      );
     } on CrmMobileApiException catch (error) {
       setState(() => _error = error.message);
-    } catch (_) {
-      setState(() => _error = 'Could not connect to ${AppConfig.brandName}.');
+    } catch (error, stack) {
+      debugPrint('[login error] $error\n$stack');
+      setState(() => _error = 'Could not connect to ${AppConfig.brandName}: $error');
     } finally {
       if (mounted) setState(() => _isSigningIn = false);
     }
@@ -90,8 +101,8 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Center(
                         child: AppBrandLogo(
-                          width: 64,
-                          height: 58,
+                          width: 72,
+                          height: 68,
                         ),
                       ),
                       const SizedBox(height: 18),

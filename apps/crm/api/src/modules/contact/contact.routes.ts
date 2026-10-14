@@ -10,16 +10,16 @@ const idParams = z.object({ id: z.string().regex(/^\d+$/u) });
 const addressParams = idParams.extend({ addressId: z.string().regex(/^\d+$/u) });
 const searchQuery = z.object({ search: z.string().trim().optional() });
 const body = z.unknown();
-const lookups: readonly (readonly [CrmContactLookupName, string])[] = [
-  ["contact-types", "/core/common/contacts/contact-types"],
-  ["contact-groups", "/core/common/contacts/contact-groups"],
-  ["address-types", "/core/common/contacts/address-types"],
-  ["bank-names", "/core/common/contacts/bank-names"],
-  ["countries", "/core/common/location/countries"],
-  ["states", "/core/common/location/states"],
-  ["districts", "/core/common/location/districts"],
-  ["cities", "/core/common/location/cities"],
-  ["pincodes", "/core/common/location/pincodes"]
+const lookups: readonly (readonly [CrmContactLookupName, string, string])[] = [
+  ["contactTypes", "contact-types", "/core/common/contacts/contact-types"],
+  ["contactGroups", "contact-groups", "/core/common/contacts/contact-groups"],
+  ["addressTypes", "address-types", "/core/common/contacts/address-types"],
+  ["bankNames", "bank-names", "/core/common/contacts/bank-names"],
+  ["countries", "countries", "/core/common/location/countries"],
+  ["states", "states", "/core/common/location/states"],
+  ["districts", "districts", "/core/common/location/districts"],
+  ["cities", "cities", "/core/common/location/cities"],
+  ["pincodes", "pincodes", "/core/common/location/pincodes"]
 ] as const;
 
 export function registerCrmContactRoutes(
@@ -109,7 +109,8 @@ export function registerCrmContactRoutes(
     handler: async ({ request }) => {
       const entries = await Promise.all(
         lookups.map(
-          async ([key, corePath]) => [key, await service.forward(request, "GET", corePath)] as const
+          async ([key, , corePath]) =>
+            [key, await service.forward(request, "GET", corePath)] as const
         )
       );
       return Object.fromEntries(entries);
@@ -119,13 +120,13 @@ export function registerCrmContactRoutes(
     schemas: { response },
     url: `${base}/lookups`
   });
-  for (const [name, corePath] of lookups) {
+  for (const [, pathName, corePath] of lookups) {
     registerContractRoute(app, {
       handler: ({ body: input, request }) => service.forward(request, "POST", corePath, input),
       method: "POST",
       preHandler,
       schemas: { body, response },
-      url: `${base}/lookups/${name}`
+      url: `${base}/lookups/${pathName}`
     });
   }
 }

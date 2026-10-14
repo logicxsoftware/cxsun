@@ -186,9 +186,9 @@ export function ChatChannelList({
   return (
     <div className="space-y-1 p-2">
       {channels.map((channel) => {
-        const unread = channel.unreadCount;
-        const favourite = favourites.has(channel.uuid);
         const isSelected = selectedId === channel.uuid;
+        const unread = isSelected ? 0 : channel.unreadCount;
+        const favourite = favourites.has(channel.uuid);
         const timeLabel = formatRelativeTime(channel.lastMessageAt ?? channel.updatedAt);
         const isSuspended = channel.status === "inactive";
         const isFromMe =
@@ -256,7 +256,7 @@ export function ChatChannelList({
                   ) : null}
                   <span className="truncate">
                     {channel.lastMessagePreview ??
-                      (channel.kind === "dm" ? "Direct chat" : "Group conversation")}
+                      (channel.kind === "dm" ? "Chat" : "Group conversation")}
                   </span>
                 </span>
 

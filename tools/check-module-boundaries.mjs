@@ -8,6 +8,7 @@ const moduleRoots = [
   { app: "hrms-api", path: join(process.cwd(), "apps", "hrms", "api", "src", "modules") },
   { app: "docs-api", path: join(process.cwd(), "apps", "docs", "api", "src", "modules") },
   { app: "himsx-api", path: join(process.cwd(), "apps", "himsx", "api", "src", "modules") },
+  { app: "sites-api", path: join(process.cwd(), "apps", "sites", "api", "src", "modules") },
 
   {
     app: "auditor-api",
@@ -111,6 +112,7 @@ const capabilityBackendRoles = new Map([
   ["hrms-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["docs-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["himsx-api/overview", ["module", "service", "routes", "seed", "types"]],
+  ["sites-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["platform-api/q-cafe", ["module", "routes", "types"]],
 
   ["auditor-api/client", ["module", "service", "repository", "routes", "migration", "types"]],
@@ -142,6 +144,8 @@ const capabilityBackendRoles = new Map([
   ["billing-api/opening-balance", reducedBackendRoles],
   ["crm-api/enquiry", reducedBackendRoles],
   ["crm-api/activities", ["module", "service", "repository", "routes", "types"]],
+  ["crm-api/closure", ["module", "routes", "migration", "seed", "types"]],
+  ["crm-api/enquiry-location", ["module", "service", "repository", "routes", "migration", "types"]],
   ["crm-api/call-log", ["module", "service", "routes", "seed", "types"]],
   ["crm-api/list-in", reducedBackendRoles],
   ["crm-api/status", reducedBackendRoles],
@@ -172,6 +176,7 @@ const webModuleRoots = [
   { app: "hrms-web", path: join(process.cwd(), "apps", "hrms", "web", "src", "modules") },
   { app: "docs-web", path: join(process.cwd(), "apps", "docs", "web", "src", "modules") },
   { app: "himsx-web", path: join(process.cwd(), "apps", "himsx", "web", "src", "modules") },
+  { app: "sites-web", path: join(process.cwd(), "apps", "sites", "web", "src", "modules") },
 
   {
     app: "ecommerce-storefront",
@@ -236,6 +241,7 @@ const capabilityFrontendRoles = new Map([
   ["hrms-web/overview", ["workspace", "services", "hooks", "types"]],
   ["docs-web/overview", ["workspace", "services", "hooks", "types"]],
   ["himsx-web/overview", ["workspace", "services", "hooks", "types"]],
+  ["sites-web/overview", ["workspace", "services", "hooks", "types"]],
   ["ecommerce-web/overview", ["workspace", "services", "hooks", "types"]],
   ["ecommerce-web/storefront", ["page", "services", "types"]],
   [
@@ -256,6 +262,7 @@ const capabilityFrontendRoles = new Map([
   ],
   ["crm-web/overview", ["workspace"]],
   ["crm-web/activities", ["workspace", "list", "services", "hooks", "types"]],
+  ["crm-web/closure", ["workspace", "services", "types"]],
   ["crm-web/call-log", ["workspace", "list", "form", "services", "hooks", "schema", "types"]],
   [
     "crm-web/contact",

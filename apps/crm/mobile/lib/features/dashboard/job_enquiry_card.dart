@@ -7,7 +7,6 @@ import '../../core/platform/mobile_actions.dart';
 import 'dashboard_list_page.dart';
 import 'job_detail_page.dart';
 import 'job_duration.dart';
-import 'job_start_countdown.dart';
 
 class JobEnquiryCard extends StatefulWidget {
   const JobEnquiryCard({
@@ -31,14 +30,12 @@ class JobEnquiryCard extends StatefulWidget {
 
 class _JobEnquiryCardState extends State<JobEnquiryCard> {
   late CrmJob _job = widget.job;
-  final _startCountdown = JobStartCountdown.instance;
   bool _updating = false;
   Timer? _runningTimer;
 
   @override
   void initState() {
     super.initState();
-    _startCountdown.addListener(_refreshCountdown);
     _syncRunningTimer();
   }
 
@@ -51,13 +48,8 @@ class _JobEnquiryCardState extends State<JobEnquiryCard> {
 
   @override
   void dispose() {
-    _startCountdown.removeListener(_refreshCountdown);
     _runningTimer?.cancel();
     super.dispose();
-  }
-
-  void _refreshCountdown() {
-    if (mounted) setState(() {});
   }
 
   CrmJobExecution? get _runningJob {
@@ -82,7 +74,6 @@ class _JobEnquiryCardState extends State<JobEnquiryCard> {
   Widget build(BuildContext context) {
     final enquiry = DashboardListItem.fromCrmJob(_job);
     final running = _runningJob != null;
-    final starting = _startCountdown.isPending(_job.sourceId);
     return Card(
       margin: EdgeInsets.zero,
       color: Colors.white,
@@ -112,8 +103,6 @@ class _JobEnquiryCardState extends State<JobEnquiryCard> {
                 _JobCardHeader(
                   enquiry: enquiry,
                   running: running,
-                  starting: starting,
-                  countdownLabel: _startCountdown.label(_job.sourceId),
                   runningDuration: running
                       ? formatJobDuration(_runningJob!)
                       : null,
@@ -164,23 +153,19 @@ class _JobEnquiryCardState extends State<JobEnquiryCard> {
 
   Future<void> _toggleJob(bool shouldRun) async {
     if (_updating) return;
-    final starting = _startCountdown.isPending(_job.sourceId);
-    if (!shouldRun && starting) {
-      _startCountdown.cancel(_job.sourceId);
-      return;
-    }
-    if (shouldRun) {
-      _scheduleJobStart();
-      return;
-    }
     setState(() => _updating = true);
     try {
       final running = _runningJob;
-      final updated = await widget.api.stopJob(
-        accessToken: widget.session.accessToken,
-        id: _job.sourceId,
-        jobName: running!.name,
-      );
+      final updated = shouldRun
+          ? await widget.api.startJob(
+              accessToken: widget.session.accessToken,
+              id: _job.sourceId,
+            )
+          : await widget.api.stopJob(
+              accessToken: widget.session.accessToken,
+              id: _job.sourceId,
+              jobName: running!.name,
+            );
       if (mounted) {
         setState(() => _job = updated);
         _syncRunningTimer();
@@ -194,31 +179,6 @@ class _JobEnquiryCardState extends State<JobEnquiryCard> {
     } finally {
       if (mounted) setState(() => _updating = false);
     }
-  }
-
-  void _scheduleJobStart() {
-    final scheduled = _startCountdown.start(
-      jobId: _job.sourceId,
-      onElapsed: () async {
-        try {
-          final updated = await widget.api.startJob(
-            accessToken: widget.session.accessToken,
-            id: _job.sourceId,
-          );
-          if (mounted) {
-            setState(() => _job = updated);
-            _syncRunningTimer();
-            widget.onJobChanged();
-          }
-        } on CrmMobileApiException catch (error) {
-          if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(error.message)));
-          }
-        }
-      },
-    );
-    if (scheduled && mounted) setState(() {});
   }
 
   Future<void> _openDetail(
@@ -295,8 +255,6 @@ class _JobCardHeader extends StatelessWidget {
   const _JobCardHeader({
     required this.enquiry,
     required this.running,
-    required this.starting,
-    required this.countdownLabel,
     required this.runningDuration,
     required this.updating,
     required this.onChanged,
@@ -304,8 +262,6 @@ class _JobCardHeader extends StatelessWidget {
 
   final DashboardListItem enquiry;
   final bool running;
-  final bool starting;
-  final String countdownLabel;
   final String? runningDuration;
   final bool updating;
   final ValueChanged<bool> onChanged;
@@ -326,7 +282,7 @@ class _JobCardHeader extends StatelessWidget {
               const Icon(Icons.adjust_rounded, size: 15, color: Colors.white),
               const SizedBox(width: 4),
               Text(
-                '#${enquiry.enquiryNumber}  ${_statusLabel(enquiry.status)}',
+                '#${enquiry.enquiryNumber}  ${_statusLabel(enquiry)}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -346,21 +302,13 @@ class _JobCardHeader extends StatelessWidget {
           ),
         ),
         Icon(
-          running
-              ? Icons.stop_rounded
-              : starting
-              ? Icons.timer_outlined
-              : Icons.play_arrow_rounded,
+          running ? Icons.stop_rounded : Icons.play_arrow_rounded,
           size: 18,
           color: const Color(0xFF242127),
         ),
         const SizedBox(width: 3),
         Text(
-          running
-              ? 'Stop ${runningDuration ?? ''}'.trim()
-              : starting
-              ? countdownLabel
-              : 'Start',
+          running ? 'Stop ${runningDuration ?? ''}'.trim() : 'Start',
           style: Theme.of(context).textTheme.labelMedium,
         ),
         const SizedBox(width: 2),
@@ -371,7 +319,7 @@ class _JobCardHeader extends StatelessWidget {
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           )
         else
-          _EmbossedSwitch(value: running || starting, onChanged: onChanged),
+          _EmbossedSwitch(value: running, onChanged: onChanged),
       ],
     );
   }
@@ -546,8 +494,11 @@ enum _JobMoreAction {
   final IconData icon;
 }
 
-String _statusLabel(JobStatus status) => switch (status) {
-  JobStatus.open => 'Open',
-  JobStatus.won => 'Won',
-  JobStatus.lost => 'Lost',
-};
+String _statusLabel(DashboardListItem enquiry) {
+  if (enquiry.statusName.trim().isNotEmpty) return enquiry.statusName;
+  return switch (enquiry.status) {
+    JobStatus.open => 'Open',
+    JobStatus.won => 'Won',
+    JobStatus.lost => 'Lost',
+  };
+}

@@ -9,6 +9,7 @@ const apiPackages = new Map([
   ["@cxsun/hrms-api", "hrms"],
   ["@cxsun/docs-api", "docs"],
   ["@cxsun/himsx-api", "himsx"],
+  ["@cxsun/sites-api", "sites"],
 
   ["@cxsun/accounts-api", "accounts"],
   ["@cxsun/auditor-api", "auditor"],

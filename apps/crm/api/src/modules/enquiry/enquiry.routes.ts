@@ -5,7 +5,11 @@ import { registerContractRoute } from "@cxsun/framework/http";
 import { AppError } from "@cxsun/framework/errors";
 import type {} from "@cxsun/framework/api";
 import { EnquiryRepository } from "./enquiry.repository.js";
-import { EnquiryService, type EnquiryRelations } from "./enquiry.service.js";
+import {
+  EnquiryService,
+  type EnquiryRelations,
+  type PendingClosureLookup
+} from "./enquiry.service.js";
 import { EnquiryReadService } from "./enquiry.read-source.js";
 import type { EnquiryDatabase } from "./enquiry.types.js";
 import { registerEnquiryWorkRoutes } from "./enquiry.work.routes.js";
@@ -48,7 +52,8 @@ const recordSchema = inputSchema.extend({
   priorityName: z.string(),
   createdBy: z.string(),
   createdAt: z.string(),
-  updatedAt: z.string()
+  updatedAt: z.string(),
+  closurePending: z.boolean().optional()
 });
 const referenceSchema = z.string().trim().min(1).max(191);
 const viewInputSchema = inputSchema
@@ -189,6 +194,7 @@ export type EnquiryRequestContext = {
   canViewAll: boolean;
   relations: EnquiryRelations;
   listUsers: () => Promise<Array<{ id: number; name: string; email: string; status: string }>>;
+  pendingClosureLookup?: PendingClosureLookup;
 };
 
 export function registerEnquiryRoutes(
@@ -200,7 +206,8 @@ export function registerEnquiryRoutes(
     const enquiry = new EnquiryService(
       new EnquiryRepository(scope.database),
       scope.relations,
-      scope
+      scope,
+      scope.pendingClosureLookup
     );
     return { scope, enquiry, read: new EnquiryReadService(enquiry) };
   };

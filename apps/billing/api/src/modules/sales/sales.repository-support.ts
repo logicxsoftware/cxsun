@@ -49,6 +49,9 @@ export type SaleHeaderRow = {
   notes: string | null;
   round_off: string | number;
   shipping_address_id: number;
+  shipping_contact_id: number;
+  shipping_contact_name: string;
+  shipping_contact_gstin: string | null;
   shipping_address_line1: string;
   shipping_address_line2: string | null;
   shipping_city: string | null;
@@ -123,7 +126,10 @@ export function selectSaleHeaders(uuid?: string) {
            billing.address_line2 AS billing_address_line2, billing.city_name AS billing_city,
            billing.district_name AS billing_district, billing.state_name AS billing_state,
            billing.pincode_name AS billing_pincode, billing.country_name AS billing_country,
-           s.shipping_address_id, shipping.address_line1 AS shipping_address_line1,
+           s.shipping_address_id, shipping_contact.id AS shipping_contact_id,
+           shipping_contact.name AS shipping_contact_name,
+           shipping_contact.gstin AS shipping_contact_gstin,
+           shipping.address_line1 AS shipping_address_line1,
            shipping.address_line2 AS shipping_address_line2, shipping.city_name AS shipping_city,
            shipping.district_name AS shipping_district, shipping.state_name AS shipping_state,
            shipping.pincode_name AS shipping_pincode, shipping.country_name AS shipping_country,
@@ -139,6 +145,7 @@ export function selectSaleHeaders(uuid?: string) {
     INNER JOIN core_contacts customer ON customer.id = s.customer_id
     INNER JOIN core_contacts_addresses billing ON billing.id = s.billing_address_id
     INNER JOIN core_contacts_addresses shipping ON shipping.id = s.shipping_address_id
+    INNER JOIN core_contacts shipping_contact ON shipping_contact.id = shipping.parent_id
     INNER JOIN core_currencies currency ON currency.id = s.currency_id
     LEFT JOIN core_work_orders work_order ON work_order.id = s.work_order_id
     LEFT JOIN core_ledgers ledger ON ledger.id = s.ledger_id
@@ -175,7 +182,10 @@ export function selectSalePageHeaders(
            billing.address_line2 AS billing_address_line2, billing.city_name AS billing_city,
            billing.district_name AS billing_district, billing.state_name AS billing_state,
            billing.pincode_name AS billing_pincode, billing.country_name AS billing_country,
-           s.shipping_address_id, shipping.address_line1 AS shipping_address_line1,
+           s.shipping_address_id, shipping_contact.id AS shipping_contact_id,
+           shipping_contact.name AS shipping_contact_name,
+           shipping_contact.gstin AS shipping_contact_gstin,
+           shipping.address_line1 AS shipping_address_line1,
            shipping.address_line2 AS shipping_address_line2, shipping.city_name AS shipping_city,
            shipping.district_name AS shipping_district, shipping.state_name AS shipping_state,
            shipping.pincode_name AS shipping_pincode, shipping.country_name AS shipping_country,
@@ -191,6 +201,7 @@ export function selectSalePageHeaders(
     INNER JOIN core_contacts customer ON customer.id = s.customer_id
     INNER JOIN core_contacts_addresses billing ON billing.id = s.billing_address_id
     INNER JOIN core_contacts_addresses shipping ON shipping.id = s.shipping_address_id
+    INNER JOIN core_contacts shipping_contact ON shipping_contact.id = shipping.parent_id
     INNER JOIN core_currencies currency ON currency.id = s.currency_id
     LEFT JOIN core_work_orders work_order ON work_order.id = s.work_order_id
     LEFT JOIN core_ledgers ledger ON ledger.id = s.ledger_id

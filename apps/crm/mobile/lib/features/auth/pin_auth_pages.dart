@@ -76,7 +76,7 @@ class _PinSetupPageState extends State<PinSetupPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Your PIN stays active until you reset it. The app requires your password after 10 inactive days.',
+                    'Your PIN secures this device and will be used on every app startup.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -185,7 +185,7 @@ class _PinUnlockPageState extends State<PinUnlockPage> {
     if (!mounted) return;
     setState(() {
       _checking = false;
-      _error = valid ? null : 'Incorrect PIN or expired session.';
+      _error = valid ? null : 'Incorrect PIN. Please try again.';
     });
     if (!valid) {
       _pin.clear();

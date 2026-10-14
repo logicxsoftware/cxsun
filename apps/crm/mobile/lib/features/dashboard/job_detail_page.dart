@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../core/api/crm_mobile_api.dart';
 import '../../core/platform/mobile_actions.dart';
 import 'dashboard_list_page.dart';
 import 'job_add_action_sheet.dart';
 import 'job_duration.dart';
-import 'job_start_countdown.dart';
 import 'job_work_feed.dart';
 
 const _detailSurfaceTone = Color(0xFFFCF9FD);
@@ -18,6 +18,7 @@ class JobDetailPage extends StatefulWidget {
     required this.session,
     required this.enquiry,
     required this.initialJob,
+    this.capturePosition,
     this.onJobChanged,
     super.key,
   });
@@ -26,6 +27,7 @@ class JobDetailPage extends StatefulWidget {
   final UserSession session;
   final DashboardListItem enquiry;
   final CrmJob initialJob;
+  final Future<Position> Function()? capturePosition;
   final VoidCallback? onJobChanged;
 
   @override
@@ -35,6 +37,8 @@ class JobDetailPage extends StatefulWidget {
 class _JobDetailPageState extends State<JobDetailPage> {
   final _replyController = TextEditingController();
   late CrmJob _job;
+  ClosureRequest? _closureRequest;
+  List<CrmEnquiryLocation> _locations = const [];
   var _isLoading = false;
   var _isSending = false;
   Timer? _runningTimer;
@@ -43,21 +47,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
   void initState() {
     super.initState();
     _job = widget.initialJob;
-    JobStartCountdown.instance.addListener(_refreshCountdown);
     _syncRunningTimer();
     _refresh();
   }
 
   @override
   void dispose() {
-    JobStartCountdown.instance.removeListener(_refreshCountdown);
     _runningTimer?.cancel();
     _replyController.dispose();
     super.dispose();
-  }
-
-  void _refreshCountdown() {
-    if (mounted) setState(() {});
   }
 
   void _syncRunningTimer() {
@@ -91,8 +89,28 @@ class _JobDetailPageState extends State<JobDetailPage> {
               onOpenNewCall: _isSending ? () {} : _openNewCall,
             ),
             if (_isLoading) const LinearProgressIndicator(minHeight: 2),
+            if (_closureRequest?.status == 'pending')
+              const MaterialBanner(
+                content: Text('Completion sent. Waiting for web approval.'),
+                leading: Icon(Icons.hourglass_top_rounded),
+                actions: [SizedBox.shrink()],
+              ),
+            if (_closureRequest?.status == 'rejected')
+              MaterialBanner(
+                content: Text(
+                  _closureRequest?.reviewNote?.trim().isNotEmpty == true
+                      ? 'Closure request rejected: ${_closureRequest!.reviewNote}'
+                      : 'Closure request was rejected. You can request again.',
+                ),
+                leading: const Icon(Icons.info_outline),
+                actions: const [SizedBox.shrink()],
+              ),
             Expanded(
-              child: JobWorkFeed(job: _job, session: widget.session),
+              child: JobWorkFeed(
+                job: _job,
+                session: widget.session,
+                locations: _locations,
+              ),
             ),
           ],
         ),
@@ -107,12 +125,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
   Future<void> _refresh() async {
     setState(() => _isLoading = true);
     try {
-      final job = await widget.api.job(
-        widget.session.accessToken,
-        widget.initialJob.sourceId,
-      );
+      final results = await Future.wait<Object?>([
+        widget.api.job(widget.session.accessToken, widget.initialJob.sourceId),
+        widget.api.latestClosureRequest(
+          accessToken: widget.session.accessToken,
+          id: widget.initialJob.sourceId,
+        ),
+        widget.api.enquiryLocations(
+          accessToken: widget.session.accessToken,
+          enquiryId: widget.initialJob.sourceId,
+        ),
+      ]);
+      final job = results[0] as CrmJob;
       if (mounted) {
-        setState(() => _job = job);
+        setState(() {
+          _job = job;
+          _closureRequest = results[1] as ClosureRequest?;
+          _locations = results[2] as List<CrmEnquiryLocation>;
+        });
         _syncRunningTimer();
         widget.onJobChanged?.call();
       }
@@ -124,36 +154,28 @@ class _JobDetailPageState extends State<JobDetailPage> {
   }
 
   Future<void> _openAddActions() async {
-    final isPendingStart = JobStartCountdown.instance.isPending(
-      widget.initialJob.sourceId,
-    );
     final runningJob = _job.jobs.where((job) => job.isRunning).firstOrNull;
     final action = await showJobAddActions(
       context,
-      isJobRunning: isPendingStart || runningJob != null,
-      timerLabel: isPendingStart
-          ? JobStartCountdown.instance.label(widget.initialJob.sourceId)
-          : runningJob == null
-          ? null
-          : formatJobDuration(runningJob),
+      isJobRunning: runningJob != null,
+      closurePending: _closureRequest?.status == 'pending',
+      closureApproved: _closureRequest?.status == 'approved',
+      timerLabel: runningJob == null ? null : formatJobDuration(runningJob),
     );
     if (!mounted || action == null) return;
     switch (action) {
       case JobAddAction.startJob:
         await _startJob();
       case JobAddAction.stopJob:
-        await _markCompleted();
+        await _stopJob();
       case JobAddAction.takePhoto:
         await _runDeviceAction(MobileActions.photo, 'Camera');
       case JobAddAction.scanDocument:
         await _runDeviceAction(MobileActions.scanDocument, 'Document scanner');
       case JobAddAction.logLocation:
-        await _runDeviceAction(
-          () => MobileActions.location('${_job.customer} ${_job.title}'),
-          'Location',
-        );
+        await _captureLocation();
       case JobAddAction.markCompleted:
-        await _markCompleted();
+        await _requestClosure();
       case JobAddAction.charges:
         await _recordAmount('Charges');
       case JobAddAction.collected:
@@ -196,26 +218,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
   }
 
   Future<void> _startJob() async {
-    final countdown = JobStartCountdown.instance;
-    final scheduled = countdown.start(
-      jobId: widget.initialJob.sourceId,
-      onElapsed: () => _runJobAction(
-        () => widget.api.startJob(
-          accessToken: widget.session.accessToken,
-          id: widget.initialJob.sourceId,
-        ),
+    await _runJobAction(
+      () => widget.api.startJob(
+        accessToken: widget.session.accessToken,
+        id: widget.initialJob.sourceId,
       ),
     );
-    if (scheduled && mounted) setState(() {});
   }
 
-  Future<void> _markCompleted() async {
-    final countdown = JobStartCountdown.instance;
-    if (countdown.isCancellable(widget.initialJob.sourceId)) {
-      countdown.cancel(widget.initialJob.sourceId);
-      if (mounted) setState(() {});
-      return;
-    }
+  Future<void> _stopJob() async {
     final running = _job.jobs.where((job) => job.isRunning).firstOrNull;
     if (running == null) {
       _showError('No running job to mark completed.');
@@ -228,7 +239,34 @@ class _JobDetailPageState extends State<JobDetailPage> {
         jobName: running.name,
       ),
     );
-    if (mounted) await _refresh();
+  }
+
+  Future<void> _requestClosure() async {
+    if (_closureRequest?.status == 'pending') {
+      _showError('Completion is already waiting for approval.');
+      return;
+    }
+    setState(() => _isSending = true);
+    try {
+      final closureRequest = await widget.api.requestClosure(
+        accessToken: widget.session.accessToken,
+        id: widget.initialJob.sourceId,
+      );
+      if (mounted) {
+        setState(() => _closureRequest = closureRequest);
+        await _refresh();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('Completion sent for approval.')),
+          );
+      }
+    } on CrmMobileApiException catch (error) {
+      if (mounted) _showError(error.message);
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
   }
 
   Future<void> _runDeviceAction(
@@ -237,6 +275,82 @@ class _JobDetailPageState extends State<JobDetailPage> {
   ) async {
     if (await action()) return;
     if (mounted) _showError('$label is not available on this device.');
+  }
+
+  Future<void> _captureLocation() async {
+    setState(() => _isSending = true);
+    try {
+      final position =
+          await (widget.capturePosition ?? _captureDevicePosition)();
+      final saved = await widget.api.logEnquiryLocation(
+        accessToken: widget.session.accessToken,
+        enquiryId: widget.initialJob.sourceId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracyMeters: position.accuracy.isFinite ? position.accuracy : null,
+        capturedAt: position.timestamp,
+      );
+      if (mounted) {
+        setState(() => _locations = [saved, ..._locations]);
+        try {
+          final updated = await widget.api.addJobComment(
+            accessToken: widget.session.accessToken,
+            id: widget.initialJob.sourceId,
+            comment: 'Location logged from mobile.',
+          );
+          if (mounted) setState(() => _job = updated);
+        } on CrmMobileApiException catch (error) {
+          if (mounted) {
+            _showError(
+              'Location saved, but its comment could not be posted: ${error.message}',
+            );
+          }
+          return;
+        }
+        if (!mounted) return;
+        widget.onJobChanged?.call();
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('Location saved to enquiry.')),
+          );
+      }
+    } on CrmMobileApiException catch (error) {
+      if (mounted) _showError(error.message);
+    } on LocationServiceDisabledException {
+      if (mounted) _showError('Turn on device location and try again.');
+    } on PermissionDeniedException {
+      if (mounted)
+        _showError('Allow location access to log this enquiry location.');
+    } catch (error) {
+      if (mounted) _showError('Could not get location: $error');
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  Future<Position> _captureDevicePosition() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw const CrmMobileApiException(
+        'Turn on device location and try again.',
+      );
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw const CrmMobileApiException(
+        'Allow location access to log this enquiry location.',
+      );
+    }
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 25),
+      ),
+    );
   }
 
   Future<void> _runJobAction(Future<CrmJob> Function() action) async {
@@ -281,7 +395,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
   Future<void> _showStatusPicker() async {
     try {
-      final formData = await widget.api.callEnquiryFormData(widget.session.accessToken);
+      final formData = await widget.api.callEnquiryFormData(
+        widget.session.accessToken,
+      );
       if (!mounted || formData.statuses.isEmpty) return;
       final chosenStatus = await showModalBottomSheet<CrmCallEnquiryStatus>(
         context: context,
@@ -371,7 +487,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              SnackBar(content: Text('Status updated to ${chosenStatus.name}.')),
+              SnackBar(
+                content: Text('Status updated to ${chosenStatus.name}.'),
+              ),
             );
         }
       } on CrmMobileApiException catch (error) {
@@ -435,11 +553,17 @@ class _CompactJobDetail extends StatelessWidget {
                 FilledButton.tonalIcon(
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                   ),
                   onPressed: onOpenNewCall,
                   icon: const Icon(Icons.call_made, size: 14),
-                  label: const Text('Open call', style: TextStyle(fontSize: 11)),
+                  label: const Text(
+                    'Open call',
+                    style: TextStyle(fontSize: 11),
+                  ),
                 ),
               ],
               const SizedBox(width: 8),
@@ -462,7 +586,7 @@ class _CompactJobDetail extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              _DetailJobTimer(jobId: job.sourceId, job: job),
+              _DetailJobTimer(job: job),
             ],
           ),
           const SizedBox(height: 10),
@@ -522,7 +646,11 @@ class _DetailStatusBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.radio_button_checked, size: 12, color: Colors.white),
+            const Icon(
+              Icons.radio_button_checked,
+              size: 12,
+              color: Colors.white,
+            ),
             const SizedBox(width: 3),
             Text(
               '#$number  $label',
@@ -544,23 +672,18 @@ class _DetailStatusBadge extends StatelessWidget {
 }
 
 class _DetailJobTimer extends StatelessWidget {
-  const _DetailJobTimer({required this.jobId, required this.job});
+  const _DetailJobTimer({required this.job});
 
-  final String jobId;
   final CrmJob job;
 
   @override
   Widget build(BuildContext context) {
-    final countdown = JobStartCountdown.instance;
-    final pending = countdown.isPending(jobId);
     final running = job.jobs.any((execution) => execution.isRunning);
-    if (!pending && !running) return const SizedBox.shrink();
+    if (!running) return const SizedBox.shrink();
     final runningJob = job.jobs
         .where((execution) => execution.isRunning)
         .firstOrNull;
-    final label = pending
-        ? countdown.label(jobId)
-        : formatJobDuration(runningJob!);
+    final label = formatJobDuration(runningJob!);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFFF1DDF5),
@@ -659,30 +782,50 @@ class _ReplyComposer extends StatelessWidget {
 }
 
 Future<String?> _requestAmount(BuildContext context, String label) async {
-  final controller = TextEditingController();
   final amount = await showDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text('$label amount'),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: const InputDecoration(prefixText: '₹ ', hintText: '0.00'),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-          child: const Text('Save'),
-        ),
-      ],
-    ),
+    builder: (context) => _AmountDialog(label: label),
   );
-  controller.dispose();
   if (amount == null || double.tryParse(amount) == null) return null;
   return amount;
+}
+
+class _AmountDialog extends StatefulWidget {
+  const _AmountDialog({required this.label});
+
+  final String label;
+
+  @override
+  State<_AmountDialog> createState() => _AmountDialogState();
+}
+
+class _AmountDialogState extends State<_AmountDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text('${widget.label} amount'),
+    content: TextField(
+      controller: _controller,
+      autofocus: true,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: const InputDecoration(prefixText: '₹ ', hintText: '0.00'),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+        child: const Text('Save'),
+      ),
+    ],
+  );
 }

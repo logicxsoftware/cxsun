@@ -15,7 +15,7 @@ class LiveMessageNotifications extends ChangeNotifier {
   });
 
   final CrmMobileApi api;
-  final UserSession session;
+  UserSession session;
   final ValueChanged<int>? onNewUnreadMessages;
 
   WebSocketChannel? _channel;
@@ -25,10 +25,21 @@ class LiveMessageNotifications extends ChangeNotifier {
   var _authenticated = false;
   var _hasInitialSnapshot = false;
   var _eventId = 0;
-  var _conversationIds = <int>[];
+  var _conversationUuids = <String>[];
   int _unreadCount = 0;
 
   int get unreadCount => _unreadCount;
+
+  void updateSession(UserSession updatedSession) {
+    if (session.accessToken == updatedSession.accessToken) return;
+    session = updatedSession;
+    _authenticated = false;
+    _reconnectTimer?.cancel();
+    _channel?.sink.close();
+    _channel = null;
+    unawaited(refresh());
+    unawaited(_connect());
+  }
 
   Future<void> start() async {
     await refresh();
@@ -45,7 +56,8 @@ class LiveMessageNotifications extends ChangeNotifier {
         accessToken: session.accessToken,
         currentEmail: session.profile.email,
       );
-      _conversationIds = conversations.map((item) => item.id).toList();
+      _conversationUuids =
+          conversations.map((item) => item.channelIdentifier).toList();
       final count = conversations.fold<int>(
         0,
         (total, item) => total + item.unreadCount,
@@ -66,16 +78,17 @@ class LiveMessageNotifications extends ChangeNotifier {
   Future<void> _connect() async {
     if (_closed) return;
     try {
-      final channel = WebSocketChannel.connect(_webSocketUri());
+      final channel = WebSocketChannel.connect(_webSocketUri(session));
       _channel = channel;
       await channel.ready;
+      _authenticated = true;
       channel.stream.listen(
         _receive,
         onDone: _reconnect,
         onError: (_) => _reconnect(),
         cancelOnError: true,
       );
-      _send('auth', {'token': session.accessToken});
+      _subscribeToConversations();
     } catch (_) {
       _reconnect();
     }
@@ -85,19 +98,16 @@ class LiveMessageNotifications extends ChangeNotifier {
     final envelope = _decode(raw);
     if (envelope == null) return;
     final eventType = envelope['eventType'];
-    if (eventType == 'auth.success') {
-      _authenticated = true;
-      _subscribeToConversations();
-      return;
-    }
-    if (eventType == 'message.created' || eventType == 'message.updated') {
+    if (eventType == 'message.created' ||
+        eventType == 'message.updated' ||
+        eventType == 'message.deleted') {
       unawaited(refresh());
     }
   }
 
   void _subscribeToConversations() {
-    for (final conversationId in _conversationIds) {
-      _send('conversation.subscribe', {'conversationId': conversationId});
+    for (final channelUuid in _conversationUuids) {
+      _send('chat.subscribe', {'channelUuid': channelUuid});
     }
   }
 
@@ -129,11 +139,15 @@ class LiveMessageNotifications extends ChangeNotifier {
   }
 }
 
-Uri _webSocketUri() {
+Uri _webSocketUri(UserSession session) {
   final api = Uri.parse(AppConfig.apiUrl);
   return api.replace(
     scheme: api.scheme == 'https' ? 'wss' : 'ws',
-    path: '${api.path.replaceFirst(RegExp(r'/$'), '')}/ws/messaging',
+    path: '${api.path.replaceFirst(RegExp(r'/$'), '')}/chat/realtime',
+    queryParameters: {
+      'token': session.accessToken,
+      'companyId': '1',
+    },
   );
 }
 
