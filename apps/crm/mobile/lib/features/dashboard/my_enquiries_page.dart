@@ -31,7 +31,6 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
   var _listFilter = '';
   var _statusFilter = '';
   var _searchQuery = '';
-  var _scope = _EnquiryScope.all;
 
   @override
   void initState() {
@@ -95,30 +94,7 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
     final content = Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: SegmentedButton<_EnquiryScope>(
-            segments: const [
-              ButtonSegment(value: _EnquiryScope.all, label: Text('All')),
-              ButtonSegment(
-                value: _EnquiryScope.assigned,
-                label: Text('Assigned'),
-              ),
-              ButtonSegment(
-                value: _EnquiryScope.created,
-                label: Text('Created'),
-              ),
-            ],
-            selected: {_scope},
-            onSelectionChanged: (selection) {
-              setState(() {
-                _scope = selection.first;
-                _enquiries = _load();
-              });
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: Row(
             children: [
               Expanded(
@@ -194,7 +170,7 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
                 child: ListView.separated(
                   padding: EdgeInsets.fromLTRB(
                     16,
-                    12,
+                    6,
                     16,
                     widget.embedded ? 84 : 28,
                   ),
@@ -274,41 +250,24 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
   Future<List<CrmJob>> _load() async {
     final token = widget.session.accessToken;
     final listId = _listFilter.isNotEmpty ? _listFilter : null;
-    switch (_scope) {
-      case _EnquiryScope.assigned:
-        return widget.api.enquiries(
-          accessToken: token,
-          scope: 'assigned',
-          search: _searchQuery,
-          listInId: listId,
-        );
-      case _EnquiryScope.created:
-        return widget.api.enquiries(
-          accessToken: token,
-          scope: 'created',
-          search: _searchQuery,
-          listInId: listId,
-        );
-      case _EnquiryScope.all:
-        try {
-          return await widget.api.enquiries(
-            accessToken: token,
-            scope: 'all',
-            search: _searchQuery,
-            listInId: listId,
-          );
-        } on CrmMobileApiException {
-          final lists = await Future.wait([
-            widget.api.assignedJobs(token),
-            widget.api.createdEnquiries(token),
-          ]);
-          final byId = <String, CrmJob>{};
-          for (final enquiry in lists.expand((items) => items)) {
-            byId.putIfAbsent(enquiry.sourceId, () => enquiry);
-          }
-          return byId.values.toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        }
+    try {
+      return await widget.api.enquiries(
+        accessToken: token,
+        scope: 'all',
+        search: _searchQuery,
+        listInId: listId,
+      );
+    } on CrmMobileApiException {
+      final lists = await Future.wait([
+        widget.api.assignedJobs(token),
+        widget.api.createdEnquiries(token),
+      ]);
+      final byId = <String, CrmJob>{};
+      for (final enquiry in lists.expand((items) => items)) {
+        byId.putIfAbsent(enquiry.sourceId, () => enquiry);
+      }
+      return byId.values.toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
   }
 
@@ -376,8 +335,6 @@ class MyEnquiriesPageState extends State<MyEnquiriesPage> {
     );
   }
 }
-
-enum _EnquiryScope { all, assigned, created }
 
 class _LoadError extends StatelessWidget {
   const _LoadError({required this.onRetry});

@@ -360,6 +360,12 @@ async function admitConnection(
   }
   const query = (request.query ?? {}) as Record<string, string | undefined>;
   if (query.companyId) request.headers["x-company-id"] = query.companyId;
+  if (query.tenantDatabase && !request.headers["x-tenant-db"]) {
+    request.headers["x-tenant-db"] = query.tenantDatabase;
+  }
+  if (query.tenantId && !request.headers["x-tenant-id"]) {
+    request.headers["x-tenant-id"] = query.tenantId;
+  }
   let context: ChatRuntimeContext;
   try {
     context = await dependencies.resolveContext(request);

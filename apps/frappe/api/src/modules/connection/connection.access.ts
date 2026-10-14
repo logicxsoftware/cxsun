@@ -13,10 +13,16 @@ export class FrappeConnectionAccess {
     const tables = await this.database.introspection.getTables();
     if (tables.some(({ name }) => name === "frappe_import_state")) {
       const importState = await new FrappeConnectionRepository(this.database).importState();
-      if (importState.completedAt) return {
-        configured: false, enabled: false, verified: false, usable: false,
-        baseUrl: null, verificationStatus: "unverified" as const, source: "tenant" as const
-      };
+      if (importState.completedAt)
+        return {
+          configured: false,
+          enabled: false,
+          verified: false,
+          usable: false,
+          baseUrl: null,
+          verificationStatus: "unverified" as const,
+          source: "tenant" as const
+        };
     }
     if (!tables.some(({ name }) => name === "frappe_connection_settings"))
       return this.environmentState();
@@ -42,6 +48,15 @@ export class FrappeConnectionAccess {
       (await new FrappeConnectionRepository(this.database).credentials(this.encryptionSecret))
         ?.settings ?? null
     );
+  }
+
+  async exportCredentials() {
+    const row = await new FrappeConnectionRepository(this.database).credentials(
+      this.encryptionSecret
+    );
+    if (!row?.row.enabled || row.row.verification_status !== "verified") return null;
+    if (!row.settings.baseUrl || !row.settings.apiKey || !row.settings.apiSecret) return null;
+    return row.settings;
   }
 
   private environmentState() {

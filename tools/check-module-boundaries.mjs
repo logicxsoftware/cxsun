@@ -157,6 +157,8 @@ const capabilityBackendRoles = new Map([
   ["frappe-api/call-log-sync", ["module", "service", "routes", "types"]],
   ["frappe-api/contact-import", ["module", "service", "routes", "types"]],
   ["frappe-api/activity-import", ["module", "service", "routes", "types"]],
+  ["frappe-api/export", ["module", "service", "routes", "worker", "types"]],
+  ["frappe-api/live-sync", ["module", "service", "routes", "types"]],
   ["frappe-api/user-mapping", ["module", "service", "repository", "routes", "migration", "types"]],
   ["zetro-api/chat", ["module", "service", "repository", "routes", "migration", "seed", "types"]],
   [
@@ -264,6 +266,8 @@ const capabilityFrontendRoles = new Map([
   ["frappe-web/contact-import", ["workspace", "services", "types"]],
   ["frappe-web/activity-import", ["workspace", "services", "types"]],
   ["frappe-web/call-log-import", ["workspace", "services", "types"]],
+  ["frappe-web/export", ["workspace", "services", "types"]],
+  ["frappe-web/live-sync", ["workspace", "services", "types"]],
   ["frappe-web/connection", ["workspace", "form", "services", "hooks", "types", "schema"]],
   ["frappe-web/user-sync", ["workspace", "list", "form", "services", "hooks", "types"]],
   [

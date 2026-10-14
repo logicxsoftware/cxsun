@@ -39,7 +39,7 @@ export function FrappeConnectionWorkspace() {
   return (
     <WorkspacePage
       title="Frappe connection"
-      description="Configure Frappe to import records into local CRM."
+      description="Configure Frappe for initial imports and manual exports."
       technicalName="page.frappe.connection"
     >
       <Card className="flex flex-wrap items-center justify-between gap-4 p-4">
@@ -50,21 +50,19 @@ export function FrappeConnectionWorkspace() {
           <div className="min-w-0">
             <h2 className="text-sm font-semibold">Connection state</h2>
             <p className="text-sm text-muted-foreground">
-              {data?.importCompletedAt
-                ? "Initial import complete. This connection is closed."
-                : verifiedUser
-                  ? `Form values verified as ${verifiedUser}. Save to use edited values.`
-                  : !data?.configured
-                    ? "Configure the Frappe connection below."
-                    : !data.enabled
-                      ? "Connection disabled"
-                      : data.verificationStatus === "verified"
-                        ? "Connection verified"
-                        : data.verificationStatus === "failed"
-                          ? "Last connection check failed"
-                          : data.source === "tenant"
-                            ? "Connection saved. Verify before syncing."
-                            : "Using server defaults. Save to manage this connection here."}
+              {verifiedUser
+                ? `Form values verified as ${verifiedUser}. Save to use edited values.`
+                : !data?.configured
+                  ? "Configure the Frappe connection below."
+                  : !data.enabled
+                    ? "Connection disabled"
+                    : data.verificationStatus === "verified"
+                      ? "Connection verified"
+                      : data.verificationStatus === "failed"
+                        ? "Last connection check failed"
+                        : data.source === "tenant"
+                          ? "Connection saved. Verify before syncing."
+                          : "Using server defaults. Save to manage this connection here."}
             </p>
           </div>
           {data ? (
@@ -93,10 +91,10 @@ export function FrappeConnectionWorkspace() {
             description={
               enabled !== data?.enabled
                 ? "Save connection to apply this change."
-                : "Allows initial imports from Frappe."
+                : "Allows imports before cutover and manual exports when selected."
             }
             checked={enabled}
-            disabled={!data || !!data.importCompletedAt || save.isPending || verify.isPending}
+            disabled={!data || save.isPending || verify.isPending}
             onCheckedChange={(checked) => {
               setEnabled(checked);
               setVerifiedUser(null);
@@ -112,7 +110,7 @@ export function FrappeConnectionWorkspace() {
           {connection.error.message}
         </p>
       ) : null}
-      {data && !data.importCompletedAt ? (
+      {data ? (
         <FrappeConnectionForm
           connection={data}
           enabled={enabled}

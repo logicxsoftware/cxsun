@@ -175,7 +175,18 @@ export type ChatRealtimeHandlers = {
 function chatRealtimeUrl(): string {
   const apiBaseUrl = requiredRuntimeValue("VITE_PLATFORM_API_URL").replace(/\/$/u, "");
   const companyId = sessionStorage.getItem("cxsun.tenant.company-id") ?? "";
-  const suffix = `/chat/realtime${companyId ? `?companyId=${encodeURIComponent(companyId)}` : ""}`;
+  const sessionSlot = sessionStorage.getItem("cxsun.auth.slot") ?? "";
+  const tenantId = sessionStorage.getItem("cxsun_tenant_id") ?? "";
+  const tenantDatabase = sessionStorage.getItem("cxsun_tenant_db_name") ?? "";
+
+  const params = new URLSearchParams();
+  if (companyId) params.set("companyId", companyId);
+  if (sessionSlot) params.set("sessionSlot", sessionSlot);
+  if (tenantId) params.set("tenantId", tenantId);
+  if (tenantDatabase) params.set("tenantDatabase", tenantDatabase);
+
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const suffix = `/chat/realtime${query}`;
   if (/^https?:\/\//u.test(apiBaseUrl)) {
     const url = new URL(apiBaseUrl);
     const protocol = url.protocol === "https:" ? "wss:" : "ws:";

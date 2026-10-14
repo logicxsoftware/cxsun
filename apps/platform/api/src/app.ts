@@ -15,7 +15,6 @@ import {
 import { himsxOverviewModule } from "@cxsun/himsx-api";
 import { createApiApp, registerHealthRoute, registerRequestLogging } from "@cxsun/framework/api";
 import { randomBytes } from "node:crypto";
-import { sql } from "kysely";
 import { registerModules } from "@cxsun/framework/modules";
 import { createMailModule } from "@cxsun/mail-api";
 import { createNotesModule } from "@cxsun/notes-api";
@@ -80,6 +79,11 @@ import {
   pullFrappeCallLog,
   frappeContactImportModule,
   frappeActivityImportModule,
+  frappeExportModule,
+  FrappeExportService,
+  processFrappeExportJob,
+  FrappeLiveSyncService,
+  frappeLiveSyncModule,
   frappeCallLogSyncModule,
   frappeEnquiryImportJobName,
   processFrappeEnquiryImportJob,
@@ -88,6 +92,8 @@ import {
   mappedLocalUserForEmployeeCode,
   frappeUserSyncModule,
   type FrappeDatabase,
+  type ExportProgress,
+  type ExportKind,
   type FrappeUserMappingDatabase
 } from "@cxsun/frappe-api";
 import { EnquiryRepository, EnquiryService } from "@cxsun/crm-api/enquiry-sync";
@@ -129,6 +135,7 @@ import { appOrchestrationModule } from "./modules/app-orchestration/index.js";
 import { startQueueManagerWorker } from "./modules/queue-manager/queue-manager.runtime.js";
 import { QueueManagerService } from "./modules/queue-manager/queue-manager.service.js";
 import { registerQueueJobProcessor } from "./modules/queue-manager/queue-manager.worker.js";
+import { startFrappeLiveSyncScheduler } from "./modules/queue-manager/frappe-live-sync.scheduler.js";
 import { platformReadinessChecks } from "./readiness.js";
 import { resolvePublicStorefrontTenant } from "./modules/tenant/index.js";
 import { requestHost, enforceBrowserRequestOrigin } from "./auth/auth-request-context.js";
@@ -761,6 +768,220 @@ export async function createApp() {
     apiSecret: env.CXSUN_FRAPPE_APP_SECRET,
     enabled: env.CXSUN_FRAPPE_ENABLED === "1"
   };
+  registerQueueJobProcessor("frappe.export", async (job, report) => {
+    const tenant = await new TenantRepository().findByIdOrCode(job.tenantId ?? "");
+    if (!tenant) throw new Error("The Frappe export tenant no longer exists.");
+    const database = getTenantDatabase(tenant);
+    const enabled = await database
+      .selectFrom("app_module_settings")
+      .select("module_key")
+      .where("module_key", "in", ["crm", "frappe"])
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .execute();
+    if (enabled.length !== 2) throw new Error("CRM and Frappe must be enabled for export.");
+    return processFrappeExportJob(
+      database as unknown as import("kysely").Kysely<FrappeDatabase>,
+      env.JWT_SECRET,
+      frappeSettings,
+      job.payload,
+      tenant.dbName,
+      report
+    );
+  });
+  frappeExportModule.register(app, {
+    preview: async (request, kind, page) => {
+      const context = tenantAccessContext(request);
+      await context.authorize("frappe.connection.manage");
+      await context.authorize("crm.enquiry.view-all");
+      return new FrappeExportService(
+        context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
+        env.JWT_SECRET,
+        frappeSettings
+      ).preview(kind, page);
+    },
+    enqueue: async (request, kind, ids, mode, verifiedJobId) => {
+      const context = tenantAccessContext(request);
+      await context.authorize("frappe.connection.manage");
+      await context.authorize("crm.enquiry.view-all");
+      if (mode === "export") await context.authorize("crm.enquiry.update");
+      const enabled = await context.database
+        .selectFrom("app_module_settings")
+        .select("module_key")
+        .where("module_key", "in", ["crm", "frappe"])
+        .where("enabled", "=", true)
+        .where("status", "=", "active")
+        .execute();
+      if (enabled.length !== 2)
+        throw AppError.forbidden("CRM and Frappe must be enabled for export.");
+      const validated = await new FrappeExportService(
+        context.database as unknown as import("kysely").Kysely<FrappeDatabase>,
+        env.JWT_SECRET,
+        frappeSettings
+      ).validateSelection(kind, ids);
+      if (mode === "export") {
+        const verification = await queueService.findJob(verifiedJobId!);
+        const verificationAge = verification
+          ? Date.now() - new Date(verification.createdAt).getTime()
+          : Number.NaN;
+        const results = verification?.result?.results;
+        const allowed = new Set(
+          Array.isArray(results)
+            ? results
+                .filter(
+                  (item): item is { id: number; outcome: string } =>
+                    typeof item === "object" &&
+                    item !== null &&
+                    typeof item.id === "number" &&
+                    ["new", "matched", "linked"].includes(String(item.outcome))
+                )
+                .map((item) => item.id)
+            : []
+        );
+        if (
+          !verification ||
+          verification.jobName !== "frappe.export" ||
+          verification.status !== "completed" ||
+          verification.tenantId !== context.tenantId ||
+          verification.payload.tenantDatabase !== context.tenantDatabase ||
+          verification.payload.baseUrl !== validated.baseUrl ||
+          verification.payload.kind !== kind ||
+          verification.payload.mode !== "verify" ||
+          !Number.isFinite(verificationAge) ||
+          verificationAge < 0 ||
+          verificationAge > 10 * 60_000 ||
+          !validated.ids.every((id) => allowed.has(id))
+        )
+          throw AppError.conflict("Verify these records again before exporting.");
+      }
+      const active = (
+        await queueService.listJobs({ tenantId: context.tenantId, queueName: "reports" })
+      ).find(
+        (job) =>
+          job.jobName === "frappe.export" &&
+          job.payload.tenantDatabase === context.tenantDatabase &&
+          job.payload.kind === kind &&
+          ["pending", "running"].includes(job.status) &&
+          Array.isArray(job.payload.ids) &&
+          validated.ids.some((id) => (job.payload.ids as unknown[]).includes(id))
+      );
+      if (active) throw AppError.conflict("One of these records is already in the export queue.");
+      const job = await queueService.enqueue({
+        actorEmail: context.actorEmail,
+        correlationId: request.id,
+        jobName: "frappe.export",
+        maxAttempts: 1,
+        payload: {
+          tenantDatabase: context.tenantDatabase,
+          baseUrl: validated.baseUrl,
+          kind,
+          mode,
+          ids: validated.ids
+        },
+        queueName: "reports",
+        sourceModule: "frappe.export",
+        tenantId: context.tenantId
+      });
+      if (!job) throw AppError.conflict("Export could not be queued.");
+      return { jobId: job.id, status: job.status };
+    },
+    status: async (request, jobId) => {
+      const context = tenantAccessContext(request);
+      await context.authorize("frappe.connection.manage");
+      await context.authorize("crm.enquiry.view-all");
+      const job = await queueService.findJob(jobId);
+      if (
+        !job ||
+        job.jobName !== "frappe.export" ||
+        job.tenantId !== context.tenantId ||
+        job.payload.tenantDatabase !== context.tenantDatabase
+      )
+        throw AppError.notFound("Frappe export job was not found.");
+      const result = job.result;
+      const progress = typeof result.scanned === "number" ? (result as ExportProgress) : null;
+      return { jobId, status: job.status, progress, errorMessage: job.errorMessage };
+    }
+  });
+  registerQueueJobProcessor("frappe.live-sync", async (job, report) => {
+    const tenant = await new TenantRepository().findByIdOrCode(job.tenantId ?? "");
+    const kind = job.payload.kind as ExportKind;
+    if (!tenant || tenant.dbName !== job.payload.tenantDatabase)
+      throw new Error("The Frappe live sync tenant is invalid.");
+    const database = getTenantDatabase(
+      tenant
+    ) as unknown as import("kysely").Kysely<FrappeDatabase>;
+    const settings = await new FrappeLiveSyncService(database).settings();
+    if (
+      job.payload.manual !== true &&
+      (!settings.enabled || settings.paused || !settings.modules[kind])
+    )
+      return { scanned: 0, exported: 0, failed: 0, failures: [], results: [] };
+    const baseUrl =
+      (
+        await new FrappeConnectionAccess(
+          database,
+          env.JWT_SECRET,
+          frappeSettings
+        ).exportCredentials()
+      )?.baseUrl ?? "";
+    if (!baseUrl) throw new Error("Enable and verify the Frappe connection before live sync.");
+    return new FrappeExportService(database, env.JWT_SECRET, frappeSettings).liveSync(
+      kind,
+      baseUrl,
+      report
+    );
+  });
+  frappeLiveSyncModule.register(app, {
+    settings: async (request) => {
+      const context = tenantAccessContext(request);
+      await context.authorize("frappe.connection.manage");
+      return new FrappeLiveSyncService(
+        context.database as unknown as import("kysely").Kysely<FrappeDatabase>
+      ).settings();
+    },
+    save: async (request, input) => {
+      const context = tenantAccessContext(request);
+      await context.authorize("frappe.connection.manage");
+      return new FrappeLiveSyncService(
+        context.database as unknown as import("kysely").Kysely<FrappeDatabase>
+      ).save(input, context.actorEmail);
+    },
+    queue: async (request, kind) => {
+      const context = tenantAccessContext(request);
+      await context.authorize("frappe.connection.manage");
+      const job = await queueService.enqueue({
+        actorEmail: context.actorEmail,
+        correlationId: request.id,
+        idempotencyKey: `frappe-live-sync:${context.tenantId}:${kind}:${Date.now()}`,
+        jobName: "frappe.live-sync",
+        maxAttempts: 3,
+        payload: { tenantDatabase: context.tenantDatabase, kind, manual: true },
+        queueName: "reports",
+        sourceModule: "frappe.live-sync",
+        tenantId: context.tenantId
+      });
+      if (!job) throw AppError.conflict("Live sync could not be queued.");
+      return { id: job.id };
+    },
+    jobs: async (request) => {
+      const context = tenantAccessContext(request);
+      await context.authorize("frappe.connection.manage");
+      return (await queueService.listJobs({ tenantId: context.tenantId, queueName: "reports" }))
+        .filter(
+          (job) =>
+            job.jobName === "frappe.live-sync" &&
+            job.payload.tenantDatabase === context.tenantDatabase
+        )
+        .map((job) => ({
+          id: job.id,
+          kind: job.payload.kind as ExportKind,
+          status: job.status,
+          createdAt: job.createdAt,
+          errorMessage: job.errorMessage,
+          progress: typeof job.result.scanned === "number" ? job.result : null
+        }));
+    }
+  });
   const ensureFrappeImportOpen = async (database: import("kysely").Kysely<FrappeDatabase>) => {
     if ((await new FrappeConnectionRepository(database).importState()).completedAt)
       throw AppError.conflict("Frappe import is complete. Use local CRM records now.");
@@ -1532,6 +1753,7 @@ export async function createApp() {
     }
   );
   startQueueManagerWorker(app, queueService);
+  startFrappeLiveSyncScheduler(queueService);
   console.info("[platform.worker] queue manager ready");
   console.info("[platform.boot] bootstrap completed");
 

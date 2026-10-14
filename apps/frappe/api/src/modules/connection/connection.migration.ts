@@ -39,6 +39,13 @@ export const frappeTenantMigrationBatch: MigrationBatch<FrappeDatabase> = {
       description: "Record when Frappe imports end and CRM becomes fully local.",
       version: 4,
       up: addLocalCutover
+    },
+    {
+      name: "frappe.connection.live-sync-v5",
+      checksum: "frappe.connection.live-sync-v5",
+      description: "Store scheduled live Frappe sync controls.",
+      version: 5,
+      up: addLiveSyncSettings
     }
   ]
 };
@@ -153,6 +160,24 @@ async function addLocalCutover(database: Kysely<FrappeDatabase>) {
     )
     .execute(database);
   await sql`INSERT INTO frappe_import_state (id) VALUES (1) ON DUPLICATE KEY UPDATE id=id`.execute(
+    database
+  );
+}
+
+async function addLiveSyncSettings(database: Kysely<FrappeDatabase>) {
+  await sql
+    .raw(
+      `CREATE TABLE IF NOT EXISTS frappe_live_sync_settings (
+    id INT NOT NULL PRIMARY KEY, enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    paused BOOLEAN NOT NULL DEFAULT FALSE, schedule_minutes INT NOT NULL DEFAULT 15,
+    contacts_enabled BOOLEAN NOT NULL DEFAULT TRUE, enquiries_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    activities_enabled BOOLEAN NOT NULL DEFAULT TRUE, call_logs_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    last_scheduled_at DATETIME NULL, updated_by VARCHAR(191) NOT NULL DEFAULT 'system:frappe-live-sync',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    )
+    .execute(database);
+  await sql`INSERT INTO frappe_live_sync_settings (id) VALUES (1) ON DUPLICATE KEY UPDATE id=id`.execute(
     database
   );
 }

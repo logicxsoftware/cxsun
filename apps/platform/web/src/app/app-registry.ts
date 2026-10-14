@@ -1097,52 +1097,126 @@ export function appMenuItemsFor(
         title: "Overview"
       },
       {
-        icon: ContactRoundIcon,
-        isActive: activePage === "frappe.contacts",
-        onSelect: () => onSelect("frappe.contacts"),
-        title: "Import contacts"
+        icon: InboxIcon,
+        isActive: [
+          "frappe.contacts",
+          "frappe.enquiries",
+          "frappe.activities",
+          "frappe.call-logs"
+        ].includes(activePage),
+        title: "Import",
+        items: [
+          {
+            icon: ContactRoundIcon,
+            isActive: activePage === "frappe.contacts",
+            onSelect: () => onSelect("frappe.contacts"),
+            title: "Import contacts"
+          },
+          {
+            icon: ClipboardListIcon,
+            isActive: activePage === "frappe.enquiries",
+            onSelect: () => onSelect("frappe.enquiries"),
+            title: "Import enquiries"
+          },
+          {
+            icon: LogsIcon,
+            isActive: activePage === "frappe.activities",
+            onSelect: () => onSelect("frappe.activities"),
+            title: "Import activities"
+          },
+          {
+            icon: PhoneCallIcon,
+            isActive: activePage === "frappe.call-logs",
+            onSelect: () => onSelect("frappe.call-logs"),
+            title: "Import call logs"
+          }
+        ]
       },
       {
-        icon: ClipboardListIcon,
-        isActive: activePage === "frappe.enquiries",
-        onSelect: () => onSelect("frappe.enquiries"),
-        title: "Import enquiries"
-      },
-      {
-        icon: LogsIcon,
-        isActive: activePage === "frappe.activities",
-        onSelect: () => onSelect("frappe.activities"),
-        title: "Import activities"
-      },
-      {
-        icon: PhoneCallIcon,
-        isActive: activePage === "frappe.call-logs",
-        onSelect: () => onSelect("frappe.call-logs"),
-        title: "Import call logs"
-      },
-      {
-        icon: RefreshCwIcon,
-        isActive: activePage === "frappe.enquiry-sync",
-        onSelect: () => onSelect("frappe.enquiry-sync"),
-        title: "Sync queue"
+        icon: SendIcon,
+        isActive: [
+          "frappe.export.contacts",
+          "frappe.export.enquiries",
+          "frappe.export.activities",
+          "frappe.export.call-logs"
+        ].includes(activePage),
+        title: "Export",
+        items: [
+          {
+            icon: ContactRoundIcon,
+            isActive: activePage === "frappe.export.contacts",
+            onSelect: () => onSelect("frappe.export.contacts"),
+            title: "Export contacts"
+          },
+          {
+            icon: ClipboardListIcon,
+            isActive: activePage === "frappe.export.enquiries",
+            onSelect: () => onSelect("frappe.export.enquiries"),
+            title: "Export enquiries"
+          },
+          {
+            icon: LogsIcon,
+            isActive: activePage === "frappe.export.activities",
+            onSelect: () => onSelect("frappe.export.activities"),
+            title: "Export activities"
+          },
+          {
+            icon: PhoneCallIcon,
+            isActive: activePage === "frappe.export.call-logs",
+            onSelect: () => onSelect("frappe.export.call-logs"),
+            title: "Export call logs"
+          }
+        ]
       },
       {
         icon: Settings2Icon,
-        isActive: activePage === "frappe.connection",
-        onSelect: () => onSelect("frappe.connection"),
-        title: "Frappe connection"
-      },
-      {
-        icon: UsersIcon,
-        isActive: activePage === "frappe.users",
-        onSelect: () => onSelect("frappe.users"),
-        title: "Frappe users"
-      },
-      {
-        icon: ContactRoundIcon,
-        isActive: activePage === "frappe.user-mapping",
-        onSelect: () => onSelect("frappe.user-mapping"),
-        title: "User mapping"
+        isActive: [
+          "frappe.live-sync",
+          "frappe.live-sync-queue",
+          "frappe.enquiry-sync",
+          "frappe.connection",
+          "frappe.users",
+          "frappe.user-mapping"
+        ].includes(activePage),
+        title: "Frappe",
+        items: [
+          {
+            icon: RefreshCwIcon,
+            isActive: activePage === "frappe.live-sync",
+            onSelect: () => onSelect("frappe.live-sync"),
+            title: "Live sync"
+          },
+          {
+            icon: LogsIcon,
+            isActive: activePage === "frappe.live-sync-queue",
+            onSelect: () => onSelect("frappe.live-sync-queue"),
+            title: "Live sync queue"
+          },
+          {
+            icon: RefreshCwIcon,
+            isActive: activePage === "frappe.enquiry-sync",
+            onSelect: () => onSelect("frappe.enquiry-sync"),
+            title: "Sync queue"
+          },
+          {
+            icon: Settings2Icon,
+            isActive: activePage === "frappe.connection",
+            onSelect: () => onSelect("frappe.connection"),
+            title: "Frappe connection"
+          },
+          {
+            icon: UsersIcon,
+            isActive: activePage === "frappe.users",
+            onSelect: () => onSelect("frappe.users"),
+            title: "Frappe users"
+          },
+          {
+            icon: ContactRoundIcon,
+            isActive: activePage === "frappe.user-mapping",
+            onSelect: () => onSelect("frappe.user-mapping"),
+            title: "User mapping"
+          }
+        ]
       }
     ];
   }

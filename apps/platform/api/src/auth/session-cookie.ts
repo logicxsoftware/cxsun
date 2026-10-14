@@ -28,8 +28,20 @@ export function authCookieName(slot?: string) {
 export function readEncryptedSessionCookie(request: FastifyRequest) {
   const slot = selectedSessionSlot(request);
   if (request.headers[sessionSlotHeader] !== undefined && !slot) return "";
-  const value = request.cookies[authCookieName(slot ?? undefined)];
-  return value ? decryptSessionCookie(value) : "";
+  const directValue = request.cookies[authCookieName(slot ?? undefined)];
+  if (directValue) return decryptSessionCookie(directValue);
+  if (!slot && request.headers[sessionSlotHeader] === undefined) {
+    const cookies = request.cookies ?? {};
+    const sessionCookieKeys = Object.keys(cookies).filter(
+      (name) => name.startsWith("cxsun_session_") || name.startsWith("__Host-cxsun_session_")
+    );
+    const firstKey = sessionCookieKeys[0];
+    if (sessionCookieKeys.length === 1 && firstKey) {
+      const singleValue = cookies[firstKey];
+      if (singleValue) return decryptSessionCookie(singleValue);
+    }
+  }
+  return "";
 }
 
 export function writeEncryptedSessionCookie(reply: FastifyReply, token: string) {
@@ -70,9 +82,32 @@ export function clearAllSessionCookies(reply: FastifyReply) {
   }
 }
 
+function extractQuerySlot(request: FastifyRequest): string | null {
+  const query = request.query as Record<string, unknown> | undefined;
+  if (typeof query?.sessionSlot === "string") return query.sessionSlot;
+  if (typeof query?.slot === "string") return query.slot;
+  if (typeof request.url === "string" && request.url.includes("?")) {
+    try {
+      const search = request.url.slice(request.url.indexOf("?"));
+      const params = new URLSearchParams(search);
+      return params.get("sessionSlot") ?? params.get("slot");
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 function selectedSessionSlot(request: FastifyRequest): string | null {
-  const value = request.headers[sessionSlotHeader];
-  return typeof value === "string" && sessionSlotPattern.test(value) ? value : null;
+  const headerValue = request.headers[sessionSlotHeader];
+  if (typeof headerValue === "string" && sessionSlotPattern.test(headerValue)) {
+    return headerValue;
+  }
+  const querySlot = extractQuerySlot(request);
+  if (typeof querySlot === "string" && sessionSlotPattern.test(querySlot)) {
+    return querySlot;
+  }
+  return null;
 }
 
 export function encryptSessionCookie(token: string) {

@@ -37,3 +37,29 @@ test("LogicX Schemes is shown only when Billing is enabled", () => {
     ["Overview", "Schemes"]
   );
 });
+
+test("Frappe navigation groups import, export, and connection pages", () => {
+  const selected: string[] = [];
+  const menu = appMenuItemsFor("frappe", "frappe.activities", (page) => selected.push(page));
+
+  assert.deepEqual(
+    menu.map((item) => item.title),
+    ["Overview", "Import", "Export", "Frappe"]
+  );
+  assert.equal(menu[1]?.isActive, true);
+  assert.deepEqual(
+    menu[1]?.items?.map((item) => item.title),
+    ["Import contacts", "Import enquiries", "Import activities", "Import call logs"]
+  );
+  assert.deepEqual(
+    menu[2]?.items?.map((item) => item.title),
+    ["Export contacts", "Export enquiries", "Export activities", "Export call logs"]
+  );
+  assert.deepEqual(
+    menu[3]?.items?.map((item) => item.title),
+    ["Sync queue", "Frappe connection", "Frappe users", "User mapping"]
+  );
+  menu[2]?.items?.[1]?.onSelect?.();
+  menu[3]?.items?.[1]?.onSelect?.();
+  assert.deepEqual(selected, ["frappe.export.enquiries", "frappe.connection"]);
+});

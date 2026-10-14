@@ -62,8 +62,6 @@ export class FrappeConnectionService {
   }
 
   async saveConnection(input: FrappeConnectionInput) {
-    if ((await new FrappeConnectionRepository(this.database).importState()).completedAt)
-      throw AppError.conflict("Frappe import is complete. This tenant now uses local CRM only.");
     const repository = new FrappeConnectionRepository(this.database);
     const current = await repository.connection();
     if (current?.base_url !== input.baseUrl && (!input.apiKey || !input.apiSecret)) {
@@ -99,8 +97,6 @@ export class FrappeConnectionService {
     apiSecret?: string | undefined;
     enabled?: boolean | undefined;
   }) {
-    if ((await new FrappeConnectionRepository(this.database).importState()).completedAt)
-      throw AppError.conflict("Frappe import is complete. This tenant now uses local CRM only.");
     const repository = new FrappeConnectionRepository(this.database);
     const saved = await repository.credentials(this.encryptionSecret);
     if (
@@ -209,9 +205,14 @@ export async function requestFrappe<T>(
   path: string,
   method: "GET" | "POST" | "PUT" | "DELETE",
   settings: FrappeSettings,
-  body?: unknown
+  body?: unknown,
+  options: { allowExport?: boolean } = {}
 ): Promise<T> {
-  if (method !== "GET" && !(method === "POST" && path === "/api/v2/method/frappe.client.get_list"))
+  if (
+    !options.allowExport &&
+    method !== "GET" &&
+    !(method === "POST" && path === "/api/v2/method/frappe.client.get_list")
+  )
     throw AppError.conflict("Sending records to Frappe is disabled. Only imports are available.");
   const { baseUrl, apiKey, apiSecret, enabled } = settings;
   if (!enabled) throw AppError.conflict("Frappe sync is disabled.");

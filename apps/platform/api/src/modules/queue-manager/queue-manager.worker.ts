@@ -24,6 +24,7 @@ export const queueManagerWorker = {
     "database-maintenance.run",
     "frappe.enquiries.import",
     "frappe.call-logs.import",
+    "frappe.live-sync",
     "mail.send",
     "mail.sync",
     "mail.system-send",

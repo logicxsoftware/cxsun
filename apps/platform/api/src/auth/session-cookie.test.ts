@@ -76,3 +76,45 @@ test("parallel tabs select separate encrypted cookies and clear only their own s
   assert.equal(readEncryptedSessionCookie(request(tenantSlot)), "");
   assert.equal(readEncryptedSessionCookie(request("invalid-slot")), "");
 });
+
+test("session cookie resolves from query parameter when slot header is absent", () => {
+  const reply = {
+    setCookie(name: string, value: string) {
+      cookies.set(name, value);
+      return this;
+    }
+  } as unknown as FastifyReply;
+  const cookies = new Map<string, string>();
+  const slot = writeEncryptedSessionCookie(reply, "ws-token");
+  assert.ok(slot);
+
+  const requestWithQuery = {
+    cookies: Object.fromEntries(cookies),
+    headers: {},
+    query: { sessionSlot: slot },
+    url: `/chat/realtime?companyId=1&sessionSlot=${slot}`
+  } as unknown as FastifyRequest;
+
+  assert.equal(readEncryptedSessionCookie(requestWithQuery), "ws-token");
+});
+
+test("session cookie falls back to single slotted cookie when header and query slot are absent", () => {
+  const reply = {
+    setCookie(name: string, value: string) {
+      cookies.set(name, value);
+      return this;
+    }
+  } as unknown as FastifyReply;
+  const cookies = new Map<string, string>();
+  const slot = writeEncryptedSessionCookie(reply, "single-token");
+  assert.ok(slot);
+
+  const requestWithoutSlot = {
+    cookies: Object.fromEntries(cookies),
+    headers: {},
+    url: "/chat/realtime?companyId=1"
+  } as unknown as FastifyRequest;
+
+  assert.equal(readEncryptedSessionCookie(requestWithoutSlot), "single-token");
+});
+

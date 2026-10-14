@@ -187,6 +187,14 @@ export default defineConfig(({ command, mode }) => {
           configDir,
           "../../crm/web/src/modules/reports/index.ts"
         ),
+        "@cxsun/frappe-web/modules/export": resolve(
+          configDir,
+          "../../frappe/web/src/modules/export/index.ts"
+        ),
+        "@cxsun/frappe-web/modules/live-sync": resolve(
+          configDir,
+          "../../frappe/web/src/modules/live-sync/index.ts"
+        ),
         "@cxsun/zetro-web/modules/provider": resolve(
           configDir,
           "../../zetro/web/src/modules/provider/index.ts"

@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/frappe-web",
-  "version": "1.0.95",
+  "version": "1.0.96",
   "private": true,
   "type": "module",
   "exports": {
@@ -11,6 +11,8 @@
     "./modules/contact-import": "./src/modules/contact-import/index.ts",
     "./modules/activity-import": "./src/modules/activity-import/index.ts",
     "./modules/call-log-import": "./src/modules/call-log-import/index.ts",
+    "./modules/export": "./src/modules/export/index.ts",
+    "./modules/live-sync": "./src/modules/live-sync/index.ts",
     "./modules/user-sync": "./src/modules/user-sync/index.ts",
     "./modules/user-mapping": "./src/modules/user-mapping/index.ts"
   },
@@ -20,7 +22,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.95",
+    "@cxsun/ui": "^1.0.96",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-table": "^9.2.6",
     "lucide-react": "^1.52.0",

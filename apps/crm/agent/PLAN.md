@@ -101,6 +101,11 @@ contract, and tests together. A menu label alone does not transfer ownership.
 | Service Outcome | Resolution, closure, cancellation, or rework decision | Require a permitted outcome and reason; preserve the closed request history. |
 | Collection Follow-up | Promise, owner, next action, and reminder for an unpaid balance | Read Billing status; never post or allocate money. |
 | Assignment | Owner, team, queue, territory, and reassignment history | Apply explicit rules and retain allocation history. |
+| SOP | Procedure identity, purpose, ownership, lifecycle, and revision policy | Own reusable procedures and their published revisions inside CRM. |
+| SOP Item | Ordered instruction, frequency, department, and evidence guidance | Own versioned steps; assignments and reports reference a stable published item revision. |
+| Duty Assignment | SOP Item allocation to a CRM user or team, order, active dates, and recurrence | Provide each employee's current duty list and retain assignment history. |
+| Duty Report | A user's completion report for one assigned SOP Item | Store report date, actions, author, timestamps, and immutable SOP revision context. |
+| Duty Reporting | Searchable report history and completion measures | Query Duty Reports with date, user, SOP, department, and frequency filters under the same CRM permissions. |
 | Activity | Immutable business events | Store actor, action, record, timestamp, and safe summary. |
 | Task | Follow-up, due date, owner, priority, recurrence, and completion | Link to a supported CRM record. |
 | Call Log | Manually selected mobile call and local comments | Use idempotency keys and link to a customer or supported CRM record. |
@@ -363,9 +368,11 @@ does not own CRM permissions or perform business mutations.
    material, evidence, and verification flows.
 5. Support poor connectivity with retry-safe writes and idempotency keys. Do not
    claim offline mode until local conflict handling is implemented.
-6. Keep search, filters, saved views, and exports tenant-scoped and permission-
+6. Provide mobile duty lists, SOP instructions, completion reports, and the same
+   authorized report history as web.
+7. Keep search, filters, saved views, and exports tenant-scoped and permission-
    checked on the server.
-7. Format calendar dates as `DD-MM-YYYY` and date-times as `DD-MM-YYYY HH:mm`.
+8. Format calendar dates as `DD-MM-YYYY` and date-times as `DD-MM-YYYY HH:mm`.
 
 ## Delivery Plan
 
@@ -403,10 +410,13 @@ one public contract, and one migration path.
    Sales and Service Estimates.
 6. Complete Consent, Attachment, Saved View, Notification, and operational Report
    modules only where the current CRM workflow needs them.
-7. Reconcile current records and preserve existing user URLs.
+7. Define SOP, SOP Item, Duty Assignment, Duty Report, and Duty Reporting
+   boundaries and permissions in `DUTIES-SOP-PLAN.md` before implementation.
+8. Reconcile current records and preserve existing user URLs.
 
 **Exit:** Current CRM data survives upgrade and restart. Mobile and web use the
-same local contracts.
+same local contracts. SOP and duty contracts have approved owners, lifecycle
+rules, permissions, and migration order.
 
 ### Phase 2: Sales Intake
 

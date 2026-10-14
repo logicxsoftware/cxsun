@@ -43,10 +43,40 @@ export type FrappeDataSourceRow = {
 };
 
 export type FrappeDatabase = EnquiryDatabase & {
-  frappe_contact_imports: { id: number; remote_name: string; local_contact_id: number; created_at: string; updated_at: string };
-  frappe_activity_imports: { id: number; remote_name: string; local_activity_id: number; created_at: string; updated_at: string };
-  frappe_import_state: { id: number; completed_at: string | Date | null; completed_by: string | null; updated_at: string | Date };
+  frappe_contact_imports: {
+    id: number;
+    remote_name: string;
+    local_contact_id: number;
+    created_at: string;
+    updated_at: string;
+  };
+  frappe_activity_imports: {
+    id: number;
+    remote_name: string;
+    local_activity_id: number;
+    created_at: string;
+    updated_at: string;
+  };
+  frappe_import_state: {
+    id: number;
+    completed_at: string | Date | null;
+    completed_by: string | null;
+    updated_at: string | Date;
+  };
   frappe_connection_settings: FrappeConnectionRow;
   frappe_data_sources: FrappeDataSourceRow;
   frappe_enquiry_sync: FrappeSyncRow;
+  frappe_live_sync_settings: {
+    id: number;
+    enabled: number | boolean;
+    paused: number | boolean;
+    schedule_minutes: number;
+    contacts_enabled: number | boolean;
+    enquiries_enabled: number | boolean;
+    activities_enabled: number | boolean;
+    call_logs_enabled: number | boolean;
+    last_scheduled_at: string | Date | null;
+    updated_by: string;
+    updated_at: string | Date;
+  };
 };

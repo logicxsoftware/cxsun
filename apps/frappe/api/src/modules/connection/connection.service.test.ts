@@ -119,3 +119,20 @@ test("Frappe transport rejects writes but permits read-only list calls", async (
   });
   assert.equal(calls.length, 1);
 });
+
+test("Frappe transport permits an explicitly requested export write", async () => {
+  globalThis.fetch = async (input, init) => {
+    assert.equal(String(input), "https://frappe.example/api/resource/Contact");
+    assert.equal(init?.method, "POST");
+    assert.equal(init?.body, JSON.stringify({ first_name: "Local customer" }));
+    return Response.json({ data: { name: "CONTACT-1" } });
+  };
+  const result = await requestFrappe<{ data: { name: string } }>(
+    "/api/resource/Contact",
+    "POST",
+    { baseUrl: "https://frappe.example", apiKey: "key", apiSecret: "secret", enabled: true },
+    { first_name: "Local customer" },
+    { allowExport: true }
+  );
+  assert.equal(result.data.name, "CONTACT-1");
+});

@@ -61,6 +61,8 @@ completion evidence.
   rules without moving Contact ownership from Core.
 - [ ] **0.13** Approve the module dependency graph, migration order, seed order,
   route names, navigation groups, and public exports.
+- [ ] **0.14** Review `DUTIES-SOP-PLAN.md` and approve SOP revisions, frequencies,
+  recurrence limits, report corrections, team assignment, and evidence rules.
 
 **Exit check:** CRM uses only local tenant data. Every planned entity has one
 owner, public contract, permission boundary, tenant scope, and migration path.
@@ -106,15 +108,32 @@ owner, public contract, permission boundary, tenant scope, and migration path.
 - [ ] **1.16** Complete existing operational reports using owner-module queries and
   permission-scoped filters.
 
+### Duties, SOP, and Reporting Modules
+
+- [ ] **1.17** Build the SOP module for procedure identity, lifecycle, ownership,
+  and revision policy.
+- [ ] **1.18** Build SOP Item with ordering, department, frequency, instruction
+  revisions, evidence guidance, publish history, and immutable published records.
+- [ ] **1.19** Build Duty Assignment for user or team allocation, order, active
+  dates, recurrence, assignment history, and permission-checked lookups.
+- [ ] **1.20** Build the signed-in employee's My Duties list for web and mobile
+  using the same local API contract.
+- [ ] **1.21** Build Duty Report as an immutable, idempotent submission linked to
+  an active assignment and exact SOP Item revision.
+- [ ] **1.22** Build Duty Reporting filters, history, and tested summary totals
+  through the Duty Report public contract. Add audited export only when allowed.
+- [ ] **1.23** Test recurrence enforcement, duplicate retries, report corrections,
+  permission scopes, revision history, and mobile reconnect behavior.
+
 ### Foundation Verification
 
-- [ ] **1.17** Test fresh tenant migrations, existing tenant upgrades, and repeatable
+- [ ] **1.24** Test fresh tenant migrations, existing tenant upgrades, and repeatable
   seeds for affected modules.
-- [ ] **1.18** Verify mobile reconnect reads server-saved records and retries
+- [ ] **1.25** Verify mobile reconnect reads server-saved records and retries
   supported pending writes without creating duplicates.
-- [ ] **1.19** Test role access, record access, tenant isolation, duplicate retries,
+- [ ] **1.26** Test role access, record access, tenant isolation, duplicate retries,
   and deletion blockers.
-- [ ] **1.20** Compare upgraded tenant data with the 1.1 baseline. Reconcile counts,
+- [ ] **1.27** Compare upgraded tenant data with the 1.1 baseline. Reconcile counts,
   IDs, links, comments, and activity order.
 
 **Exit check:** Existing CRM work is local-first and persistent. Web and mobile

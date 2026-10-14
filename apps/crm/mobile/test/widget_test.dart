@@ -415,9 +415,10 @@ void main() {
     await tester.tap(find.text('Enquiries').last);
     await tester.pumpAndSettle();
     expect(find.byTooltip('New enquiry'), findsOneWidget);
-    expect(find.text('All'), findsOneWidget);
-    expect(find.text('Assigned'), findsOneWidget);
-    expect(find.text('Created'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text('All'), findsNothing);
+    expect(find.text('Assigned'), findsNothing);
+    expect(find.text('Created'), findsNothing);
   });
 
   testWidgets('shows the job detail comments and reply flow', (

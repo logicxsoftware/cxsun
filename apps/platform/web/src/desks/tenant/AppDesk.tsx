@@ -169,6 +169,26 @@ const FrappeCallLogImportWorkspace = lazyWorkspace(() =>
     (module) => module.FrappeCallLogImportWorkspace
   )
 );
+const FrappeContactExportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/export").then((module) => module.FrappeContactExportWorkspace)
+);
+const FrappeEnquiryExportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/export").then((module) => module.FrappeEnquiryExportWorkspace)
+);
+const FrappeActivityExportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/export").then((module) => module.FrappeActivityExportWorkspace)
+);
+const FrappeCallLogExportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/export").then((module) => module.FrappeCallLogExportWorkspace)
+);
+const FrappeLiveSyncWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/live-sync").then((module) => module.FrappeLiveSyncWorkspace)
+);
+const FrappeLiveSyncQueueWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/live-sync").then(
+    (module) => module.FrappeLiveSyncQueueWorkspace
+  )
+);
 const FrappeConnectionWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/connection").then((module) => module.FrappeConnectionWorkspace)
 );
@@ -503,6 +523,12 @@ type AppPage =
   | "frappe.enquiries"
   | "frappe.activities"
   | "frappe.call-logs"
+  | "frappe.export.contacts"
+  | "frappe.export.enquiries"
+  | "frappe.export.activities"
+  | "frappe.export.call-logs"
+  | "frappe.live-sync"
+  | "frappe.live-sync-queue"
   | "frappe.enquiry-sync"
   | "frappe.connection"
   | "frappe.users"
@@ -1231,7 +1257,12 @@ export function AppDesk() {
           </Button>
         ) : null
       }
-      hideSidebarBrand={activeApp === "crm" || activeApp === "hrms" || activeApp === "chat"}
+      hideSidebarBrand={
+        activeApp === "crm" ||
+        activeApp === "hrms" ||
+        activeApp === "chat" ||
+        activeApp === "frappe"
+      }
       homeHref={appRootUrl(activeApp)}
       menuItems={menuItems}
       omitWorkspaceBreadcrumb={activeApp === "crm" || activeApp === "hrms" || activeApp === "chat"}
@@ -1354,6 +1385,12 @@ export function AppDesk() {
           {safePage === "frappe.enquiries" ? <FrappeEnquiryImportWorkspace /> : null}
           {safePage === "frappe.activities" ? <FrappeActivityImportWorkspace /> : null}
           {safePage === "frappe.call-logs" ? <FrappeCallLogImportWorkspace /> : null}
+          {safePage === "frappe.export.contacts" ? <FrappeContactExportWorkspace /> : null}
+          {safePage === "frappe.export.enquiries" ? <FrappeEnquiryExportWorkspace /> : null}
+          {safePage === "frappe.export.activities" ? <FrappeActivityExportWorkspace /> : null}
+          {safePage === "frappe.export.call-logs" ? <FrappeCallLogExportWorkspace /> : null}
+          {safePage === "frappe.live-sync" ? <FrappeLiveSyncWorkspace /> : null}
+          {safePage === "frappe.live-sync-queue" ? <FrappeLiveSyncQueueWorkspace /> : null}
           {safePage === "frappe.connection" ? <FrappeConnectionWorkspace /> : null}
           {safePage === "frappe.users" ? <FrappeUserSyncWorkspace /> : null}
           {safePage === "frappe.user-mapping" ? <FrappeUserMappingWorkspace /> : null}
@@ -1722,6 +1759,12 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "frappe.enquiries" ||
     key === "frappe.activities" ||
     key === "frappe.call-logs" ||
+    key === "frappe.export.contacts" ||
+    key === "frappe.export.enquiries" ||
+    key === "frappe.export.activities" ||
+    key === "frappe.export.call-logs" ||
+    key === "frappe.live-sync" ||
+    key === "frappe.live-sync-queue" ||
     key === "frappe.enquiry-sync" ||
     key === "frappe.connection" ||
     key === "frappe.users" ||
@@ -2311,6 +2354,12 @@ function titleForPage(page: AppPage) {
     "frappe.enquiries": "Import enquiries",
     "frappe.activities": "Import activities",
     "frappe.call-logs": "Import call logs",
+    "frappe.export.contacts": "Export contacts",
+    "frappe.export.enquiries": "Export enquiries",
+    "frappe.export.activities": "Export activities",
+    "frappe.export.call-logs": "Export call logs",
+    "frappe.live-sync": "Live sync",
+    "frappe.live-sync-queue": "Live sync queue",
     "frappe.enquiry-sync": "Sync queue",
     "frappe.connection": "Frappe connection",
     "frappe.users": "Frappe users",
