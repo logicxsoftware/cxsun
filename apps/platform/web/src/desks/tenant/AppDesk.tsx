@@ -2527,11 +2527,11 @@ function mailboxForPage(page: AppPage) {
 }
 
 function chatFilterForPage(page: AppPage): "channel" | "dm" | "group" | "broadcast" | undefined {
-  if (page === "chat.direct") return "dm";
+  if (page === "chat.direct" || page === "chat.overview") return "dm";
   if (page === "chat.groups") return "group";
   if (page === "chat.channels") return "channel";
   if (page === "chat.broadcast") return "broadcast";
-  return undefined;
+  return "dm";
 }
 
 function pageForApp(app: PlatformAppId): AppPage {

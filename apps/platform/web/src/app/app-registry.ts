@@ -70,6 +70,7 @@ export type PlatformAppRootPage =
   | "mail.inbox"
   | "notes.overview"
   | "chat.overview"
+  | "chat.direct"
   | "task-manager.overview"
   | "blog.overview"
   | "auditor.overview"
@@ -437,7 +438,7 @@ export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
   if (appId === "task-manager") return "task-manager.overview";
   if (appId === "mail") return "mail.inbox";
   if (appId === "notes") return "notes.overview";
-  if (appId === "chat") return "chat.overview";
+  if (appId === "chat") return "chat.direct";
   if (appId === "accounts") return "accounts.overview";
   if (appId === "billing") return "billing.overview";
   return "application.overview";
@@ -734,7 +735,7 @@ export function appMenuFor(
     return {
       icon: MessagesSquareIcon,
       isActive: activePage.startsWith("chat"),
-      onSelect: () => onSelect("chat.overview"),
+      onSelect: () => onSelect("chat.direct"),
       title: "Chat"
     };
   }
@@ -1335,14 +1336,8 @@ export function appMenuItemsFor(
   if (appId === "chat") {
     return [
       {
-        icon: MessagesSquareIcon,
-        isActive: activePage === "chat.overview",
-        onSelect: () => onSelect("chat.overview"),
-        title: "All"
-      },
-      {
         icon: MessageCircleIcon,
-        isActive: activePage === "chat.direct",
+        isActive: activePage === "chat.direct" || activePage === "chat.overview",
         onSelect: () => onSelect("chat.direct"),
         title: "Direct Chat"
       },

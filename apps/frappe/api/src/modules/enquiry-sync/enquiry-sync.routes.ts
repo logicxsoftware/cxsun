@@ -60,7 +60,10 @@ export function registerFrappeEnquirySyncRoutes(
     method: "GET",
     url: "/frappe/enquiries/remote",
     schemas: {
-      querystring: z.object({ page: z.coerce.number().int().positive().max(100_000).default(1) }),
+      querystring: z.object({
+        page: z.coerce.number().int().positive().max(100_000).default(1),
+        pageSize: z.coerce.number().int().min(1).max(500).default(50)
+      }),
       response: z.object({
         hasMore: z.boolean(),
         items: z.array(
@@ -76,10 +79,11 @@ export function registerFrappeEnquirySyncRoutes(
           })
         ),
         page: z.number().int().positive(),
-        pageSize: z.number().int().positive()
+        pageSize: z.number().int().positive(),
+        total: z.number().int().nonnegative()
       })
     },
-    handler: async ({ query, request }) => (await service(request)).preview(query.page)
+    handler: async ({ query, request }) => (await service(request)).preview(query.page, query.pageSize)
   });
   registerContractRoute(app, {
     method: "POST",

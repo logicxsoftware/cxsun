@@ -151,13 +151,10 @@ export class TenantService {
       .filter(
         (key) =>
           key !== "devkit" &&
-          key !== "project-manager" &&
-          (isSingleTenantMode() || key !== "q-cafe")
+          key !== "project-manager"
       );
     const defaultKeys = includeDefaults
-      ? defaultTenantModuleKeys.filter(
-          (key) => !disabledModuleKeys.includes(key) && (isSingleTenantMode() || key !== "q-cafe")
-        )
+      ? defaultTenantModuleKeys.filter((key) => !disabledModuleKeys.includes(key))
       : ["platform.application"];
     const enabledModuleKeys = Array.from(new Set([...defaultKeys, ...legacyKeys]));
     const defaultLandingApp = resolveLandingApp(input.defaultLandingApp, enabledModuleKeys);

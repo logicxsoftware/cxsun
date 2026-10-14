@@ -29,6 +29,13 @@ export class ChatService {
     return context;
   }
 
+  async listUsers(
+    request: Parameters<ChatModuleDependencies["resolveContext"]>[0],
+    search?: string
+  ) {
+    return this.repository.listUsers(await this.context(request), search);
+  }
+
   async listChannels(
     request: Parameters<ChatModuleDependencies["resolveContext"]>[0],
     filters: ChatChannelListFilters

@@ -124,7 +124,7 @@ export class FrappeActivityImportService {
         parent: "Enquiry",
         limit_start: offset,
         limit_page_length: limit,
-        order_by: "creation desc"
+        order_by: "creation asc"
       }
     );
     const items = response.message ?? response.data;

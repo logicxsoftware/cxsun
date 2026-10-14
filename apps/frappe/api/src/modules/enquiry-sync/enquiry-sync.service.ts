@@ -31,12 +31,20 @@ export class FrappeEnquirySyncService {
     this.repository = new FrappeConnectionRepository(context.database);
   }
 
-  async preview(page: number) {
+  async preview(page: number, pageSize = 50) {
     const settings = await this.settings();
-    const enquiries = await this.listRemote(settings, (page - 1) * pageSize, pageSize + 1);
-    const hasMore = enquiries.length > pageSize;
+    const [enquiries, count] = await Promise.all([
+      this.listRemote(settings, (page - 1) * pageSize, pageSize),
+      requestFrappe<{ message?: number }>(
+        "/api/method/frappe.client.get_count?doctype=Enquiry",
+        "GET",
+        settings
+      )
+    ]);
+    const total = count.message;
+    if (typeof total !== "number" || !Number.isSafeInteger(total) || total < 0)
+      throw AppError.validation("Frappe returned an invalid enquiry count.");
     const valid = enquiries
-      .slice(0, pageSize)
       .filter((item) => typeof item.name === "string" && item.name.trim());
     const links = await this.repository.linksByRemoteNames(valid.map((item) => item.name));
     const items = valid.map((item) => ({
@@ -49,7 +57,7 @@ export class FrappeEnquirySyncService {
       modifiedAt: item.modified || null,
       localEnquiryId: links.get(item.name) ?? null
     }));
-    return { hasMore, items, page, pageSize };
+    return { hasMore: page * pageSize < total, items, page, pageSize, total };
   }
 
   async connectionOrigin() {
@@ -76,7 +84,7 @@ export class FrappeEnquirySyncService {
     for (let start = 0; ; start += pageSize) {
       if ((await this.settings()).baseUrl !== settings.baseUrl)
         throw AppError.conflict("The Frappe connection changed during this import.");
-      const page = await this.listRemote(settings, start, pageSize, "name asc");
+      const page = await this.listRemote(settings, start, pageSize);
       if (!page.length) break;
       const names = page
         .map((item) => item.name)
@@ -110,14 +118,13 @@ export class FrappeEnquirySyncService {
   private async listRemote(
     settings: FrappeSettings,
     start: number,
-    size: number,
-    orderBy = "modified desc"
+    size: number
   ) {
     const query = new URLSearchParams({
       fields: JSON.stringify(previewFields),
       limit_start: String(start),
       limit_page_length: String(size),
-      order_by: orderBy
+      order_by: "creation asc"
     });
     const response = await requestFrappe<{ data?: RemoteEnquiry[] }>(
       `/api/resource/Enquiry?${query}`,

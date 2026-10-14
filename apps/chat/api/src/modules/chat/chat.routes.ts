@@ -112,9 +112,24 @@ const channelDetailSchema = z
     messages: z.array(messageSchema)
   })
   .strict();
+const userSchema = z
+  .object({
+    email: z.string(),
+    name: z.string()
+  })
+  .strict();
 
 export function registerChatRoutes(app: FastifyInstance, dependencies: ChatModuleDependencies) {
   const service = new ChatService(dependencies, dependencies.events);
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/chat/users",
+    schemas: {
+      querystring: z.object({ search: z.string().optional() }).strict(),
+      response: z.array(userSchema)
+    },
+    handler: ({ query, request }) => service.listUsers(request, query.search)
+  });
   registerContractRoute(app, {
     method: "GET",
     url: "/chat/channels",

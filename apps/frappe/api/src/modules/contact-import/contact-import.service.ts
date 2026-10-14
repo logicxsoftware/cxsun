@@ -32,7 +32,7 @@ export class FrappeContactImportService {
       fields: JSON.stringify(fields),
       limit_start: String((page - 1) * pageSize),
       limit_page_length: String(pageSize + 1),
-      order_by: "name asc"
+      order_by: "creation asc"
     });
     const response = await requestFrappe<{ data?: RemoteContact[] }>(
       `/api/resource/Contact?${query}`,

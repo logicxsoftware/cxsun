@@ -49,18 +49,20 @@ test("remote preview, selected pull, and import job routes are available", async
     insertInto: () => insert
   } as unknown as Kysely<FrappeDatabase>;
   globalThis.fetch = async (input) =>
-    Response.json({
-      data: String(input).includes("/api/resource/Enquiry?")
-        ? [{ name: "ENQ27", title: "Machine issue", date: "2026-10-06" }]
-        : {
-            name: "ENQ27",
-            title: "Machine issue",
-            mobile: "9994885548",
-            date: "2026-10-06",
-            status: "New",
-            priority: "Normal"
-          }
-    });
+    String(input).includes("get_count")
+      ? Response.json({ message: 1 })
+      : Response.json({
+          data: String(input).includes("/api/resource/Enquiry?")
+            ? [{ name: "ENQ27", title: "Machine issue", date: "2026-10-06" }]
+            : {
+                name: "ENQ27",
+                title: "Machine issue",
+                mobile: "9994885548",
+                date: "2026-10-06",
+                status: "New",
+                priority: "Normal"
+              }
+        });
   const app = Fastify();
   registerFrappeEnquirySyncRoutes(
     app,
@@ -88,6 +90,7 @@ test("remote preview, selected pull, and import job routes are available", async
     const preview = await app.inject({ method: "GET", url: "/frappe/enquiries/remote?page=1" });
     assert.equal(preview.statusCode, 200);
     assert.equal(preview.json().data.items[0].name, "ENQ27");
+    assert.equal(preview.json().data.total, 1);
 
     const pull = await app.inject({
       method: "POST",

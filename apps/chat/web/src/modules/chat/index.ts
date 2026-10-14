@@ -4,4 +4,5 @@ export * from "./chat.list";
 export * from "./chat.schema";
 export * from "./chat.services";
 export * from "./chat.types";
+export * from "./chat.user-picker";
 export * from "./chat.workspace";

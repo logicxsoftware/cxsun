@@ -31,8 +31,10 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 }
 
 export const getConnectionState = () => request<FrappeConnectionState>("/frappe/connection");
-export const getRemoteEnquiries = (page: number) =>
-  request<RemoteEnquiryPage>(`/frappe/enquiries/remote?page=${page}`);
+export const getRemoteEnquiries = (page: number, pageSize: number) =>
+  request<RemoteEnquiryPage>(
+    `/frappe/enquiries/remote?${new URLSearchParams({ page: String(page), pageSize: String(pageSize) })}`
+  );
 export const getLatestImport = () => request<EnquiryImportJob | null>("/frappe/enquiries/import");
 export const startImport = () =>
   request<{ jobId: number; status: string }>("/frappe/enquiries/import", {});

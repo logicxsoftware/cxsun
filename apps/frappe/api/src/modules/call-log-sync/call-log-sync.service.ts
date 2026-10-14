@@ -39,7 +39,7 @@ export async function previewFrappeCallLogs(
     throw AppError.conflict("Verify the Frappe connection before importing call logs.");
   const query = new URLSearchParams({
     fields: JSON.stringify(fields),
-    order_by: "creation desc",
+    order_by: "creation asc",
     limit_start: String((page - 1) * 50),
     limit_page_length: "51"
   });

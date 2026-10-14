@@ -72,13 +72,10 @@ function database(
 
 test("previews remote enquiries and their local link", async () => {
   const scope = database();
-  globalThis.fetch = async () =>
-    new Response(
-      JSON.stringify({ data: [{ name: "ENQ27", title: "Machine issue", date: "2026-10-06" }] }),
-      {
-        status: 200
-      }
-    );
+  globalThis.fetch = async (input) =>
+    String(input).includes("get_count")
+      ? Response.json({ message: 1 })
+      : Response.json({ data: [{ name: "ENQ27", title: "Machine issue", date: "2026-10-06" }] });
   const service = new FrappeEnquirySyncService(
     {
       database: scope.value,
@@ -98,6 +95,7 @@ test("previews remote enquiries and their local link", async () => {
     hasMore: false,
     page: 1,
     pageSize: 50,
+    total: 1,
     items: [
       {
         name: "ENQ27",
@@ -117,8 +115,10 @@ test("previews a page beyond the former 1,000 enquiry limit", async () => {
   const scope = database();
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
+    if (url.pathname.endsWith("get_count")) return Response.json({ message: 1001 });
     assert.equal(url.searchParams.get("limit_start"), "1000");
-    assert.equal(url.searchParams.get("limit_page_length"), "51");
+    assert.equal(url.searchParams.get("limit_page_length"), "100");
+    assert.equal(url.searchParams.get("order_by"), "creation asc");
     return new Response(JSON.stringify({ data: [{ name: "ENQ1001" }] }), { status: 200 });
   };
   const service = new FrappeEnquirySyncService(
@@ -136,9 +136,11 @@ test("previews a page beyond the former 1,000 enquiry limit", async () => {
     defaults,
     "secret"
   );
-  const result = await service.preview(21);
+  const result = await service.preview(11, 100);
   assert.equal(result.items[0]?.name, "ENQ1001");
   assert.equal(result.hasMore, false);
+  assert.equal(result.total, 1001);
+  assert.equal(result.pageSize, 100);
 });
 
 test("imports unlinked enquiries across multiple remote batches", async () => {
@@ -150,6 +152,7 @@ test("imports unlinked enquiries across multiple remote batches", async () => {
     const url = new URL(String(input));
     if (url.pathname.endsWith("/Enquiry")) {
       const start = Number(url.searchParams.get("limit_start"));
+      assert.equal(url.searchParams.get("order_by"), "creation asc");
       return new Response(
         JSON.stringify({ data: names.slice(start, start + 50).map((name) => ({ name })) }),
         { status: 200 }

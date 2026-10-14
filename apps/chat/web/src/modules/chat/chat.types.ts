@@ -2,6 +2,11 @@ export type ChatChannelKind = "channel" | "dm" | "group" | "broadcast";
 export type ChatStatus = "active" | "inactive";
 export type ChatMemberRole = "admin" | "member";
 
+export type ChatUserOption = {
+  email: string;
+  name: string;
+};
+
 export type ChatChannel = {
   createdAt: string;
   id: number;

@@ -168,8 +168,7 @@ export class TenantRepository {
       .filter(
         (key) =>
           key !== "devkit" &&
-          key !== "project-manager" &&
-          (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
+          key !== "project-manager"
       )
       .sort();
     const payloadSettings = {

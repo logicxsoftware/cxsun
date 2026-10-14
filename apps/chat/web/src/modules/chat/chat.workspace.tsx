@@ -69,8 +69,10 @@ import type {
   ChatChannelKind,
   ChatChannelSavePayload,
   ChatMemberRole,
-  ChatMessage
+  ChatMessage,
+  ChatUserOption
 } from "./chat.types";
+import { ChatUserPickerModal } from "./chat.user-picker";
 
 const FAVOURITES_KEY = "cxsun.chat.favourites.v1";
 const MAX_ATTACHMENTS = 5;
@@ -92,6 +94,7 @@ export function ChatWorkspace({
     channel: null,
     open: false
   });
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
   const [deletingChannel, setDeletingChannel] = useState<ChatChannel | null>(null);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<PendingAttachment[]>([]);
@@ -315,6 +318,40 @@ export function ChatWorkspace({
     }
   }
 
+  function handleNewChat() {
+    if (filterKind === "dm") {
+      setUserPickerOpen(true);
+    } else {
+      setChannelForm({ channel: null, open: true });
+    }
+  }
+
+  async function handleSelectUserForDm(user: ChatUserOption) {
+    try {
+      const existing = (chat.channels.data ?? []).find(
+        (c) =>
+          c.kind === "dm" &&
+          (c.name.trim().toLowerCase() === user.name.trim().toLowerCase() ||
+            c.name.trim().toLowerCase() === user.email.trim().toLowerCase())
+      );
+      if (existing) {
+        setSelected(existing);
+        setUserPickerOpen(false);
+        return;
+      }
+      const created = await chat.createChannel.mutateAsync({
+        kind: "dm",
+        members: [user.email],
+        name: user.name || user.email
+      });
+      setSelected(created);
+      setUserPickerOpen(false);
+      toast.success(`Chat started with ${user.name}`);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
+  }
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-background">
       {/* LEFT PANEL: CONTACTS / CHATS LIST */}
@@ -331,7 +368,7 @@ export function ChatWorkspace({
             type="button"
             title="New conversation"
             className="size-8 rounded-lg"
-            onClick={() => setChannelForm({ channel: null, open: true })}
+            onClick={handleNewChat}
           >
             <Plus className="size-4" />
           </Button>
@@ -682,7 +719,7 @@ export function ChatWorkspace({
             <Button
               variant="outline"
               className="mt-5 rounded-lg"
-              onClick={() => setChannelForm({ channel: null, open: true })}
+              onClick={handleNewChat}
             >
               <Plus className="mr-2 size-4" />
               Start a new conversation
@@ -692,6 +729,14 @@ export function ChatWorkspace({
       </section>
 
       {/* MODALS */}
+      <ChatUserPickerModal
+        busy={chat.createChannel.isPending}
+        currentUserEmail={selfEmail}
+        open={userPickerOpen}
+        onOpenChange={setUserPickerOpen}
+        onSelectUser={handleSelectUserForDm}
+      />
+
       <ChatChannelForm
         key={channelForm.channel?.uuid ?? `new-${filterKind ?? "default"}`}
         busy={chat.createChannel.isPending || chat.renameChannel.isPending}

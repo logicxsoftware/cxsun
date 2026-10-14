@@ -6,6 +6,8 @@ import { Button } from "@cxsun/ui/components/button";
 import { Card } from "@cxsun/ui/components/card";
 import { Input } from "@cxsun/ui/components/input";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
+import { WorkspacePagination } from "@cxsun/ui/workspace/pagination";
+import { buildShowingLabel } from "@cxsun/ui/workspace/utils";
 import {
   enquiryImportKey,
   remoteEnquiriesKey,
@@ -26,12 +28,13 @@ type PullResult = {
 export function FrappeEnquiryImportWorkspace() {
   const client = useQueryClient();
   const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<PullResult | null>(null);
   const connection = useConnectionState();
-  const remote = useRemoteEnquiries(true, page);
+  const remote = useRemoteEnquiries(true, page, rowsPerPage);
   const importJob = useEnquiryImport(true);
   const importBusy = importJob.data?.status === "pending" || importJob.data?.status === "running";
   const connected = Boolean(connection.data?.configured && connection.data.enabled);
@@ -94,7 +97,10 @@ export function FrappeEnquiryImportWorkspace() {
   });
 
   const busy = pull.isPending || importBusy;
+  const total = remote.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
   const changePage = (next: number) => {
+    if (remote.isFetching || busy || next < 1 || next > totalPages) return;
     setPage(next);
     setSelected(new Set());
     setResult(null);
@@ -219,23 +225,24 @@ export function FrappeEnquiryImportWorkspace() {
         }
         onPull={(name) => pull.mutate([name])}
       />
-      <div className="flex items-center justify-end gap-3">
-        <span className="text-sm text-muted-foreground">Page {page}</span>
-        <Button
-          variant="outline"
-          disabled={page === 1 || remote.isFetching || busy}
-          onClick={() => changePage(page - 1)}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          disabled={!remote.data?.hasMore || remote.isFetching || busy}
-          onClick={() => changePage(page + 1)}
-        >
-          Next
-        </Button>
-      </div>
+      <WorkspacePagination
+        page={page}
+        rowsPerPage={rowsPerPage}
+        showingLabel={buildShowingLabel(page, rowsPerPage, total)}
+        singularLabel="enquiries"
+        totalCount={total}
+        totalPages={totalPages}
+        onNextPage={() => changePage(page + 1)}
+        onPageChange={changePage}
+        onPreviousPage={() => changePage(page - 1)}
+        onRowsPerPageChange={(value) => {
+          if (remote.isFetching || busy) return;
+          setRowsPerPage(value);
+          setPage(1);
+          setSelected(new Set());
+          setResult(null);
+        }}
+      />
     </WorkspacePage>
   );
 }

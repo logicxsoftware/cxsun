@@ -5,10 +5,16 @@ import type {
   ChatMember,
   ChatMemberSavePayload,
   ChatMessage,
-  ChatMessageSavePayload
+  ChatMessageSavePayload,
+  ChatUserOption
 } from "./chat.types";
 
 const API_BASE_URL = requiredRuntimeValue("VITE_PLATFORM_API_URL");
+
+export function listChatUsers(search = "") {
+  const suffix = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
+  return chatRequest<ChatUserOption[]>(`/chat/users${suffix}`);
+}
 
 export function listChannels(search = "") {
   const suffix = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";

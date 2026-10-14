@@ -4,10 +4,10 @@ import { getConnectionState, getLatestImport, getRemoteEnquiries } from "./enqui
 export const remoteEnquiriesKey = ["frappe", "enquiry-sync", "remote"] as const;
 export const enquiryImportKey = ["frappe", "enquiry-sync", "import"] as const;
 
-export function useRemoteEnquiries(active: boolean, page: number) {
+export function useRemoteEnquiries(active: boolean, page: number, pageSize: number) {
   return useQuery({
-    queryKey: [...remoteEnquiriesKey, page],
-    queryFn: () => getRemoteEnquiries(page),
+    queryKey: [...remoteEnquiriesKey, page, pageSize],
+    queryFn: () => getRemoteEnquiries(page, pageSize),
     enabled: active
   });
 }

@@ -12,7 +12,8 @@ import type {
   ChatMessage,
   ChatMessageListFilters,
   ChatRuntimeContext,
-  ChatStatus
+  ChatStatus,
+  ChatUserOption
 } from "./chat.types.js";
 
 const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
@@ -20,6 +21,21 @@ const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 export const CHAT_REACTION_EMOJIS: readonly string[] = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 export class ChatRepository {
+  async listUsers(context: ChatRuntimeContext, search?: string): Promise<ChatUserOption[]> {
+    let query = sql<{ email: string; name: string | null }>`SELECT email, name FROM app_users WHERE status = 'active'`;
+    if (search && search.trim()) {
+      const term = `%${search.trim().toLowerCase()}%`;
+      query = sql<{ email: string; name: string | null }>`SELECT email, name FROM app_users WHERE status = 'active' AND (LOWER(email) LIKE ${term} OR LOWER(name) LIKE ${term}) ORDER BY name ASC LIMIT 100`;
+    } else {
+      query = sql<{ email: string; name: string | null }>`SELECT email, name FROM app_users WHERE status = 'active' ORDER BY name ASC LIMIT 100`;
+    }
+    const rows = await query.execute(context.database);
+    return rows.rows.map((row) => ({
+      email: String(row.email),
+      name: String(row.name || row.email)
+    }));
+  }
+
   async listChannels(context: ChatRuntimeContext, filters: ChatChannelListFilters) {
     let query = context.database
       .selectFrom("chat_channels")

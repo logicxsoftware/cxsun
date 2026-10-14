@@ -9,6 +9,7 @@ import {
   forceDeleteChannel,
   forceDeleteMessage,
   listChannels,
+  listChatUsers,
   listMembers,
   listMessages,
   markChannelRead,
@@ -198,4 +199,11 @@ export function useChatRealtime(channelUuid: string | null) {
     status,
     typingEmails: channelUuid ? (typingByChannel[channelUuid] ?? []) : []
   };
+}
+
+export function useChatUsers(search = "") {
+  return useQuery({
+    queryKey: [...chatQueryKey, "users", search],
+    queryFn: () => listChatUsers(search)
+  });
 }

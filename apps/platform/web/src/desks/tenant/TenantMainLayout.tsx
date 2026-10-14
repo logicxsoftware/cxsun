@@ -135,7 +135,7 @@ function TenantMainShell({
           user={user}
         />
       </div>
-      <div className={cn("relative flex min-h-0 flex-1", fullBleed ? "pt-0" : "pt-0.5")}>
+      <div className="relative flex min-h-0 flex-1 pt-0.5">
         <AppSidebar
           {...(hideSidebarBrand ? {} : { brand })}
           className="md:p-1 md:pt-0.5 md:pb-0.5"
@@ -162,14 +162,7 @@ function TenantMainShell({
           user={user}
           variant="inset"
         />
-        <SidebarInset
-          className={cn(
-            "min-h-0 min-w-0 overflow-hidden",
-            fullBleed
-              ? "md:peer-data-[variant=inset]:m-0 md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:border-0 md:peer-data-[variant=inset]:shadow-none"
-              : "md:peer-data-[variant=inset]:m-1 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:mt-0 md:peer-data-[variant=inset]:mb-0.5"
-          )}
-        >
+        <SidebarInset className="min-h-0 min-w-0 overflow-hidden md:peer-data-[variant=inset]:m-1 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:mt-0 md:peer-data-[variant=inset]:mb-0.5">
           {hideAppHeader
             ? null
             : (headerContent ?? (

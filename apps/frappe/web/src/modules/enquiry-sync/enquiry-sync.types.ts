@@ -14,6 +14,7 @@ export type RemoteEnquiryPage = {
   items: RemoteEnquiry[];
   page: number;
   pageSize: number;
+  total: number;
 };
 
 export type EnquiryImportJob = {
