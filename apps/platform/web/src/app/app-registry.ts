@@ -16,6 +16,8 @@ import {
   LayersIcon,
   MailIcon,
   MapPinnedIcon,
+  MessagesSquareIcon,
+  NotebookPenIcon,
   PackageIcon,
   PhoneCallIcon,
   Settings2Icon,
@@ -42,6 +44,8 @@ export type PlatformAppId =
   | "devkit"
   | "project-manager"
   | "mail"
+  | "notes"
+  | "chat"
   | "task-manager"
   | "blog"
   | "auditor"
@@ -61,6 +65,8 @@ export type PlatformAppRootPage =
   | "billing.overview"
   | "accounts.overview"
   | "mail.inbox"
+  | "notes.overview"
+  | "chat.overview"
   | "task-manager.overview"
   | "blog.overview"
   | "auditor.overview"
@@ -100,6 +106,8 @@ export type PlatformAppDefinition = {
     | "devkit"
     | "project-manager"
     | "mail"
+    | "notes"
+    | "chat"
     | "platform-task-manager"
     | "blog"
     | "auditor"
@@ -120,6 +128,8 @@ export const defaultTenantModuleKeys = [
   "billing.sales",
   "accounts.overview",
   "mail",
+  "notes",
+  "chat",
   "platform.task-manager",
   "auditor",
   "crm",
@@ -236,6 +246,28 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
     label: "Mail",
     moduleKey: "mail",
     stack: "mail"
+  },
+  {
+    accentClass: "bg-amber-500",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Fast team notes with search, suspend, restore, and permanent delete.",
+    icon: NotebookPenIcon,
+    id: "notes",
+    label: "Notes",
+    moduleKey: "notes",
+    stack: "notes"
+  },
+  {
+    accentClass: "bg-emerald-600",
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Team channels, direct threads, and channel messages.",
+    icon: MessagesSquareIcon,
+    id: "chat",
+    label: "Chat",
+    moduleKey: "chat",
+    stack: "chat"
   },
   {
     accentClass: "bg-cyan-600",
@@ -401,6 +433,8 @@ export function appRootPage(appId: PlatformAppId): PlatformAppRootPage {
   if (appId === "auditor") return "auditor.overview";
   if (appId === "task-manager") return "task-manager.overview";
   if (appId === "mail") return "mail.inbox";
+  if (appId === "notes") return "notes.overview";
+  if (appId === "chat") return "chat.overview";
   if (appId === "accounts") return "accounts.overview";
   if (appId === "billing") return "billing.overview";
   return "application.overview";
@@ -683,6 +717,22 @@ export function appMenuFor(
       isActive: activePage.startsWith("mail"),
       onSelect: () => onSelect("mail.inbox"),
       title: "Mail"
+    };
+  }
+  if (appId === "notes") {
+    return {
+      icon: NotebookPenIcon,
+      isActive: activePage.startsWith("notes"),
+      onSelect: () => onSelect("notes.overview"),
+      title: "Notes"
+    };
+  }
+  if (appId === "chat") {
+    return {
+      icon: MessagesSquareIcon,
+      isActive: activePage.startsWith("chat"),
+      onSelect: () => onSelect("chat.overview"),
+      title: "Chat"
     };
   }
   if (appId === "accounts") {
@@ -1245,6 +1295,26 @@ export function appMenuItemsFor(
       }
     ];
   }
+  if (appId === "notes") {
+    return [
+      {
+        icon: NotebookPenIcon,
+        isActive: activePage === "notes.overview",
+        onSelect: () => onSelect("notes.overview"),
+        title: "Notes"
+      }
+    ];
+  }
+  if (appId === "chat") {
+    return [
+      {
+        icon: MessagesSquareIcon,
+        isActive: activePage === "chat.overview",
+        onSelect: () => onSelect("chat.overview"),
+        title: "Channels"
+      }
+    ];
+  }
   if (appId === "accounts") {
     return [
       {
@@ -1564,6 +1634,8 @@ function codexsunMenuItems(activePage: string, onSelect: (page: string) => void)
     }
   ];
 }
+
+export const deskAddonAppIds: PlatformAppId[] = ["notes", "chat"];
 
 export function appWorkspaceItems(enabledApps: PlatformAppId[], activeApp: PlatformAppId) {
   return platformAppRegistry

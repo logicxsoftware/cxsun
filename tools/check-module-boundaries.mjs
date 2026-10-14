@@ -111,6 +111,7 @@ const capabilityBackendRoles = new Map([
   ["hrms-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["docs-api/overview", ["module", "service", "routes", "seed", "types"]],
   ["himsx-api/overview", ["module", "service", "routes", "seed", "types"]],
+  ["platform-api/q-cafe", ["module", "routes", "types"]],
 
   ["auditor-api/client", ["module", "service", "repository", "routes", "migration", "types"]],
   ["ecommerce-api/catalog-data-source", ["service", "repository", "routes", "migration", "types"]],

@@ -15,6 +15,7 @@ import {
   WorkspaceFormGrid
 } from "@cxsun/ui/workspace/upsert";
 import { WorkspaceLookup } from "@cxsun/ui/workspace/lookup";
+import { WorkspaceDatePicker } from "@cxsun/ui/workspace/date-picker";
 import { attendanceSchema } from "./attendance.schema";
 import { useAttendanceEmployees } from "./attendance.hooks";
 import type { AttendanceGateway } from "./attendance.services";
@@ -87,13 +88,10 @@ export function AttendanceForm({
           />
         </WorkspaceFormField>
         <WorkspaceFormField label="Date" required>
-          <Input
-            type="date"
+          <WorkspaceDatePicker
+            ariaLabel="Attendance date"
             value={value.workDate}
-            disabled={busy}
-            onChange={(event) =>
-              setValue((current) => ({ ...current, workDate: event.target.value }))
-            }
+            onValueChange={(workDate) => setValue((current) => ({ ...current, workDate }))}
           />
         </WorkspaceFormField>
         <WorkspaceFormField label="Status" required>

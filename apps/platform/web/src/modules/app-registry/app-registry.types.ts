@@ -13,6 +13,8 @@ export type PlatformApp = {
     | "devkit"
     | "project-manager"
     | "mail"
+    | "notes"
+    | "chat"
     | "platform-task-manager"
     | "blog"
     | "auditor"

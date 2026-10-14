@@ -36,7 +36,7 @@ class DashboardJobsFeed extends ChangeNotifier with WidgetsBindingObserver {
     if (_isRefreshing) return;
     _isRefreshing = true;
     try {
-      final updated = await api.assignedJobs(session.accessToken);
+      final updated = await _loadEnquiries();
       _jobs
         ..clear()
         ..addAll(updated);
@@ -68,6 +68,26 @@ class DashboardJobsFeed extends ChangeNotifier with WidgetsBindingObserver {
 
   void _startPolling() {
     _timer ??= Timer.periodic(_refreshInterval, (_) => unawaited(refresh()));
+  }
+
+  Future<List<CrmJob>> _loadEnquiries() async {
+    try {
+      return await api.enquiries(
+        accessToken: session.accessToken,
+        scope: 'all',
+      );
+    } on CrmMobileApiException {
+      final lists = await Future.wait([
+        api.assignedJobs(session.accessToken),
+        api.createdEnquiries(session.accessToken),
+      ]);
+      final byId = <String, CrmJob>{};
+      for (final enquiry in lists.expand((items) => items)) {
+        byId.putIfAbsent(enquiry.sourceId, () => enquiry);
+      }
+      return byId.values.toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
   }
 
   @override

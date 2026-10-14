@@ -178,6 +178,22 @@ Mail owns tenant-scoped outbound delivery, inbound synchronization, message hist
 
 Billing document screens consume Mail only through its public web contract to capture the visible invoice or quotation as a PDF and enqueue a branded customer email.
 
+### Notes
+
+Notes owns tenant-scoped fast team notes with search and lifecycle status.
+
+- `apps/notes/api`: Fastify module package with tenant migration, permission seed, note CRUD, suspend, restore, force delete, and public contracts.
+- `apps/notes/web`: React workspace for note search, status filter, list, create/edit dialog, view dialog, suspend, restore, and delete confirmation.
+
+### Chat
+
+Chat owns tenant-scoped team channels and channel-scoped messages in a WhatsApp-tone workspace.
+
+- `apps/chat/api`: Fastify module package with tenant migrations, permission seed, channel CRUD with message-dependency protection on delete, message CRUD scoped to a verified parent channel, channel detail with messages and members, image/file attachments, channel membership with admin roles, broadcast posting rules, server read receipts with per-channel unread counts, and public contracts.
+- `apps/chat/web`: React workspace for channel search, All/Unread/Favourites tabs, avatars with unread badges, date pills, green/white message bubbles with saved ticks, inline image rendering, file download cards, composer with image/file picker, channel create with participants, member drawer with admin management, and message edit/suspend/restore/delete.
+
+Mail, Notes, and Chat are composed by Platform API and surfaced together in the tenant desk launcher.
+
 Product development and release tooling preserves those ownership boundaries while deploying one composed runtime.
 `npm run stack:impact -- <changed files>` identifies the verification blast radius, while
 `npm run stack:plan -- <stack>` prints the composed Platform services, owned migration scopes, and rollback plan.

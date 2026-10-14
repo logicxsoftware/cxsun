@@ -84,7 +84,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
         bottom: false,
         child: Column(
           children: [
-            _CompactJobDetail(enquiry: widget.enquiry, job: _job),
+            _CompactJobDetail(
+              enquiry: DashboardListItem.fromCrmJob(_job),
+              job: _job,
+              onTapStatus: _isSending ? () {} : _showStatusPicker,
+              onOpenNewCall: _isSending ? () {} : _openNewCall,
+            ),
             if (_isLoading) const LinearProgressIndicator(minHeight: 2),
             Expanded(
               child: JobWorkFeed(job: _job, session: widget.session),
@@ -250,17 +255,154 @@ class _JobDetailPageState extends State<JobDetailPage> {
     }
   }
 
+  Future<void> _openNewCall() async {
+    setState(() => _isSending = true);
+    try {
+      final updated = await widget.api.openNewCall(
+        accessToken: widget.session.accessToken,
+        id: widget.initialJob.sourceId,
+      );
+      if (mounted) {
+        setState(() => _job = updated);
+        _syncRunningTimer();
+        widget.onJobChanged?.call();
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('New call opened successfully.')),
+          );
+      }
+    } on CrmMobileApiException catch (error) {
+      if (mounted) _showError(error.message);
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  Future<void> _showStatusPicker() async {
+    try {
+      final formData = await widget.api.callEnquiryFormData(widget.session.accessToken);
+      if (!mounted || formData.statuses.isEmpty) return;
+      final chosenStatus = await showModalBottomSheet<CrmCallEnquiryStatus>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Text(
+                  'Change Status',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: formData.statuses.map((status) {
+                    final isCurrent =
+                        status.name.toLowerCase() == _job.status.toLowerCase();
+                    return ListTile(
+                      title: Text(status.name),
+                      trailing: isCurrent
+                          ? const Icon(Icons.check, color: Color(0xFF662C90))
+                          : null,
+                      onTap: () => Navigator.of(context).pop(status),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (!mounted || chosenStatus == null) return;
+      if (chosenStatus.name.toLowerCase() == _job.status.toLowerCase()) return;
+
+      String? closedReason;
+      final code = chosenStatus.code.toLowerCase();
+      if (code == 'won' || code == 'lost' || code == 'closed') {
+        closedReason = await showDialog<String>(
+          context: context,
+          builder: (context) {
+            final reasonController = TextEditingController();
+            return AlertDialog(
+              title: Text('Reason for ${chosenStatus.name}'),
+              content: TextField(
+                controller: reasonController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Enter outcome or closure reason...',
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final text = reasonController.text.trim();
+                    if (text.isNotEmpty) Navigator.of(context).pop(text);
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+        if (closedReason == null || closedReason.isEmpty) return;
+      }
+
+      setState(() => _isSending = true);
+      try {
+        final updated = await widget.api.updateProperties(
+          accessToken: widget.session.accessToken,
+          id: widget.initialJob.sourceId,
+          statusId: chosenStatus.id,
+          closedReason: closedReason,
+        );
+        if (mounted) {
+          setState(() => _job = updated);
+          _syncRunningTimer();
+          widget.onJobChanged?.call();
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(content: Text('Status updated to ${chosenStatus.name}.')),
+            );
+        }
+      } on CrmMobileApiException catch (error) {
+        if (mounted) _showError(error.message);
+      } finally {
+        if (mounted) setState(() => _isSending = false);
+      }
+    } on CrmMobileApiException catch (error) {
+      if (mounted) _showError(error.message);
+    }
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
 class _CompactJobDetail extends StatelessWidget {
-  const _CompactJobDetail({required this.enquiry, required this.job});
+  const _CompactJobDetail({
+    required this.enquiry,
+    required this.job,
+    required this.onTapStatus,
+    required this.onOpenNewCall,
+  });
 
   final DashboardListItem enquiry;
   final CrmJob job;
+  final VoidCallback onTapStatus;
+  final VoidCallback onOpenNewCall;
 
   @override
   Widget build(BuildContext context) {
@@ -285,20 +427,53 @@ class _CompactJobDetail extends StatelessWidget {
               _DetailStatusBadge(
                 number: enquiry.enquiryNumber,
                 status: enquiry.status,
+                statusName: job.status.isNotEmpty ? job.status : null,
+                onTap: onTapStatus,
               ),
+              if (job.status.toLowerCase() == 'new') ...[
+                const SizedBox(width: 8),
+                FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                  onPressed: onOpenNewCall,
+                  icon: const Icon(Icons.call_made, size: 14),
+                  label: const Text('Open call', style: TextStyle(fontSize: 11)),
+                ),
+              ],
               const SizedBox(width: 8),
-              Expanded(
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEBE6F0),
+                  borderRadius: BorderRadius.circular(6),
+                ),
                 child: Text(
                   enquiry.list.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF5A5260),
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
+              const Spacer(),
               _DetailJobTimer(jobId: job.sourceId, job: job),
             ],
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
+          Text(
+            enquiry.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1E1724),
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
             'Created by ${enquiry.createdBy} · ${enquiry.createdDate} | ${enquiry.createdAgo}',
             maxLines: 1,
@@ -308,12 +483,6 @@ class _CompactJobDetail extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            enquiry.title,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
         ],
       ),
     );
@@ -321,34 +490,57 @@ class _CompactJobDetail extends StatelessWidget {
 }
 
 class _DetailStatusBadge extends StatelessWidget {
-  const _DetailStatusBadge({required this.number, required this.status});
+  const _DetailStatusBadge({
+    required this.number,
+    required this.status,
+    this.statusName,
+    this.onTap,
+  });
 
   final String number;
   final JobStatus status;
+  final String? statusName;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-    decoration: BoxDecoration(
-      color: const Color(0xFF4F7FD4),
+  Widget build(BuildContext context) {
+    final rawLabel = statusName != null && statusName!.trim().isNotEmpty
+        ? statusName!.trim()
+        : _detailStatusLabel(status);
+    final label = rawLabel.length > 1
+        ? '${rawLabel[0].toUpperCase()}${rawLabel.substring(1)}'
+        : rawLabel.toUpperCase();
+    return InkWell(
       borderRadius: BorderRadius.circular(14),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.radio_button_checked, size: 12, color: Colors.white),
-        const SizedBox(width: 3),
-        Text(
-          '#$number  ${_detailStatusLabel(status)}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF4F7FD4),
+          borderRadius: BorderRadius.circular(14),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.radio_button_checked, size: 12, color: Colors.white),
+            const SizedBox(width: 3),
+            Text(
+              '#$number  $label',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: 2),
+              const Icon(Icons.arrow_drop_down, size: 14, color: Colors.white),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DetailJobTimer extends StatelessWidget {

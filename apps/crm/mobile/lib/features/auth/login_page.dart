@@ -21,19 +21,23 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _corporateId = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   String? _error;
   bool _isSigningIn = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
     super.initState();
     _email.text = widget.initialEmail;
+    _corporateId.text = AppConfig.corporateId;
   }
 
   @override
   void dispose() {
+    _corporateId.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -46,8 +50,9 @@ class _LoginPageState extends State<LoginPage> {
     });
     try {
       final session = await widget.api.signIn(
-        email: _email.text,
+        email: _email.text.trim(),
         password: _password.text,
+        corporateId: _corporateId.text.trim(),
       );
       widget.onSignedIn(session);
     } on CrmMobileApiException catch (error) {
@@ -63,71 +68,162 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F5F9),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: AppBrandLogo(
-                      width: 58,
-                      height: 52,
-                    ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Card(
+                elevation: 0,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: const BorderSide(color: Color(0xFFECE7EF)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: AppBrandLogo(
+                          width: 64,
+                          height: 58,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Welcome',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF2C2434),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Sign in to your ${AppConfig.brandName} workspace',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF756F7A),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: _corporateId,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.business_outlined, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          labelText: 'Corporate ID',
+                          hintText: 'e.g. CODEXSUN',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _email,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          labelText: 'Email',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _password,
+                        obscureText: _obscurePassword,
+                        onSubmitted: (_) => _isSigningIn ? null : _signIn(),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              size: 20,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          labelText: 'Password',
+                        ),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer.withValues(
+                              alpha: 0.7,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: theme.colorScheme.error,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _error!,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onErrorContainer,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _isSigningIn ? null : _signIn,
+                        child: _isSigningIn
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Sign in',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 22),
-                  Text(
-                    'Welcome',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  TextField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Email',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _password,
-                    obscureText: true,
-                    onSubmitted: (_) => _isSigningIn ? null : _signIn(),
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Password',
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      _error!,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: _isSigningIn ? null : _signIn,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: _isSigningIn
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(),
-                            )
-                          : const Text('Sign in'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

@@ -10,8 +10,8 @@ import "dotenv/config";
 
 const sourceMaster = "cxsun_master_db";
 const tenantCode = "CODEXSUN";
-const addedApps = ["hrms", "docs", "himsx"];
-const excludedApps = new Set(["q-cafe", "devkit", "project-manager"]);
+const addedApps = ["hrms", "docs", "himsx", "q-cafe"];
+const excludedApps = new Set(["devkit", "project-manager"]);
 const dumpBinary = "C:\\Program Files\\MariaDB 12.3\\bin\\mariadb-dump.exe";
 const targetMaster = process.env.DB_MASTER_NAME;
 

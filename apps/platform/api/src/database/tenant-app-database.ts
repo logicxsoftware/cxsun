@@ -86,6 +86,18 @@ import {
   rollbackMailModule,
   seedMailModule
 } from "@cxsun/mail-api";
+import {
+  migrateNotesModule,
+  notesMigrationBatch,
+  rollbackNotesModule,
+  seedNotesModule
+} from "@cxsun/notes-api";
+import {
+  chatMigrationBatch,
+  migrateChatModule,
+  rollbackChatModule,
+  seedChatModule
+} from "@cxsun/chat-api";
 import type { Kysely } from "kysely";
 import {
   blogsMigrationBatch,
@@ -132,6 +144,16 @@ import {
 import { seedTaskManagerModule } from "../modules/task-manager/task-manager.seed.js";
 
 const mailTenantMigrations = mailMigrationBatch.steps.map(({ description, name }) => ({
+  description,
+  name
+}));
+
+const notesTenantMigrations = notesMigrationBatch.steps.map(({ description, name }) => ({
+  description,
+  name
+}));
+
+const chatTenantMigrations = chatMigrationBatch.steps.map(({ description, name }) => ({
   description,
   name
 }));
@@ -208,6 +230,14 @@ export function tenantDatabaseMigrationsFor(_tenant: Tenant) {
       ...migration,
       statements: [`RUN ${migration.name}`]
     })),
+    ...notesTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
+    ...chatTenantMigrations.map((migration) => ({
+      ...migration,
+      statements: [`RUN ${migration.name}`]
+    })),
     ...taskManagerTenantMigrationBatch.steps.map(({ description, name }) => ({
       description,
       name,
@@ -258,6 +288,10 @@ export async function migrateSelectedTenantApps(database: Kysely<TenantDatabase>
   provisionedApps.push("accounts");
   await migrateMailModule(database as never);
   provisionedApps.push("mail");
+  await migrateNotesModule(database as never);
+  provisionedApps.push("notes");
+  await migrateChatModule(database as never);
+  provisionedApps.push("chat");
   await migrateTaskManagerTenantModule(database as never);
   provisionedApps.push("task-manager");
   await migrateCodexsunDatabase(database as unknown as Kysely<CodexsunDatabase>);
@@ -343,6 +377,16 @@ export async function seedSelectedTenantApps(database: Kysely<TenantDatabase>, t
     seededApps.push("mail");
   }
 
+  if (enabled.has("notes")) {
+    await seedNotesModule(database as never);
+    seededApps.push("notes");
+  }
+
+  if (enabled.has("chat")) {
+    await seedChatModule(database as never);
+    seededApps.push("chat");
+  }
+
   if (enabled.has("platform.task-manager")) {
     await seedTaskManagerModule(database, {
       importLegacyJson: false,
@@ -368,6 +412,8 @@ export async function rollbackSelectedTenantApps(database: Kysely<TenantDatabase
   if (enabled.has("platform.task-manager"))
     await rollbackTaskManagerTenantModule(database as never);
   if (enabled.has("mail")) await rollbackMailModule(database as never);
+  if (enabled.has("notes")) await rollbackNotesModule(database as never);
+  if (enabled.has("chat")) await rollbackChatModule(database as never);
   if (enabled.has("crm") && enabled.has("frappe")) {
     await rollbackFrappeUserMappingDatabase(
       database as unknown as Kysely<FrappeUserMappingDatabase>

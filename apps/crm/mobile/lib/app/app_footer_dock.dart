@@ -166,8 +166,19 @@ class _Destination {
 
 const _destinations = [
   _Destination(
+    label: 'Home',
+    icon: Icons.home_outlined,
+    selectedIcon: Icons.home,
+  ),
+  _Destination(
     label: 'Enquiries',
     icon: Icons.assignment_outlined,
     selectedIcon: Icons.assignment,
   ),
+  _Destination(
+    label: 'Chat',
+    icon: Icons.forum_outlined,
+    selectedIcon: Icons.forum,
+  ),
+  _Destination(label: 'Menu', icon: Icons.menu, selectedIcon: Icons.menu),
 ];

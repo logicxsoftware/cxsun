@@ -18,6 +18,8 @@ import { randomBytes } from "node:crypto";
 import { sql } from "kysely";
 import { registerModules } from "@cxsun/framework/modules";
 import { createMailModule } from "@cxsun/mail-api";
+import { createNotesModule } from "@cxsun/notes-api";
+import { createChatModule } from "@cxsun/chat-api";
 import { accountsApiModuleKeys, registerAccountsApi } from "@cxsun/accounts-api";
 import {
   billingApiModuleKeys,
@@ -101,6 +103,7 @@ import type { FastifyRequest } from "fastify";
 import type { HealthCheck } from "@cxsun/framework/health";
 import { registerAuthRoutes } from "./auth/auth.routes.js";
 import { appRegistryModule } from "./modules/app-registry/index.js";
+import { qCafeModule } from "./modules/q-cafe/index.js";
 import { tenantDomainModule } from "./modules/tenant-domain/index.js";
 import { tenantModule } from "./modules/tenant/index.js";
 import { TenantUserService, tenantUserModule } from "./modules/tenant-user/index.js";
@@ -202,6 +205,8 @@ export async function createApp() {
     resolveContext: mailContext,
     secretKey: env.JWT_SECRET
   });
+  const notesModule = createNotesModule({ resolveContext: notesContext });
+  const chatModule = createChatModule({ resolveContext: chatContext });
 
   const healthChecks: HealthCheck[] = [
     {
@@ -230,6 +235,7 @@ export async function createApp() {
             ...projectManagerApiModuleKeys,
             ...zunoApiModuleKeys,
             ...addonApiModuleKeys,
+            qCafeModule.key,
             appRegistryModule.key,
             tenantModule.key,
             tenantUserModule.key,
@@ -250,7 +256,9 @@ export async function createApp() {
             storageManagerModule.key,
             taskManagerModule.key,
             appOrchestrationModule.key,
-            mailModule.key
+            mailModule.key,
+            notesModule.key,
+            chatModule.key
           ],
           addons: activePlatformAddons(),
           runtime: "platform-foundation"
@@ -1400,6 +1408,7 @@ export async function createApp() {
   await registerModules(
     [
       appRegistryModule,
+      qCafeModule,
       tenantModule,
       tenantUserModule,
       tenantRoleModule,
@@ -1419,7 +1428,9 @@ export async function createApp() {
       storageManagerModule,
       taskManagerModule,
       appOrchestrationModule,
-      mailModule
+      mailModule,
+      notesModule,
+      chatModule
     ],
     { app },
     {
@@ -1497,6 +1508,26 @@ async function mailContext(request: FastifyRequest) {
   const companyId = Number(Array.isArray(header) ? header[0] : header);
   if (!Number.isInteger(companyId) || companyId <= 0) {
     throw AppError.validation("x-company-id is required for Mail access.");
+  }
+  return { ...context, companyId, database: context.database as never };
+}
+
+async function notesContext(request: FastifyRequest) {
+  const context = tenantAccessContext(request);
+  const header = request.headers["x-company-id"];
+  const companyId = Number(Array.isArray(header) ? header[0] : header);
+  if (!Number.isInteger(companyId) || companyId <= 0) {
+    throw AppError.validation("x-company-id is required for Notes access.");
+  }
+  return { ...context, companyId, database: context.database as never };
+}
+
+async function chatContext(request: FastifyRequest) {
+  const context = tenantAccessContext(request);
+  const header = request.headers["x-company-id"];
+  const companyId = Number(Array.isArray(header) ? header[0] : header);
+  if (!Number.isInteger(companyId) || companyId <= 0) {
+    throw AppError.validation("x-company-id is required for Chat access.");
   }
   return { ...context, companyId, database: context.database as never };
 }

@@ -69,6 +69,7 @@ import {
   appRootPage,
   appRootUrl,
   appWorkspaceItems,
+  deskAddonAppIds,
   enabledAppIds,
   platformAppRegistry,
   type BillingNavigationFeatures,
@@ -426,6 +427,12 @@ const ReceiptWorkspace = lazyWorkspace(() =>
 const MailWorkspace = lazyWorkspace(() =>
   import("@cxsun/mail-web/modules/mail").then((module) => module.MailWorkspace)
 );
+const NotesWorkspace = lazyWorkspace(() =>
+  import("@cxsun/notes-web/modules/notes").then((module) => module.NotesWorkspace)
+);
+const ChatWorkspace = lazyWorkspace(() =>
+  import("@cxsun/chat-web/modules/chat").then((module) => module.ChatWorkspace)
+);
 const AccountsOverviewWorkspace = lazyWorkspace(() =>
   loadAccountsOverviewModule().then((module) => module.AccountsOverviewWorkspace)
 );
@@ -564,6 +571,8 @@ type AppPage =
   | "mail.sent"
   | "mail.failed"
   | "mail.trash"
+  | "notes.overview"
+  | "chat.overview"
   | "task-manager.overview"
   | "task-manager.todos"
   | "core.common.location.countries"
@@ -691,19 +700,23 @@ export function AppDesk() {
                               ? pageForApp(landingApp)
                               : page.startsWith("mail") && !switchableApps.includes("mail")
                                 ? pageForApp(landingApp)
-                                : page.startsWith("crm") && !switchableApps.includes("crm")
+                                : page.startsWith("notes") && !switchableApps.includes("notes")
                                   ? pageForApp(landingApp)
-                                  : page.startsWith("blog") && !switchableApps.includes("blog")
+                                  : page.startsWith("chat") && !switchableApps.includes("chat")
                                     ? pageForApp(landingApp)
-                                    : page.startsWith("accounts") &&
-                                        !switchableApps.includes("accounts")
+                                    : page.startsWith("crm") && !switchableApps.includes("crm")
                                       ? pageForApp(landingApp)
-                                      : (page.startsWith("billing") ||
-                                            (page.startsWith("core") &&
-                                              !page.startsWith("core.organisation"))) &&
-                                          !switchableApps.includes("billing")
+                                      : page.startsWith("blog") && !switchableApps.includes("blog")
                                         ? pageForApp(landingApp)
-                                        : page;
+                                        : page.startsWith("accounts") &&
+                                            !switchableApps.includes("accounts")
+                                          ? pageForApp(landingApp)
+                                          : (page.startsWith("billing") ||
+                                                (page.startsWith("core") &&
+                                                  !page.startsWith("core.organisation"))) &&
+                                              !switchableApps.includes("billing")
+                                            ? pageForApp(landingApp)
+                                            : page;
   const safePage = resolveBillingFeaturePage(appSafePage, billingSettingsQuery.data?.features);
   const activePageTitle =
     safePage === "hrms.employees" && location.pathname.endsWith("/new")
@@ -1002,6 +1015,8 @@ export function AppDesk() {
         ? void navigate({ params: { _splat: "ecommerce" }, to: "/app/$" })
         : requestListNavigation(pageForApp(item.appId))
   }));
+  const addonWorkspaceItems = workspaceItems.filter((item) => deskAddonAppIds.includes(item.appId));
+  const appLauncherItems = workspaceItems.filter((item) => !deskAddonAppIds.includes(item.appId));
 
   const contextError =
     !defaultCompanyQuery.isLoading && runtime?.tenant && !activeDefaultCompany
@@ -1079,7 +1094,8 @@ export function AppDesk() {
                 ? "workspace"
                 : "edge"
         }
-        appItems={workspaceItems}
+        appItems={appLauncherItems}
+        addonAppItems={addonWorkspaceItems}
         brand={{
           href: appRootUrl(activeApp),
           ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
@@ -1200,7 +1216,7 @@ export function AppDesk() {
         hideSidebarBrand={activeApp === "crm" || activeApp === "hrms"}
         homeHref={appRootUrl(activeApp)}
         menuItems={menuItems}
-        omitWorkspaceBreadcrumb={activeApp === "crm" || safePage === "hrms.employees"}
+        omitWorkspaceBreadcrumb={activeApp === "crm" || activeApp === "hrms"}
         onLogout={handleLogout}
         onOpenSettings={() => requestListNavigation("application.settings")}
         settingsActive={safePage === "application.settings"}
@@ -1476,6 +1492,10 @@ export function AppDesk() {
             {safePage.startsWith("mail.") ? (
               <MailWorkspace mailbox={mailboxForPage(safePage)} />
             ) : null}
+            {safePage === "notes.overview" ? <NotesWorkspace /> : null}
+            {safePage === "chat.overview" ? (
+              <ChatWorkspace currentUserEmail={signedInUser.email} />
+            ) : null}
             {safePage === "task-manager.overview" || safePage === "task-manager.todos" ? (
               <TaskManagerWorkspace desk="tenant" />
             ) : null}
@@ -1731,6 +1751,8 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "mail.sent" ||
     key === "mail.failed" ||
     key === "mail.trash" ||
+    key === "notes.overview" ||
+    key === "chat.overview" ||
     key === "task-manager.overview" ||
     key === "task-manager.todos" ||
     key === "core.common.location.countries" ||
@@ -2315,6 +2337,8 @@ function titleForPage(page: AppPage) {
     "mail.sent": "Sent",
     "mail.failed": "Failed",
     "mail.trash": "Trash",
+    "notes.overview": "Notes",
+    "chat.overview": "Chat",
     "task-manager.overview": "Task Manager",
     "task-manager.todos": "Todo",
     "core.common.location.cities": "Cities",
@@ -2432,6 +2456,8 @@ function appFromPage(
     return enabledApps.includes("accounts") ? "accounts" : landingApp;
   if (page.startsWith("devkit") || page.startsWith("project-manager")) return landingApp;
   if (page.startsWith("mail")) return enabledApps.includes("mail") ? "mail" : landingApp;
+  if (page.startsWith("notes")) return enabledApps.includes("notes") ? "notes" : landingApp;
+  if (page.startsWith("chat")) return enabledApps.includes("chat") ? "chat" : landingApp;
   return "application";
 }
 

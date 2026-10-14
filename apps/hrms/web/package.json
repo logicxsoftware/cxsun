@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/hrms-web",
-  "version": "1.0.91",
+  "version": "1.0.92",
   "private": true,
   "type": "module",
   "exports": {
@@ -16,7 +16,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.91",
+    "@cxsun/ui": "^1.0.92",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "@tanstack/react-table": "^9.2.6",

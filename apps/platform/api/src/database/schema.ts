@@ -73,6 +73,8 @@ export type PlatformAppsTable = {
     | "devkit"
     | "project-manager"
     | "mail"
+    | "notes"
+    | "chat"
     | "platform-task-manager"
     | "blog"
     | "auditor"

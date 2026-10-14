@@ -36,12 +36,10 @@ const qCafeWebPort = requiredDevPort(
   process.env.CXSUN_Q_CAFE_WEB_PORT ?? env.CXSUN_Q_CAFE_WEB_PORT,
   "CXSUN_Q_CAFE_WEB_PORT"
 );
-const qCafeEnabled = (process.env.CXSUN_TENANCY_MODE ?? env.CXSUN_TENANCY_MODE) === "single";
-if (qCafeOnly && !qCafeEnabled) {
-  throw new Error("Q Cafe development requires CXSUN_TENANCY_MODE=single.");
-}
+const qCafeLocalApiEnabled =
+  (process.env.CXSUN_TENANCY_MODE ?? env.CXSUN_TENANCY_MODE) === "single";
 const allServices = {
-  ...(qCafeEnabled
+  ...(qCafeLocalApiEnabled
     ? {
         "q-cafe-api": {
           color: "\x1b[33m",
@@ -49,16 +47,16 @@ const allServices = {
           readyUrl: `http://127.0.0.1:${qCafeApiPort}/health`,
           label: "Q Cafe API",
           readyTimeoutMs: 30_000
-        },
-        "q-cafe-web": {
-          color: "\x1b[33m",
-          healthUrl: `http://127.0.0.1:${qCafeWebPort}/q-cafe/`,
-          readyUrl: `http://127.0.0.1:${qCafeWebPort}/q-cafe/`,
-          label: "Q Cafe web",
-          readyTimeoutMs: 30_000
         }
       }
     : {}),
+  "q-cafe-web": {
+    color: "\x1b[33m",
+    healthUrl: `http://127.0.0.1:${qCafeWebPort}/q-cafe/`,
+    readyUrl: `http://127.0.0.1:${qCafeWebPort}/q-cafe/`,
+    label: "Q Cafe web",
+    readyTimeoutMs: 30_000
+  },
   "uiux-web": {
     color: "\x1b[33m",
     healthUrl: `http://127.0.0.1:${uiuxPort}/`,
@@ -126,10 +124,8 @@ console.log(qCafeOnly ? "\nQ Cafe development runtime" : "\nCXSUN Platform devel
 
 try {
   if (!qCafeOnly) await startAndWait("platform-api");
-  if (qCafeEnabled) {
-    await startAndWait("q-cafe-api");
-    await startAndWait("q-cafe-web");
-  }
+  if (qCafeLocalApiEnabled) await startAndWait("q-cafe-api");
+  await startAndWait("q-cafe-web");
   if (stopping) await shutdown(0);
   if (!qCafeOnly) {
     await startAndWait("platform-web");
@@ -141,8 +137,8 @@ try {
   if (stopping) process.exit(0);
   console.log(
     qCafeOnly
-      ? "  ok Q Cafe API and web are ready"
-      : `  ok Platform, ${qCafeEnabled ? "Q Cafe, " : ""}Ecommerce, UIUX, and Project Manager are ready`
+      ? "  ok Q Cafe web is ready"
+      : `  ok Platform, Q Cafe, Ecommerce, UIUX, and Project Manager are ready`
   );
   console.log("  - Each service restarts independently after local changes or failures\n");
   monitorStackHealth();

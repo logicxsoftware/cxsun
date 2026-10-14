@@ -229,19 +229,15 @@ function platformDevelopmentServer(runtimeEnv: Record<string, string | undefined
     host: platformRuntime.webBindHost,
     port: requireEnvNumber(runtimeEnv.PLATFORM_WEB_PORT, "PLATFORM_WEB_PORT"),
     proxy: {
+      "/q-cafe": {
+        changeOrigin: false,
+        target: `http://127.0.0.1:${requireEnvNumber(runtimeEnv.CXSUN_Q_CAFE_WEB_PORT, "CXSUN_Q_CAFE_WEB_PORT")}`
+      },
       "/api/app/codexsun/socket.io": {
         ...proxy,
         rewrite: (path: string) => path.replace(/^\/api\/app/u, "")
       },
       "/api/app": proxy,
-      "/api/v1/q-cafe": {
-        changeOrigin: false,
-        target: `http://127.0.0.1:${requireEnvNumber(runtimeEnv.CXSUN_Q_CAFE_API_PORT, "CXSUN_Q_CAFE_API_PORT")}`
-      },
-      "/q-cafe": {
-        changeOrigin: false,
-        target: `http://127.0.0.1:${requireEnvNumber(runtimeEnv.CXSUN_Q_CAFE_WEB_PORT, "CXSUN_Q_CAFE_WEB_PORT")}`
-      },
       "/api/billing": {
         ...proxy,
         rewrite: (path: string) => path.replace(/^\/api\/billing/u, "") || "/"

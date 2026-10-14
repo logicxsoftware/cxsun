@@ -16,6 +16,8 @@ export type Tenant = {
     | "devkit"
     | "project-manager"
     | "mail"
+    | "notes"
+    | "chat"
     | "task-manager"
     | "blog"
     | "auditor"

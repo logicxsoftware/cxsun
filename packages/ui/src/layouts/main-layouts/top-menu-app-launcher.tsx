@@ -5,11 +5,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "../../components/dropdown-menu";
 import type { TopMenuAppItem } from "./top-menu-types";
 
-export function TopMenuAppLauncher({ items }: { items: TopMenuAppItem[] }) {
+export function TopMenuAppLauncher({
+  addonItems = [],
+  items
+}: {
+  addonItems?: TopMenuAppItem[];
+  items: TopMenuAppItem[];
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -28,35 +35,48 @@ export function TopMenuAppLauncher({ items }: { items: TopMenuAppItem[] }) {
         sideOffset={10}
       >
         <DropdownMenuLabel className="px-3 py-2 text-sm font-medium">Apps</DropdownMenuLabel>
-        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-background p-2 shadow-sm">
-          {items.map((item) => (
-            <DropdownMenuItem
-              asChild={Boolean(item.url && !item.onSelect)}
-              className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl p-2 text-center"
-              key={item.title}
-              {...(item.onSelect
-                ? {
-                    onSelect: (event) => {
-                      event.preventDefault();
-                      item.onSelect?.();
-                    }
-                  }
-                : {})}
-            >
-              {item.url && !item.onSelect ? (
-                <a href={item.url} title={item.description}>
-                  <AppTile item={item} />
-                </a>
-              ) : (
-                <button title={item.description} type="button">
-                  <AppTile item={item} />
-                </button>
-              )}
-            </DropdownMenuItem>
-          ))}
-        </div>
+        <AppGrid items={items} />
+        {addonItems.length ? (
+          <>
+            <DropdownMenuSeparator className="my-2" />
+            <DropdownMenuLabel className="px-3 py-2 text-sm font-medium">Add-ons</DropdownMenuLabel>
+            <AppGrid items={addonItems} />
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function AppGrid({ items }: { items: TopMenuAppItem[] }) {
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-2xl bg-background p-2 shadow-sm">
+      {items.map((item) => (
+        <DropdownMenuItem
+          asChild={Boolean(item.url && !item.onSelect)}
+          className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl p-2 text-center"
+          key={item.title}
+          {...(item.onSelect
+            ? {
+                onSelect: (event) => {
+                  event.preventDefault();
+                  item.onSelect?.();
+                }
+              }
+            : {})}
+        >
+          {item.url && !item.onSelect ? (
+            <a href={item.url} title={item.description}>
+              <AppTile item={item} />
+            </a>
+          ) : (
+            <button title={item.description} type="button">
+              <AppTile item={item} />
+            </button>
+          )}
+        </DropdownMenuItem>
+      ))}
+    </div>
   );
 }
 

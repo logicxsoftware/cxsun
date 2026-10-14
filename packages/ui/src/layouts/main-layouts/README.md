@@ -14,13 +14,13 @@ AppLayout
 └── StatusBar
 ```
 
-| Region | Shared component | Technical name |
-| --- | --- | --- |
-| Top menu | `TopMenu` | `main.topMenu` |
-| Side menu | `SideMenu` or the existing `AppSidebar` | `main.sideBar` |
-| App header | `AppHeader` | `main.AppHeader` |
-| Workspace | `WorkspaceCanvas` or the host's page canvas | `main.workspace` |
-| Status bar | `StatusBar` | `main.StatusBar` |
+| Region     | Shared component                            | Technical name   |
+| ---------- | ------------------------------------------- | ---------------- |
+| Top menu   | `TopMenu`                                   | `main.topMenu`   |
+| Side menu  | `SideMenu` or the existing `AppSidebar`     | `main.sideBar`   |
+| App header | `AppHeader`                                 | `main.AppHeader` |
+| Workspace  | `WorkspaceCanvas` or the host's page canvas | `main.workspace` |
+| Status bar | `StatusBar`                                 | `main.StatusBar` |
 
 These technical names are case-sensitive. Import their values from one source:
 
@@ -46,3 +46,8 @@ New or updated post-auth desk shells must include all five regions. The UIUX
 gallery demonstrates the composition with its existing `AppSidebar` and live
 workspace. Existing desk layouts and `@cxsun/ui/layouts/app-layout` remain
 separate until their hosts adopt this contract.
+
+The top-menu app launcher renders the host's `appItems` grid first. When the
+host also passes `addonItems`, the launcher renders a separator followed by a
+second `Add-ons` grid for add-on tiles. Both lists use the same
+`TopMenuAppItem` contract.

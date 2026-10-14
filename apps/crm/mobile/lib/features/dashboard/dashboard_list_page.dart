@@ -171,6 +171,7 @@ class DashboardListItem {
     required this.lastAction,
     this.detail = '',
     this.status = JobStatus.open,
+    this.statusName = 'Open',
     this.priority = JobPriority.normal,
   });
 
@@ -186,6 +187,7 @@ class DashboardListItem {
   final String createdAgo;
   final String lastAction;
   final JobStatus status;
+  final String statusName;
   final JobPriority priority;
 
   factory DashboardListItem.fromCrmJob(CrmJob job) => DashboardListItem(
@@ -199,12 +201,13 @@ class DashboardListItem {
     createdDate: _shortDate(job.createdAt),
     createdAgo: _relativeTime(job.createdAt),
     lastAction: job.lastAction,
-    status: switch (job.status) {
+    status: switch (job.status.toLowerCase()) {
       'won' => JobStatus.won,
       'lost' => JobStatus.lost,
       _ => JobStatus.open,
     },
-    priority: switch (job.priority) {
+    statusName: job.status.isNotEmpty ? job.status : 'Open',
+    priority: switch (job.priority.toLowerCase()) {
       'urgent' => JobPriority.urgent,
       'high' => JobPriority.high,
       _ => JobPriority.normal,
@@ -219,9 +222,9 @@ enum JobStatus { open, won, lost }
 final dashboardListSections = [
   DashboardListSection(label: 'Home', icon: Icons.home, items: []),
   DashboardListSection(
-    label: 'Jobs',
-    heading: 'My Jobs',
-    icon: Icons.business_center,
+    label: 'Enquiry',
+    heading: 'Enquiries',
+    icon: Icons.assignment_outlined,
     isJobs: true,
     items: [],
   ),

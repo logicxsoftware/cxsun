@@ -14,7 +14,7 @@ class DashboardHome extends StatelessWidget {
     required this.api,
     required this.session,
     required this.onOpenList,
-    required this.onOpenMyEnquiries,
+    required this.onOpenActions,
     required this.jobsFeed,
     super.key,
   });
@@ -22,7 +22,7 @@ class DashboardHome extends StatelessWidget {
   final CrmMobileApi api;
   final UserSession session;
   final ValueChanged<int> onOpenList;
-  final Future<void> Function() onOpenMyEnquiries;
+  final Future<void> Function() onOpenActions;
   final DashboardJobsFeed jobsFeed;
 
   @override
@@ -68,7 +68,7 @@ class DashboardHome extends StatelessWidget {
               onOpenList: onOpenList,
               api: api,
               session: session,
-              onOpenMyEnquiries: onOpenMyEnquiries,
+              onOpenActions: onOpenActions,
             ),
             if (runningJob != null) ...[
               const SizedBox(height: 18),
@@ -287,14 +287,14 @@ class _StatsRow extends StatelessWidget {
     required this.onOpenList,
     required this.api,
     required this.session,
-    required this.onOpenMyEnquiries,
+    required this.onOpenActions,
   });
 
   final int jobCount;
   final ValueChanged<int> onOpenList;
   final CrmMobileApi api;
   final UserSession session;
-  final Future<void> Function() onOpenMyEnquiries;
+  final Future<void> Function() onOpenActions;
 
   @override
   Widget build(BuildContext context) {
@@ -302,8 +302,8 @@ class _StatsRow extends StatelessWidget {
       children: [
         Expanded(
           child: _StatCard(
-            icon: Icons.business_center_outlined,
-            label: 'Jobs',
+            icon: Icons.assignment_outlined,
+            label: 'Enquiries',
             value: '$jobCount',
             onTap: () => onOpenList(1),
           ),
@@ -311,12 +311,35 @@ class _StatsRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _LiveStatCard(
-            icon: Icons.assignment_outlined,
-            label: 'My Enquiries',
-            count: () => api
-                .createdEnquiries(session.accessToken)
-                .then((enquiries) => enquiries.length),
-            onTap: onOpenMyEnquiries,
+            icon: Icons.calendar_month_outlined,
+            label: 'Duty',
+            count: () =>
+                api.duties(session.accessToken).then((duties) => duties.length),
+            onTap: () async => onOpenList(2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _LiveStatCard(
+            icon: Icons.bolt_outlined,
+            label: 'Activities',
+            count: () async {
+              try {
+                final count = await api.activitiesCount(session.accessToken);
+                if (count > 0) return count;
+                final enquiries = await api.enquiries(
+                  accessToken: session.accessToken,
+                  scope: 'all',
+                );
+                return enquiries.fold<int>(
+                  0,
+                  (sum, e) => sum + e.activities.length + e.jobs.length,
+                );
+              } catch (_) {
+                return 0;
+              }
+            },
+            onTap: onOpenActions,
           ),
         ),
       ],

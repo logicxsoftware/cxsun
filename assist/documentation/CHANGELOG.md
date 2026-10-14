@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.91
+Current version: 1.0.92
 
-Release tag: v-1.0.91
+Release tag: v-1.0.92
 
-Changelog label: v 1.0.91
+Changelog label: v 1.0.92
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,7 +20,38 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.92
+
+### [v 1.0.92] 2026-10-14 7:55 am - working with chat
+
+#### Database Changes
+
+- Database update: Yes (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.92.
+
 ## v-1.0.91
+
+### [v 1.0.91] 13/10/2026 10:29 pm - Team notes and team chat apps with tenant desk launcher
+
+#### Database Changes
+
+- Added `notes_notes` table through migration `notes.001_foundation` with tenant migration batch, seed, and rollback wiring.
+- Added `chat_channels` and `chat_messages` tables (channel foreign key, channel index) through migration `chat.001_foundation` with tenant migration batch, seed, and rollback wiring.
+- Added `chat_attachments` and `chat_channel_members` through `chat.002_attachments` and `chat.003_members`, plus `chat_channel_reads` for server read receipts through `chat.004_reads`.
+- Registered `notes.manage` and `chat.manage` permissions with admin grants in repeatable module seeds.
+
+#### App Codebase Changes
+
+- Added `apps/notes/api` (`@cxsun/notes-api`) and `apps/notes/web` (`@cxsun/notes-web`): team note CRUD with search, suspend, restore, and force delete.
+- Added `apps/chat/api` (`@cxsun/chat-api`) and `apps/chat/web` (`@cxsun/chat-web`): team channels with channel-scoped messages, rename, suspend, restore, and dependency-protected channel delete.
+- Composed both modules in Platform API with tenant company context and health registration.
+- Registered Notes and Chat in the backend app registry, tenant defaults, frontend app registry, tenant desk pages, side menus, landing choices, and tenant access screens.
+- Refined Chat to a WhatsApp-tone workspace: channel search with All/Unread/Favourites tabs, avatars with server unread badges, date pills, green/white bubbles with saved ticks, inline image rendering, file download cards, composer with image/file picker, group/broadcast kinds, member drawer with admin roles, and broadcast admin-only posting.
+- Added quoted replies with jump-to-message, emoji reactions with counts, edit markers, and a cookie-authenticated WebSocket realtime gateway with live message fan-out, typing indicators, presence, reconnect sync, plus a managed browser client with heartbeat and backoff.
+- Added quoted replies with jump-to, emoji reactions with counts, edit markers, and a cookie-authenticated WebSocket realtime gateway with live message fan-out, typing indicators, presence, reconnect sync, and a managed browser client with heartbeat and backoff.
 
 ### [v 1.0.91] 2026-10-13 9:11 pm - working on crm with mobile
 

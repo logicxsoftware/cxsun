@@ -4,13 +4,14 @@ import type {
   PlatformAppSavePayload
 } from "./app-registry.types.js";
 import { AppRegistryRepository } from "./app-registry.repository.js";
-import { env } from "../../env.js";
 
 export const defaultTenantModuleKeys = [
   "platform.application",
   "billing.sales",
   "accounts.overview",
   "mail",
+  "notes",
+  "chat",
   "platform.task-manager",
   "auditor",
   "crm",
@@ -142,6 +143,28 @@ export const platformAppRegistry: PlatformAppDefinition[] = [
   {
     alwaysEnabled: false,
     defaultLanding: false,
+    description: "Fast team notes with search, suspend, restore, and permanent delete.",
+    appId: "notes",
+    id: 0,
+    label: "Notes",
+    moduleKey: "notes",
+    stack: "notes",
+    uuid: ""
+  },
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
+    description: "Team channels, direct threads, and channel messages.",
+    appId: "chat",
+    id: 0,
+    label: "Chat",
+    moduleKey: "chat",
+    stack: "chat",
+    uuid: ""
+  },
+  {
+    alwaysEnabled: false,
+    defaultLanding: false,
     description: "Chart of accounts, ledger groups, ledgers, journal, and accounting overview.",
     appId: "accounts",
     id: 0,
@@ -238,7 +261,6 @@ export function resolveEnabledApps(enabledModuleKeys: string[]) {
       ...app,
       enabled:
         (app.appId !== "frappe" || enabled.has("crm")) &&
-        (app.appId !== "q-cafe" || env.CXSUN_TENANCY_MODE === "single") &&
         (app.alwaysEnabled || enabled.has(app.moduleKey))
     }));
 }

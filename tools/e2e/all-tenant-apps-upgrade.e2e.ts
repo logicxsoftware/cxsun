@@ -125,16 +125,15 @@ try {
   const firstSeedRows = await tableCounts();
   await seedTenantDatabase(allEnabled);
   assert.deepEqual(await tableCounts(), firstSeedRows, "Second seed changed row counts.");
-  if (env.CXSUN_TENANCY_MODE === "multi") {
-    const [qCafe] = await admin.query<Array<{ enabled: number }>>(
-      `SELECT enabled FROM \`${databaseName}\`.app_module_settings WHERE module_key='q-cafe'`
-    );
-    assert.equal(Number(qCafe[0]?.enabled), 0, "Q Cafe needs tenant isolation before multi mode.");
-    assert.equal(
-      resolveEnabledApps(["q-cafe"]).find(({ appId }) => appId === "q-cafe")?.enabled,
-      false
-    );
-  }
+  const [qCafe] = await admin.query<Array<{ enabled: number; status: string }>>(
+    `SELECT enabled,status FROM \`${databaseName}\`.app_module_settings WHERE module_key='q-cafe'`
+  );
+  assert.equal(Number(qCafe[0]?.enabled), 1, "Q Cafe was not enabled for the tenant.");
+  assert.equal(qCafe[0]?.status, "active");
+  assert.equal(
+    resolveEnabledApps(["q-cafe"]).find(({ appId }) => appId === "q-cafe")?.enabled,
+    true
+  );
   assert.equal(
     resolveEnabledApps(["accounts.accounting"]).find(({ appId }) => appId === "accounts")?.enabled,
     true,

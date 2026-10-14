@@ -16,6 +16,7 @@ import 'package:cxsun_crm_mobile/features/dashboard/job_duration.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/job_start_countdown.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/job_start_store.dart';
 import 'package:cxsun_crm_mobile/features/dashboard/messages_sample_page.dart';
+import 'package:cxsun_crm_mobile/features/dashboard/my_enquiries_page.dart';
 
 void main() {
   test('resets the session after ten inactive days', () {
@@ -353,7 +354,7 @@ void main() {
     expect(savedPin, '2468');
   });
 
-  testWidgets('shows only the Enquiries destination', (
+  testWidgets('shows the dashboard dock destinations', (
     WidgetTester tester,
   ) async {
     final navigation = DashboardNavigation();
@@ -386,16 +387,37 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
+    expect(find.text('Home'), findsOneWidget);
     expect(find.text('Enquiries'), findsNWidgets(2));
-    expect(find.text('Home'), findsNothing);
-    expect(find.text('Job'), findsNothing);
-    expect(find.text('Actions'), findsNothing);
-    expect(find.text('Menu'), findsNothing);
+    expect(find.text('Chat'), findsOneWidget);
+    expect(find.text('Menu'), findsOneWidget);
+    expect(find.text('Duty'), findsOneWidget);
+    expect(find.text('Activities'), findsOneWidget);
+
+    await tester.tap(find.text('Menu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Duty'), findsNWidgets(2));
+    expect(find.text('Call logs'), findsOneWidget);
+    expect(find.text('Actions'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Call logs'))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Account options'));
+    await tester.pumpAndSettle();
+    expect(find.text('Account'), findsOneWidget);
+    expect(find.text('vijay@example.com'), findsOneWidget);
+    expect(find.text('Sign out'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Account'))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Enquiries').last);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('New enquiry'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.text('Assigned'), findsOneWidget);
     expect(find.text('Created'), findsOneWidget);
-    expect(find.byTooltip('Call Logs'), findsOneWidget);
   });
 
   testWidgets('shows the job detail comments and reply flow', (
@@ -477,6 +499,116 @@ void main() {
     expect(find.text('Messages'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
+
+  testWidgets('filters enquiries by search query in MyEnquiriesPage', (
+    WidgetTester tester,
+  ) async {
+    final fakeApi = _FakeCrmMobileApi();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MyEnquiriesPage(
+          api: fakeApi,
+          session: const UserSession(
+            accessToken: 'test-token',
+            profile: UserProfile(
+              email: 'vijay@example.com',
+              name: 'Vijay Anand',
+              role: 'user',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ROG Asus Adopter 240W'), findsOneWidget);
+
+    final searchField = find.byType(TextField);
+    expect(searchField, findsOneWidget);
+
+    await tester.enterText(searchField, 'Dell');
+    await tester.pumpAndSettle();
+    expect(find.text('ROG Asus Adopter 240W'), findsNothing);
+    expect(find.text('No enquiries are in this list.'), findsOneWidget);
+
+    await tester.enterText(searchField, 'ROG');
+    await tester.pumpAndSettle();
+    expect(find.text('ROG Asus Adopter 240W'), findsOneWidget);
+  });
+
+  testWidgets('supports open call and dynamic status update in JobDetailPage', (
+    WidgetTester tester,
+  ) async {
+    final fakeApi = _FakeCrmMobileApi();
+    final newJob = CrmJob(
+      id: 762,
+      sourceId: '762',
+      number: '762',
+      title: 'ROG Asus Adopter 240W',
+      customer: 'Vee Cee Exports',
+      list: 'Spares',
+      dueDate: '03 Aug',
+      createdBy: 'Vijay Anand',
+      createdAt: DateTime(2026, 8, 3),
+      lastAction: 'Pending review',
+      status: 'New',
+      priority: 'normal',
+      comments: const [],
+      jobs: const [],
+      activities: const [],
+    );
+    fakeApi._job = newJob;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: JobDetailPage(
+          api: fakeApi,
+          session: const UserSession(
+            accessToken: 'test-token',
+            profile: UserProfile(
+              email: 'vijay@example.com',
+              name: 'Vijay Anand',
+              role: 'user',
+            ),
+          ),
+          initialJob: newJob,
+          enquiry: const DashboardListItem(
+            enquiryNumber: '762',
+            title: 'ROG Asus Adopter 240W',
+            customer: 'Vee Cee Exports',
+            list: 'Spares',
+            assignedTo: 'Vijay Anand',
+            dueDate: '03 Aug',
+            createdBy: 'Vijay Anand',
+            createdAgo: '3 days ago',
+            lastAction: 'Pending review',
+            statusName: 'New',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open call'), findsOneWidget);
+    await tester.tap(find.text('Open call'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New call opened successfully.'), findsOneWidget);
+    expect(find.text('Open call'), findsNothing);
+    expect(find.text('#762  Open'), findsOneWidget);
+
+    await tester.tap(find.text('#762  Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Change Status'), findsOneWidget);
+    expect(find.text('In Progress'), findsOneWidget);
+
+    await tester.tap(find.text('In Progress'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Status updated to In Progress.'), findsOneWidget);
+    expect(find.text('#762  In Progress'), findsOneWidget);
+  });
 }
 
 final _testCrmJob = CrmJob(
@@ -506,12 +638,111 @@ class _FakeCrmMobileApi extends CrmMobileApi {
   Future<List<CrmJob>> assignedJobs(String accessToken) async => [_job];
 
   @override
+  Future<List<CrmJob>> assignedJobDetails(String accessToken) async => [_job];
+
+  @override
+  Future<List<HrDuty>> duties(String accessToken) async => [];
+
+  @override
   Future<List<CrmJob>> createdEnquiries(String accessToken) async => [_job];
+
+  @override
+  Future<int> activitiesCount(String accessToken) async => 0;
+
+  @override
+  Future<List<CrmJob>> enquiries({
+    required String accessToken,
+    String scope = 'all',
+    String search = '',
+    String? listInId,
+    int page = 1,
+    int pageSize = 100,
+  }) async => [_job];
+
+  @override
+  Future<CrmJob> openNewCall({
+    required String accessToken,
+    required String id,
+  }) async {
+    _job = CrmJob(
+      id: _job.id,
+      sourceId: _job.sourceId,
+      number: _job.number,
+      title: _job.title,
+      customer: _job.customer,
+      list: _job.list,
+      dueDate: _job.dueDate,
+      createdBy: _job.createdBy,
+      createdAt: _job.createdAt,
+      lastAction: 'New call opened',
+      status: 'open',
+      priority: _job.priority,
+      comments: _job.comments,
+      jobs: _job.jobs,
+      activities: _job.activities,
+    );
+    return _job;
+  }
+
+  @override
+  Future<CrmJob> updateProperties({
+    required String accessToken,
+    required String id,
+    String? statusId,
+    String? priorityId,
+    String? listInId,
+    String? assignedUserId,
+    String? dueDate,
+    String? closedReason,
+  }) async {
+    if (statusId != null) {
+      final statuses = const [
+        CrmCallEnquiryStatus(id: 'st-1', name: 'Open', code: 'OPEN'),
+        CrmCallEnquiryStatus(id: 'st-2', name: 'In Progress', code: 'IN_PROGRESS'),
+        CrmCallEnquiryStatus(id: 'st-3', name: 'Won', code: 'WON'),
+      ];
+      final match = statuses.where((s) => s.id == statusId).firstOrNull;
+      if (match != null) {
+        _job = CrmJob(
+          id: _job.id,
+          sourceId: _job.sourceId,
+          number: _job.number,
+          title: _job.title,
+          customer: _job.customer,
+          list: _job.list,
+          dueDate: _job.dueDate,
+          createdBy: _job.createdBy,
+          createdAt: _job.createdAt,
+          lastAction: _job.lastAction,
+          status: match.name,
+          priority: _job.priority,
+          statusId: match.id,
+          priorityId: _job.priorityId,
+          listInId: _job.listInId,
+          comments: _job.comments,
+          jobs: _job.jobs,
+          activities: _job.activities,
+        );
+      }
+    }
+    return _job;
+  }
 
   @override
   Future<CrmCallEnquiryFormData> callEnquiryFormData(
     String accessToken,
-  ) async => const CrmCallEnquiryFormData(groups: [], assignees: []);
+  ) async => const CrmCallEnquiryFormData(
+    groups: [],
+    assignees: [],
+    statuses: [
+      CrmCallEnquiryStatus(id: 'st-1', name: 'Open', code: 'OPEN'),
+      CrmCallEnquiryStatus(id: 'st-2', name: 'In Progress', code: 'IN_PROGRESS'),
+      CrmCallEnquiryStatus(id: 'st-3', name: 'Won', code: 'WON'),
+    ],
+    priorities: [
+      CrmCallEnquiryPriority(id: 'pr-1', name: 'Normal', code: 'NORMAL'),
+    ],
+  );
 
   @override
   Future<CrmJob> job(String accessToken, String id) async => _job;

@@ -1392,6 +1392,8 @@ function tenantAppAccessFromRegistry(apps: PlatformApp[] | undefined): TenantApp
         app.appId === "application" ||
         app.appId === "billing" ||
         app.appId === "mail" ||
+        app.appId === "notes" ||
+        app.appId === "chat" ||
         app.appId === "task-manager"
     )
     .map((app) => {

@@ -1,0 +1,254 @@
+# CRM Delivery Tasks
+
+This file tracks implementation of the product plan in [PLAN.md](./PLAN.md).
+The plan defines scope and ownership. This file defines the work order and
+completion evidence.
+
+## Progress Rules
+
+- Keep every task unchecked until its completion evidence exists.
+- Complete a task only when its owner contract, implementation, permissions,
+  migration, user flow, and required checks are complete.
+- Record a short evidence link or test name beside a completed task.
+- Do not mark a phase complete while one of its required tasks or exit checks is
+  open.
+- Keep CRM data local and authoritative. Do not add a live external CRM read or
+  outbound sync to these tasks.
+- Keep Core, Billing, Inventory, and Zetro records in their owning modules. Use
+  their public contracts.
+- Add a real module only when it owns behavior. Do not add placeholder role files.
+
+## Phase 0: Product Contracts and Decisions
+
+- [ ] **0.1** Approve Sales Enquiry stages, close outcomes, required fields, and
+  permitted transitions.
+- [ ] **0.2** Approve Service Request outcomes, closure reasons, rework rules, and
+  permitted transitions.
+- [ ] **0.3** Confirm the Billing quote-to-order contract, order identity, accepted
+  quote behavior, and split-order rules.
+- [ ] **0.4** Confirm Core public contracts for Contacts, products, units, taxes,
+  and work-order type masters.
+- [ ] **0.5** Confirm the Inventory contract for availability, reservation,
+  purchase, issue, and fulfillment status.
+- [ ] **0.6** Confirm CRM ownership of Sales Delivery Work, Service Work Orders,
+  Resource, Booking, Material Request, and Verification until another owner takes
+  those records.
+- [ ] **0.7** Define tenant settings for stage templates, currency, date and time
+  zone, working calendars, consent, retention, and approval thresholds.
+- [ ] **0.8** Define roles, record-level access, protected actions, audit events,
+  stable public IDs, and deletion or archive rules.
+- [ ] **0.9** Define lead-to-contact match, duplicate review, merge, and conversion
+  rules without moving Contact ownership from Core.
+- [ ] **0.10** Approve the module dependency graph, migration order, seed order,
+  route names, navigation groups, and public exports.
+
+**Exit check:** Every entity has one owner, public contract, permission boundary,
+tenant scope, and migration path.
+
+## Phase 1: Local CRM Foundation
+
+### Persistence and Existing Modules
+
+- [ ] **1.1** Audit current Enquiry, Activity, Task, Call Log, Assignment, Status,
+  Priority, List In, and Reports behavior against local-only ownership.
+- [ ] **1.2** Ensure Enquiry, Activity, Task, Call Log, and Assignment persist in the
+  tenant database and survive restart.
+- [ ] **1.3** Ensure web and mobile use the same typed local contracts for Enquiry,
+  Call Log, comments, and activity history.
+- [ ] **1.4** Make mobile retries idempotent and prevent duplicate calls, comments,
+  enquiries, activities, and assignments.
+- [ ] **1.5** Preserve current record IDs, links, comments, creators, timestamps,
+  assignment history, and activity order during upgrades.
+- [ ] **1.6** Keep CRM Contact screens on Core Contact public contracts. Do not add a
+  second CRM-owned Contact identity table.
+
+### Shared CRM Modules
+
+- [ ] **1.7** Complete Assignment with owner, team, queue, reassignment history,
+  access checks, and audit events.
+- [ ] **1.8** Complete Activity as an append-only business event stream with actor,
+  action, record reference, timestamp, and safe summary.
+- [ ] **1.9** Complete Task with owner, due date, priority, recurrence, completion,
+  record links, and reminder rules.
+- [ ] **1.10** Complete Call Log with selected mobile calls, comments, supported
+  record links, deduplication, and retry behavior.
+- [ ] **1.11** Complete Consent with purpose, channel, source, capture time, expiry,
+  and withdrawal history.
+- [ ] **1.12** Complete Attachment metadata, access checks, retention policy, and
+  authorized download behavior.
+- [ ] **1.13** Complete Saved View with tenant-scoped filters, columns, sort order,
+  ownership, and sharing permissions.
+- [ ] **1.14** Complete Notification from persisted events with recipient access
+  checks, read state, and retry-safe delivery.
+- [ ] **1.15** Complete Customer 360 as a permission-aware composition of Core
+  Contacts and CRM-owned records. Do not copy sibling data into a shadow table.
+- [ ] **1.16** Complete existing operational reports using owner-module queries and
+  permission-scoped filters.
+
+### Foundation Verification
+
+- [ ] **1.17** Test fresh tenant migrations, existing tenant upgrades, and repeatable
+  seeds for affected modules.
+- [ ] **1.18** Test local database persistence after API and mobile restarts.
+- [ ] **1.19** Test role access, record access, tenant isolation, duplicate retries,
+  and deletion blockers.
+- [ ] **1.20** Reconcile existing CRM counts and relationships before and after
+  migration.
+
+**Exit check:** Existing CRM work is local-first and persistent. Web and mobile
+share the local contracts, and migration reconciliation passes.
+
+## Phase 2: Sales Intake
+
+- [ ] **2.1** Build Campaign for source, audience, dates, owner, targets, measured
+  spend, and lifecycle history.
+- [ ] **2.2** Build Lead for prospect identity, campaign source, consent, import
+  key, qualification facts, duplicate review, and disqualification reason.
+- [ ] **2.3** Add explicit Lead qualification, disqualification, match, and
+  conversion actions with audit history.
+- [ ] **2.4** Migrate the current generic Enquiry into Sales Enquiry without losing
+  IDs, URLs, comments, activities, assignments, or timestamps.
+- [ ] **2.5** Build Sales Enquiry stages, expected value, probability, close date,
+  competitor, owner, next action, and outcome reason.
+- [ ] **2.6** Add Sales Enquiry list, board, search, filters, saved views, and
+  follow-up queue.
+- [ ] **2.7** Add campaign and source conversion reports from the owning records.
+- [ ] **2.8** Test Lead conversion, duplicate handling, rejected transitions,
+  permission scope, and migrated history.
+
+**Exit check:** Users can track a sourced prospect through qualification and a
+reasoned Sales Enquiry outcome without duplicate customer identities.
+
+## Phase 3: Service Intake and Coverage
+
+- [ ] **3.1** Build Customer Asset linked to Core Contact and service location, with
+  serial, model, warranty, and history fields.
+- [ ] **3.2** Build Service Request with customer, reported issue, channel, priority,
+  location, asset, owner, and outcome.
+- [ ] **3.3** Build Service Timeline for diagnosis, decisions, customer updates, and
+  ordered immutable events.
+- [ ] **3.4** Build Service Agreement with versioned coverage, active dates,
+  renewal, suspension, cancellation, and recurring schedule rules.
+- [ ] **3.5** Build Entitlement for covered parties, assets, products, locations,
+  usage limits, and eligibility decisions.
+- [ ] **3.6** Build SLA Policy with response and resolution targets, calendars,
+  time zones, holidays, pause rules, warnings, breach tracking, and escalation.
+- [ ] **3.7** Snapshot the applied agreement, entitlement, and SLA terms on each
+  Service Request.
+- [ ] **3.8** Build versioned Incident Templates for diagnostic steps, safety
+  checks, tasks, skills, materials, and expected duration.
+- [ ] **3.9** Build Service Outcome for resolved, cancelled, no-work, and rework
+  decisions with required reasons.
+- [ ] **3.10** Add service queues and reports for response time, SLA risk, asset
+  history, repeat visits, and resolution outcomes.
+- [ ] **3.11** Test covered and uncovered requests, SLA pause and breach, template
+  version snapshots, and closed-request history.
+
+**Exit check:** A team can receive, assign, diagnose, and close a covered or
+uncovered service request with complete history and correct SLA evidence.
+
+## Phase 4: Estimates and Billing Handoff
+
+- [ ] **4.1** Build Sales Estimate with typed Sales Enquiry source, scope, items,
+  quantities, assumptions, price basis, validity, revisions, and approvals.
+- [ ] **4.2** Build Service Estimate with typed Service Request source, labor,
+  materials, coverage, payable amount, assumptions, revisions, and approvals.
+- [ ] **4.3** Keep current vendor or purchase estimates separate from customer
+  estimates and preserve their existing supplier meaning.
+- [ ] **4.4** Read products, units, tax, currency, and prices through owner APIs.
+- [ ] **4.5** Connect approved CRM estimates and eligible source records to Billing
+  Quotes through a fixed, typed public contract.
+- [ ] **4.6** Preserve sent quote revisions and snapshot approved commercial terms.
+- [ ] **4.7** Support quote accept, reject, expire, and change decisions with
+  authorized actors, reasons, and audit events.
+- [ ] **4.8** Link an accepted Billing Quote to its Billing-owned order. Prevent
+  duplicate orders on retries.
+- [ ] **4.9** Test price, tax, currency, revision immutability, approval, and quote
+  to order reconciliation.
+
+**Exit check:** Customer offers have approved sources, immutable sent revisions,
+and traceable Billing-owned orders after acceptance.
+
+## Phase 5: Delivery, Service Work, and Materials
+
+- [ ] **5.1** Build Sales Delivery Work for accepted sales scope, milestones,
+  partial completion, delivery evidence, and customer acceptance.
+- [ ] **5.2** Build Service Work Order for authorized service execution, labor,
+  visits, materials, checklists, and completion evidence.
+- [ ] **5.3** Build Resource for skills, working hours, territory, leave, and
+  capacity.
+- [ ] **5.4** Build Booking for resource, customer window, service location, travel
+  buffer, schedule changes, no-show, and cancellation.
+- [ ] **5.5** Keep booking state separate from Sales Delivery Work and Service Work
+  Order states.
+- [ ] **5.6** Build Material Request for demand and fulfillment references. Read
+  reservation, availability, and issue state from Inventory or its approved owner.
+- [ ] **5.7** Build Verification with checklist version, evidence, result, verifier,
+  customer acceptance, and rework link.
+- [ ] **5.8** Require verified completion before closing operational work. Create
+  linked rework when verification fails.
+- [ ] **5.9** Support multiple visits, multiple assets, partial delivery, split
+  work, and retry-safe updates.
+- [ ] **5.10** Test capacity, schedule changes, material state, work transitions,
+  verification, rework, and duplicate mobile submissions.
+
+**Exit check:** Accepted sales scope and authorized service scope can be scheduled,
+executed, and verified with separate work lifecycles.
+
+## Phase 6: Collection Follow-up, Renewals, and Reporting
+
+- [ ] **6.1** Build Collection Follow-up with Billing balance reads, promise,
+  owner, next action, reminders, and history.
+- [ ] **6.2** Keep invoices, receipts, payment allocations, and balances in Billing.
+- [ ] **6.3** Generate recurring Service Requests from active agreement versions
+  with idempotency keys and approval controls.
+- [ ] **6.4** Add renewal work for Sales Enquiries and Service Agreements with
+  owner, due date, and next action.
+- [ ] **6.5** Build Sales and Service reports from owner-module queries with
+  consistent permission scope and defined metric formulas.
+- [ ] **6.6** Reconcile report totals with source records and Billing summaries.
+- [ ] **6.7** Test overdue collection follow-up without changing Billing financial
+  state.
+
+**Exit check:** Teams can manage renewals and collection follow-up while financial
+records remain owned by Billing.
+
+## Phase 7: Zetro CRM Agent
+
+- [ ] **7.1** Add read-only Customer 360, Sales Enquiry, Service Request, assigned
+  work, and next-action skills through fixed CRM contracts.
+- [ ] **7.2** Add source-linked summaries for overdue work, SLA risks, verification,
+  and collection follow-up.
+- [ ] **7.3** Add draft-only qualification questions, diagnosis summaries, quote
+  messages, and follow-up notes.
+- [ ] **7.4** Require explicit user confirmation for supported writes and keep
+  prohibited payment, pricing, approval, messaging, and verification actions
+  unavailable to the agent.
+- [ ] **7.5** Enforce tenant, actor, role, module, and record checks in every tool
+  call. Treat prompts and record content as untrusted data.
+- [ ] **7.6** Audit model and rule versions, skill, source IDs, response,
+  confirmation, and result.
+- [ ] **7.7** Test authorization, source accuracy, prompt injection, denial, audit
+  failure, confirmation, and user correction for each skill.
+
+**Exit check:** Every answer links to permitted source records. Every supported
+write requires confirmation and leaves an audit record.
+
+## Phase 8: Release and Operational Readiness
+
+- [ ] **8.1** Test fresh migrations and upgrades for every affected tenant database.
+- [ ] **8.2** Test role permissions, record ownership, tenant isolation, and public
+  IDs across all CRM modules.
+- [ ] **8.3** Test valid and rejected transitions for Sales, Service, documents,
+  delivery, work, and verification.
+- [ ] **8.4** Test mobile retries, duplicate submissions, and persistence after
+  restart.
+- [ ] **8.5** Reconcile migrations, imports, reports, and financial summaries with
+  their owning databases.
+- [ ] **8.6** Run formatting, lint, TypeScript, focused tests, module boundaries,
+  production builds, and composed web and mobile flows.
+- [ ] **8.7** Document recovery, backup, rollback, retention, and support
+  procedures before production rollout.
+
+**Exit check:** All release gates in PLAN.md pass with evidence. Report database,
+browser, mobile, and end-to-end results separately.

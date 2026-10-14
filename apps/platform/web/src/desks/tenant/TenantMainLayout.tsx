@@ -25,6 +25,7 @@ import {
 
 type TenantMainLayoutProps = {
   headerActionsAlignment?: "edge" | "workspace" | "form";
+  addonAppItems?: TopMenuAppItem[];
   appItems: TopMenuAppItem[];
   brand: SidebarBrand;
   children: ReactNode;
@@ -63,6 +64,7 @@ export function TenantMainLayout(props: TenantMainLayoutProps) {
 
 function TenantMainShell({
   headerActionsAlignment = "edge",
+  addonAppItems = [],
   appItems,
   brand,
   children,
@@ -86,7 +88,7 @@ function TenantMainShell({
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const searchItems: TopMenuSearchItem[] = [
-    ...appItems.map((app) => ({
+    ...[...appItems, ...addonAppItems].map((app) => ({
       description: app.description,
       icon: app.icon,
       label: `Go to ${app.title}`,
@@ -109,6 +111,7 @@ function TenantMainShell({
     <AppLayout className="relative h-dvh w-full">
       <div className="tenant-main-menu shrink-0 [&>header]:h-[50px] [&>header>div:last-child]:gap-3">
         <TopMenu
+          addonItems={addonAppItems}
           appItems={appItems}
           applicationName={workspaceName}
           notifications={[]}

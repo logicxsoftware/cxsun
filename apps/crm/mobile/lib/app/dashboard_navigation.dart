@@ -29,7 +29,7 @@ class DashboardNavigation extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    selectContent(index);
+    selectContent(index == 2 ? 3 : index);
   }
 
   bool takeMenuRequest() {

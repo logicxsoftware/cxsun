@@ -27,6 +27,7 @@ CMD ["npm", "run", "start:api:production"]
 FROM nginx:1.28-alpine AS web
 COPY .container/demo/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist/apps/platform/web /usr/share/nginx/html
+COPY --from=build /app/dist/apps/q-cafe/web /usr/share/nginx/q-cafe
 EXPOSE 80
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=5 \
   CMD wget -qO- http://127.0.0.1/health >/dev/null || exit 1

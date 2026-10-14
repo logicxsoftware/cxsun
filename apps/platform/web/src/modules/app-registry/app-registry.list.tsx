@@ -25,7 +25,9 @@ export const appRegistryFields: RegistryField<PlatformApp>[] = [
       { label: "LogicX ERP", value: "logicx-erp" },
       { label: "Platform Task Manager", value: "platform-task-manager" },
       { label: "Project Manager", value: "project-manager" },
-      { label: "Mail", value: "mail" }
+      { label: "Mail", value: "mail" },
+      { label: "Notes", value: "notes" },
+      { label: "Chat", value: "chat" }
     ]
   },
   {

@@ -559,8 +559,17 @@ enum _CallFilter {
 
 String _digits(String value) => value.replaceAll(RegExp(r'\D'), '');
 
-bool isCallLogAdministrator(String role) =>
-    const {'admin', 'super-admin'}.contains(role.trim().toLowerCase());
+bool isCallLogAdministrator(String role) {
+  final normalized = role.trim().toLowerCase();
+  return const {
+    'admin',
+    'super-admin',
+    'administrator',
+    'system-admin',
+    'system administrator',
+    'tenant',
+  }.contains(normalized);
+}
 
 extension on String {
   String takeLast(int count) =>

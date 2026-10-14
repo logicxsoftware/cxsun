@@ -16,15 +16,18 @@ class CrmMobileApi {
   Future<UserSession> signIn({
     required String email,
     required String password,
+    String? corporateId,
   }) async {
+    final corp = (corporateId != null && corporateId.trim().isNotEmpty)
+        ? corporateId.trim()
+        : AppConfig.corporateId;
     final data = await _request(
       '/auth/login',
       body: {
         'desk': 'tenant',
         'email': email,
         'password': password,
-        if (AppConfig.corporateId.isNotEmpty)
-          'corporateId': AppConfig.corporateId,
+        if (corp.isNotEmpty) 'corporateId': corp,
       },
       method: 'POST',
       requestBearerToken: true,
@@ -82,6 +85,35 @@ class CrmMobileApi {
         .toList();
   }
 
+  Future<List<CrmJob>> enquiries({
+    required String accessToken,
+    String scope = 'all',
+    String search = '',
+    String? listInId,
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    final query = <String, String>{
+      'scope': scope,
+      'page': '$page',
+      'pageSize': '$pageSize',
+      if (search.trim().isNotEmpty) 'search': search.trim(),
+      if (listInId != null && listInId.isNotEmpty) 'listInId': listInId,
+    };
+    final data = await _request(
+      '/crm/enquiries',
+      accessToken: accessToken,
+      query: query,
+    );
+    if (data is! Map<String, dynamic> || data['items'] is! List) {
+      throw const CrmMobileApiException('Unexpected enquiries response.');
+    }
+    return (data['items'] as List)
+        .whereType<Map<String, dynamic>>()
+        .map(CrmJob.fromJson)
+        .toList();
+  }
+
   Future<List<CrmJob>> createdEnquiries(String accessToken) async {
     final data = await _request(
       '/crm/enquiries',
@@ -103,6 +135,21 @@ class CrmMobileApi {
     final jobs = await assignedJobs(accessToken);
     return Future.wait(jobs.map((item) => job(accessToken, item.sourceId)));
   }
+
+  Future<int> activitiesCount(String accessToken) async {
+    try {
+      final data = await _request(
+        '/crm/activities',
+        accessToken: accessToken,
+        query: const {'pageSize': '1'},
+      );
+      if (data is Map<String, dynamic> && data['total'] is num) {
+        return (data['total'] as num).toInt();
+      }
+    } catch (_) {}
+    return 0;
+  }
+
 
   Future<List<CrmCustomerReference>> customerReferences({
     required String accessToken,
@@ -228,6 +275,26 @@ class CrmMobileApi {
             (item) => CrmCallEnquiryAssignee(
               id: item['id'] as String,
               name: item['name'] as String,
+            ),
+          )
+          .toList(),
+      statuses: (options['statuses'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (item) => CrmCallEnquiryStatus(
+              id: item['id']?.toString() ?? '',
+              name: item['name'] as String? ?? '',
+              code: item['code'] as String? ?? '',
+            ),
+          )
+          .toList(),
+      priorities: (options['priorities'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (item) => CrmCallEnquiryPriority(
+              id: item['id']?.toString() ?? '',
+              name: item['name'] as String? ?? '',
+              code: item['code'] as String? ?? '',
             ),
           )
           .toList(),
@@ -417,6 +484,45 @@ class CrmMobileApi {
     return job(accessToken, id);
   }
 
+  Future<CrmJob> openNewCall({
+    required String accessToken,
+    required String id,
+  }) async {
+    await _request(
+      '/crm/enquiries/${Uri.encodeComponent(id)}/open-new-call',
+      accessToken: accessToken,
+      method: 'POST',
+      body: const {},
+    );
+    return job(accessToken, id);
+  }
+
+  Future<CrmJob> updateProperties({
+    required String accessToken,
+    required String id,
+    String? statusId,
+    String? priorityId,
+    String? listInId,
+    String? assignedUserId,
+    String? dueDate,
+    String? closedReason,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (statusId != null) payload['statusId'] = statusId;
+    if (priorityId != null) payload['priorityId'] = priorityId;
+    if (listInId != null) payload['listInId'] = listInId;
+    if (assignedUserId != null) payload['assignedUserId'] = assignedUserId;
+    if (dueDate != null) payload['dueDate'] = dueDate;
+    if (closedReason != null) payload['closedReason'] = closedReason;
+    await _request(
+      '/crm/enquiries/${Uri.encodeComponent(id)}/properties',
+      accessToken: accessToken,
+      method: 'PATCH',
+      body: payload,
+    );
+    return job(accessToken, id);
+  }
+
   Future<List<MessagingConversation>> conversations({
     required String accessToken,
     required String currentEmail,
@@ -549,10 +655,13 @@ class CrmMobileApi {
       utf8.decode(await response.stream.toBytes()),
     ) as Map<String, dynamic>;
     if (payload['success'] != true || response.statusCode >= 400) {
-      final error = payload['error'] as Map<String, dynamic>?;
-      throw CrmMobileApiException(
-        error?['message'] as String? ?? 'Request failed.',
-      );
+      final error = payload['error'];
+      final message = switch (error) {
+        String msg => msg,
+        Map<String, dynamic> err => err['message'] as String? ?? 'Request failed.',
+        _ => payload['message'] as String? ?? 'Request failed.',
+      };
+      throw CrmMobileApiException(message);
     }
     return payload['data'];
   }
@@ -646,10 +755,17 @@ class UserProfile {
   final String role;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
+    final email = json['email'] as String? ?? '';
+    final explicitRole = json['role'] as String?;
+    final userType = json['userType'] as String?;
+    final derivedRole = explicitRole ??
+        ((userType == 'tenant' || email.toLowerCase().startsWith('admin@'))
+            ? 'admin'
+            : 'user');
     return UserProfile(
-      email: json['email'] as String,
-      name: json['name'] as String? ?? json['email'] as String,
-      role: json['role'] as String? ?? 'user',
+      email: email,
+      name: json['name'] as String? ?? email,
+      role: derivedRole,
     );
   }
 }
@@ -661,10 +777,41 @@ class CrmMobileApiException implements Exception {
 }
 
 class CrmCallEnquiryFormData {
-  const CrmCallEnquiryFormData({required this.groups, required this.assignees});
+  const CrmCallEnquiryFormData({
+    required this.groups,
+    required this.assignees,
+    this.statuses = const [],
+    this.priorities = const [],
+  });
 
   final List<CrmCallEnquiryGroup> groups;
   final List<CrmCallEnquiryAssignee> assignees;
+  final List<CrmCallEnquiryStatus> statuses;
+  final List<CrmCallEnquiryPriority> priorities;
+}
+
+class CrmCallEnquiryStatus {
+  const CrmCallEnquiryStatus({
+    required this.id,
+    required this.name,
+    required this.code,
+  });
+
+  final String id;
+  final String name;
+  final String code;
+}
+
+class CrmCallEnquiryPriority {
+  const CrmCallEnquiryPriority({
+    required this.id,
+    required this.name,
+    required this.code,
+  });
+
+  final String id;
+  final String name;
+  final String code;
 }
 
 class CrmCallEnquiryGroup {
@@ -769,6 +916,9 @@ class CrmJob {
     required this.lastAction,
     required this.status,
     required this.priority,
+    this.statusId = '',
+    this.priorityId = '',
+    this.listInId = '',
     required this.comments,
     required this.jobs,
     required this.activities,
@@ -788,6 +938,9 @@ class CrmJob {
   final String lastAction;
   final String status;
   final String priority;
+  final String statusId;
+  final String priorityId;
+  final String listInId;
   final List<CrmComment> comments;
   final List<CrmJobExecution> jobs;
   final List<CrmActivity> activities;
@@ -851,6 +1004,9 @@ class CrmJob {
           json['priorityName'] as String? ??
           json['priority'] as String? ??
           'normal',
+      statusId: json['statusId']?.toString() ?? '',
+      priorityId: json['priorityId']?.toString() ?? '',
+      listInId: json['listInId']?.toString() ?? '',
       comments: comments.map(CrmComment.fromJson).toList(),
       jobs: (json['jobs'] as List? ?? [])
           .whereType<Map<String, dynamic>>()

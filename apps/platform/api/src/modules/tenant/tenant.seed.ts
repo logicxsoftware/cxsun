@@ -145,10 +145,7 @@ export async function seedTenantRuntimeModule(database: Kysely<TenantDatabase>, 
     ["platform.application", ...tenant.enabledModuleKeys]
       .map((key) => (key === "accounts.accounting" ? "accounts.overview" : key))
       .filter(
-        (key) =>
-          key !== "devkit" &&
-          key !== "project-manager" &&
-          (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
+        (key) => key !== "devkit" && key !== "project-manager"
       )
   );
   const moduleKeys = Array.from(
@@ -257,8 +254,6 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
   if (
     moduleKeys.every((key) => tenant.enabledModuleKeys.includes(key)) &&
     moduleKeys.every((key) => configuredApps.includes(key)) &&
-    (env.CXSUN_TENANCY_MODE === "single" || !tenant.enabledModuleKeys.includes("q-cafe")) &&
-    (env.CXSUN_TENANCY_MODE === "single" || !configuredApps.includes("q-cafe")) &&
     !tenant.enabledModuleKeys.includes("devkit") &&
     !configuredApps.includes("devkit") &&
     !tenant.enabledModuleKeys.includes("project-manager") &&
@@ -274,9 +269,7 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
         new Set(
           [...moduleKeys, ...tenant.enabledModuleKeys].filter(
             (key) =>
-              key !== "devkit" &&
-              key !== "project-manager" &&
-              (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
+              key !== "devkit" && key !== "project-manager"
           )
         )
       ).sort(),
@@ -288,9 +281,7 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
             new Set(
               [...moduleKeys, ...configuredApps].filter(
                 (key) =>
-                  key !== "devkit" &&
-                  key !== "project-manager" &&
-                  (env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe")
+                  key !== "devkit" && key !== "project-manager"
               )
             )
           ).sort()
@@ -301,9 +292,7 @@ async function reconcileDefaultTenantModules(repository: TenantRepository, tenan
 }
 
 function defaultSeedModuleKeys() {
-  return defaultTenantModuleKeys.filter(
-    (key) => env.CXSUN_TENANCY_MODE === "single" || key !== "q-cafe"
-  );
+  return Array.from(defaultTenantModuleKeys);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

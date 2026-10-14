@@ -8,6 +8,7 @@ import type { TopMenuAppItem, TopMenuUser } from "./top-menu-types";
 import { TopMenuUserMenu } from "./top-menu-user";
 
 export type TopMenuProps = {
+  addonItems?: TopMenuAppItem[];
   appItems: TopMenuAppItem[];
   applicationName: string;
   logoutHref?: string;
@@ -30,6 +31,7 @@ export type TopMenuProps = {
 };
 
 export function TopMenu({
+  addonItems = [],
   appItems,
   applicationName,
   logoutHref,
@@ -100,7 +102,7 @@ export function TopMenu({
             user={user}
             workspaceTitle={applicationName}
           />
-          <TopMenuAppLauncher items={appItems} />
+          <TopMenuAppLauncher addonItems={addonItems} items={appItems} />
           <TopMenuUserMenu
             {...(logoutHref ? { logoutHref } : {})}
             {...(onLogout ? { onLogout } : {})}

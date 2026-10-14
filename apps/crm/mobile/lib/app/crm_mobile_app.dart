@@ -27,6 +27,9 @@ class _CrmMobileAppState extends State<CrmMobileApp>
   final _secureSession = SecureSessionStore();
   final _navigatorKey = GlobalKey<NavigatorState>();
   final _dashboardNavigation = DashboardNavigation();
+  late final _routeObserver = _AppRouteObserver(() {
+    if (mounted) setState(() {});
+  });
   UserSession? _session;
   StoredSession? _storedSession;
   String _lastEmail = '';
@@ -336,6 +339,7 @@ class _CrmMobileAppState extends State<CrmMobileApp>
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigatorKey,
+      navigatorObservers: [_routeObserver],
       debugShowCheckedModeBanner: false,
       title: AppConfig.brandName,
       theme: ThemeData(
@@ -343,12 +347,15 @@ class _CrmMobileAppState extends State<CrmMobileApp>
         scaffoldBackgroundColor: const Color(0xFFF9F7FC),
         useMaterial3: true,
       ),
-      builder: (context, child) => _AuthenticatedAppShell(
-        navigation: _dashboardNavigation,
-        navigatorKey: _navigatorKey,
-        showDock: _stage == _AuthStage.dashboard,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        final canPop = _navigatorKey.currentState?.canPop() ?? false;
+        return _AuthenticatedAppShell(
+          navigation: _dashboardNavigation,
+          navigatorKey: _navigatorKey,
+          showDock: _stage == _AuthStage.dashboard && !canPop,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: _buildHome(),
     );
   }
@@ -482,3 +489,29 @@ class _AppUpdateDialog extends StatelessWidget {
     );
   }
 }
+
+class _AppRouteObserver extends NavigatorObserver {
+  _AppRouteObserver(this.onRouteChanged);
+  final VoidCallback onRouteChanged;
+
+  void _schedule() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => onRouteChanged());
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _schedule();
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _schedule();
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _schedule();
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _schedule();
+}
+

@@ -1,8 +1,9 @@
 {
   "name": "@cxsun/q-cafe-api",
-  "version": "1.0.91",
+  "version": "1.0.92",
   "private": true,
   "type": "module",
+  "types": "src/store.d.ts",
   "scripts": {
     "start": "node src/server.mjs",
     "test": "node --test src/*.test.mjs"

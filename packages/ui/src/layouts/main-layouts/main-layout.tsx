@@ -12,6 +12,7 @@ import type { MainLayoutNavigationSection } from "./types";
 import { WorkspaceCanvas } from "./workspace-canvas";
 
 export type MainLayoutProps = {
+  addonItems?: TopMenuAppItem[];
   appItems: TopMenuAppItem[];
   applicationName: string;
   children?: ReactNode;
@@ -31,6 +32,7 @@ export type MainLayoutProps = {
 };
 
 export function MainLayout({
+  addonItems = [],
   appItems,
   applicationName,
   children,
@@ -93,6 +95,7 @@ export function MainLayout({
   return (
     <AppLayout className={className}>
       <TopMenu
+        addonItems={addonItems}
         appItems={appItems}
         applicationName={applicationName}
         {...(logoutHref ? { logoutHref } : {})}

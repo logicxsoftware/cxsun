@@ -45,7 +45,7 @@ const frappeLegacyKeyedTables = new Set([
 
 function hasTenantOwnerPrefix(file, table) {
   if (
-    /^(app|accounts|auditor|core|billing|crm|cxsun|devkit|ecommerce|frappe|mail|logicx_erp|project_manager|zetro|zuno)_/.test(
+    /^(app|accounts|auditor|core|billing|chat|crm|cxsun|devkit|ecommerce|frappe|mail|notes|logicx_erp|project_manager|zetro|zuno)_/.test(
       table
     )
   ) {
