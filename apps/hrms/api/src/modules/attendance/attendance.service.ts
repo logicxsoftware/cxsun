@@ -1,6 +1,6 @@
 import { AppError } from "@cxsun/framework/errors";
 import type { AttendanceRepository } from "./attendance.repository.js";
-import type { AttendanceInput, AttendanceStatus } from "./attendance.types.js";
+import type { AttendanceInput } from "./attendance.types.js";
 
 export class AttendanceService {
   constructor(private readonly repository: AttendanceRepository) {}
@@ -56,6 +56,9 @@ export class AttendanceService {
   }
 
   private async resolve(input: AttendanceInput) {
+    const today = await this.repository.today();
+    if (input.workDate > today)
+      throw AppError.validation("Attendance date cannot be in the future.");
     const employee = await this.repository.employee(input.employeeId);
     if (!employee || employee.deletedAt || employee.status !== "active")
       throw AppError.validation("Select an active employee.");

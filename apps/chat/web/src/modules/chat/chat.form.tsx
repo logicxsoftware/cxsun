@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Megaphone, MessageSquare, User, Users } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import {
@@ -49,20 +49,29 @@ const KIND_OPTIONS: {
 export function ChatChannelForm({
   busy,
   channel,
+  defaultKind = "channel",
   onOpenChange,
   onSubmit,
   open
 }: {
   busy: boolean;
   channel: ChatChannel | null;
+  defaultKind?: ChatChannelKind | undefined;
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: ChatChannelSavePayload) => Promise<void>;
   open: boolean;
 }) {
   const [name, setName] = useState(channel?.name ?? "");
-  const [kind, setKind] = useState<ChatChannelKind>(channel?.kind ?? "channel");
+  const [kind, setKind] = useState<ChatChannelKind>(channel?.kind ?? defaultKind);
   const [members, setMembers] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setName(channel?.name ?? "");
+    setKind(channel?.kind ?? defaultKind);
+    setMembers("");
+    setError("");
+  }, [channel, defaultKind, open]);
 
   async function submit() {
     if (channel) {

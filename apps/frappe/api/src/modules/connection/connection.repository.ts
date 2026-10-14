@@ -16,6 +16,38 @@ export class FrappeConnectionRepository {
       .executeTakeFirst();
   }
 
+  async importState() {
+    const row = await this.database
+      .selectFrom("frappe_import_state")
+      .select(["completed_at", "completed_by"])
+      .where("id", "=", 1)
+      .executeTakeFirst();
+    return {
+      completedAt: row?.completed_at ? new Date(row.completed_at).toISOString() : null,
+      completedBy: row?.completed_by ?? null
+    };
+  }
+
+  async completeImport(actorEmail: string) {
+    await this.database.transaction().execute(async (transaction) => {
+      await transaction
+        .updateTable("frappe_import_state")
+        .set({
+          completed_at: new Date().toISOString().slice(0, 19).replace("T", " "),
+          completed_by: actorEmail
+        })
+        .where("id", "=", 1)
+        .where("completed_at", "is", null)
+        .execute();
+      await transaction
+        .updateTable("frappe_connection_settings")
+        .set({ enabled: false })
+        .where("id", "=", 1)
+        .execute();
+    });
+    return this.importState();
+  }
+
   async provider(moduleKey: string): Promise<"local" | "frappe"> {
     const row = await this.database
       .selectFrom("frappe_data_sources")

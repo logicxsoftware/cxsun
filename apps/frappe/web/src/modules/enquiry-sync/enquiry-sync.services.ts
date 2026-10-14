@@ -1,7 +1,6 @@
 import type {
   EnquiryImportJob,
   FrappeConnectionState,
-  LocalEnquiryPage,
   RemoteEnquiryPage
 } from "./enquiry-sync.types";
 import type { SyncQueuePage, SyncQueueStatus } from "./enquiry-sync.types";
@@ -35,20 +34,12 @@ export const getConnectionState = () => request<FrappeConnectionState>("/frappe/
 export const getRemoteEnquiries = (page: number) =>
   request<RemoteEnquiryPage>(`/frappe/enquiries/remote?page=${page}`);
 export const getLatestImport = () => request<EnquiryImportJob | null>("/frappe/enquiries/import");
-export const startImport = () => request<EnquiryImportJob>("/frappe/enquiries/import", {});
-export const getLocalEnquiries = (page: number, pageSize: number, search: string) =>
-  request<LocalEnquiryPage>(
-    `/frappe/overview?${new URLSearchParams({ page: String(page), pageSize: String(pageSize), search })}`
-  );
+export const startImport = () =>
+  request<{ jobId: number; status: string }>("/frappe/enquiries/import", {});
 export const pullEnquiry = (remoteName: string) =>
-  request<{ remoteName: string; enquiryId: number; status: "created" | "updated" }>(
+  request<{ remoteName: string; enquiryId: number; status: "created" | "updated" | "linked" }>(
     "/frappe/enquiries/pull",
     { remoteName }
-  );
-export const postEnquiry = (id: number) =>
-  request<{ enquiryId: number; remoteName: string; syncedAt: string }>(
-    `/frappe/enquiries/${id}/sync`,
-    {}
   );
 
 export const getSyncQueue = (status: SyncQueueStatus, page: number, pageSize: number) =>
@@ -58,9 +49,3 @@ export const getSyncQueue = (status: SyncQueueStatus, page: number, pageSize: nu
 
 export const retrySyncEvent = (eventId: number) =>
   request<{ id: number; status: "pending" }>(`/frappe/enquiries/sync-queue/${eventId}/retry`, {});
-
-export const startEnquiryBackfill = () =>
-  request<{ jobId: number; status: string }>("/frappe/enquiries/backfill", {});
-
-export const getEnquiryBackfill = (jobId: number) =>
-  request<EnquiryImportJob>(`/frappe/enquiries/backfill/${jobId}`);

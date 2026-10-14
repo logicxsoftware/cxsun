@@ -1,15 +1,25 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { Card } from "@cxsun/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@cxsun/ui/components/dialog";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
 import { useFrappeConnection, useFrappeOverview } from "./overview.hooks";
-import { verifyFrappeConnection } from "./overview.services";
+import { completeFrappeImport, verifyFrappeConnection } from "./overview.services";
 
 export function FrappeOverviewWorkspace() {
   const [verifiedUser, setVerifiedUser] = useState<string | null>(null);
+  const [confirmCutover, setConfirmCutover] = useState(false);
+  const client = useQueryClient();
   const connection = useFrappeConnection();
   const overview = useFrappeOverview(1, 1, "");
   const verify = useMutation({
@@ -20,13 +30,22 @@ export function FrappeOverviewWorkspace() {
     },
     onError: (error) => toast.error("Connection check failed", { description: error.message })
   });
+  const cutover = useMutation({
+    mutationFn: completeFrappeImport,
+    onSuccess: async () => {
+      setConfirmCutover(false);
+      await client.invalidateQueries({ queryKey: ["frappe"] });
+      toast.success("Frappe import finished. CRM now uses local records only.");
+    },
+    onError: (error) => toast.error("Could not finish import", { description: error.message })
+  });
   const configured = connection.data?.configured && connection.data.enabled;
   const counts = overview.data?.counts;
 
   return (
     <WorkspacePage
       title="Frappe"
-      description="Connection and outbound sync for local CRM enquiries."
+      description="Import Frappe records into local CRM, then finish the connection."
       technicalName="page.frappe.overview"
       actions={
         <Button
@@ -50,11 +69,13 @@ export function FrappeOverviewWorkspace() {
               ? "Checking configuration…"
               : !connection.data?.configured
                 ? "Set up Application connection from the Frappe sidebar."
-                : !connection.data.enabled
-                  ? "Frappe sync is disabled."
-                  : verifiedUser
-                    ? `Verified as ${verifiedUser}`
-                    : "Configured. Verify before syncing records."}
+                : connection.data.importCompletedAt
+                  ? "Import complete. CRM now uses local records only."
+                  : !connection.data.enabled
+                    ? "Frappe connection is disabled."
+                    : verifiedUser
+                      ? `Verified as ${verifiedUser}`
+                      : "Configured. Verify before syncing records."}
           </p>
           {connection.data?.baseUrl ? (
             <p className="truncate text-xs text-muted-foreground">{connection.data.baseUrl}</p>
@@ -63,7 +84,7 @@ export function FrappeOverviewWorkspace() {
         <Button
           type="button"
           variant="outline"
-          disabled={!configured || verify.isPending}
+          disabled={!configured || verify.isPending || !!connection.data?.importCompletedAt}
           onClick={() => verify.mutate()}
         >
           {verify.isPending ? "Verifying…" : "Verify connection"}
@@ -76,9 +97,43 @@ export function FrappeOverviewWorkspace() {
       ) : null}
       <div className="grid gap-3 sm:grid-cols-3">
         <CountCard label="Local enquiries" value={counts?.total} />
-        <CountCard label="Posted" value={counts?.synced} />
-        <CountCard label="Not posted" value={counts?.pending} />
+        <CountCard label="Linked to Frappe" value={counts?.synced} />
+        <CountCard label="Local only" value={counts?.pending} />
       </div>
+      <Card className="flex flex-wrap items-center justify-between gap-4 p-4">
+        <div>
+          <h2 className="text-sm font-semibold">Finish initial import</h2>
+          <p className="text-xs text-muted-foreground">
+            After reviewing contacts, enquiries, activities and call logs, stop all Frappe imports
+            for this tenant.
+          </p>
+        </div>
+        <Button
+          disabled={!!connection.data?.importCompletedAt || cutover.isPending}
+          onClick={() => setConfirmCutover(true)}
+        >
+          {connection.data?.importCompletedAt ? "Import complete" : "Use local CRM only"}
+        </Button>
+      </Card>
+      <Dialog open={confirmCutover} onOpenChange={setConfirmCutover}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finish Frappe import?</DialogTitle>
+            <DialogDescription>
+              This stops Frappe imports and disables this tenant's Frappe connection. Continue
+              working with local CRM records.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmCutover(false)}>
+              Cancel
+            </Button>
+            <Button disabled={cutover.isPending} onClick={() => cutover.mutate()}>
+              {cutover.isPending ? "Finishing…" : "Finish import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </WorkspacePage>
   );
 }

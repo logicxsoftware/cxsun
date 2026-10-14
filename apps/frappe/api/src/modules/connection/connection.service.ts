@@ -24,6 +24,7 @@ export class FrappeConnectionService {
   ) {}
 
   async configured() {
+    const importState = await new FrappeConnectionRepository(this.database).importState();
     const stored = await new FrappeConnectionRepository(this.database).connection();
     if (stored)
       return {
@@ -42,7 +43,8 @@ export class FrappeConnectionService {
           : null,
         lastVerifiedAt: stored.last_verified_at
           ? new Date(stored.last_verified_at).toISOString()
-          : null
+          : null,
+        importCompletedAt: importState.completedAt
       };
     return {
       source: "environment" as const,
@@ -54,11 +56,14 @@ export class FrappeConnectionService {
       appSecretConfigured: Boolean(this.settings.apiSecret),
       verificationStatus: "unverified" as const,
       lastCheckedAt: null,
-      lastVerifiedAt: null
+      lastVerifiedAt: null,
+      importCompletedAt: importState.completedAt
     };
   }
 
   async saveConnection(input: FrappeConnectionInput) {
+    if ((await new FrappeConnectionRepository(this.database).importState()).completedAt)
+      throw AppError.conflict("Frappe import is complete. This tenant now uses local CRM only.");
     const repository = new FrappeConnectionRepository(this.database);
     const current = await repository.connection();
     if (current?.base_url !== input.baseUrl && (!input.apiKey || !input.apiSecret)) {
@@ -94,6 +99,8 @@ export class FrappeConnectionService {
     apiSecret?: string | undefined;
     enabled?: boolean | undefined;
   }) {
+    if ((await new FrappeConnectionRepository(this.database).importState()).completedAt)
+      throw AppError.conflict("Frappe import is complete. This tenant now uses local CRM only.");
     const repository = new FrappeConnectionRepository(this.database);
     const saved = await repository.credentials(this.encryptionSecret);
     if (
@@ -184,46 +191,8 @@ export class FrappeConnectionService {
   }
 
   async sync(enquiryId: number) {
-    const settings =
-      (await new FrappeConnectionRepository(this.database).credentials(this.encryptionSecret))
-        ?.settings ?? this.settings;
-    const enquiry = await this.loadEnquiry(enquiryId);
-    const repository = new FrappeConnectionRepository(this.database);
-    const existing = await repository.get(enquiryId);
-    const employeeCode = existing
-      ? null
-      : await this.mappedEmployeeCode(enquiry.createdBy, settings.baseUrl);
-    const payload = this.enquiryPayload(enquiry, employeeCode);
-    const remote = existing
-      ? await this.request<{ data?: { name?: string } }>(
-          `/api/resource/Enquiry/${encodeURIComponent(existing.remote_name)}`,
-          "PUT",
-          payload,
-          settings
-        )
-      : await this.request<{ data?: { name?: string } }>(
-          "/api/resource/Enquiry",
-          "POST",
-          payload,
-          settings
-        );
-    const remoteName = remote.data?.name?.trim() || existing?.remote_name;
-    if (!remoteName) throw upstreamError("Frappe did not return an enquiry name.");
-    await repository.save(enquiryId, remoteName);
-    return { enquiryId, remoteName, syncedAt: new Date().toISOString() };
-  }
-
-  private enquiryPayload(enquiry: EnquiryRecord, employeeCode: string | null) {
-    return {
-      title: enquiry.title,
-      enquiry_details: enquiry.description || enquiry.title,
-      mobile: enquiry.capturedPhone || "",
-      date: enquiry.enquiredAt.slice(0, 10),
-      due_date: enquiry.dueDate,
-      priority: enquiry.priorityName,
-      status: enquiry.statusName,
-      ...(employeeCode ? { user_employee: employeeCode } : {})
-    };
+    void enquiryId;
+    throw AppError.conflict("Sending CRM enquiries to Frappe is disabled.");
   }
 
   private async request<T>(
@@ -242,6 +211,8 @@ export async function requestFrappe<T>(
   settings: FrappeSettings,
   body?: unknown
 ): Promise<T> {
+  if (method !== "GET" && !(method === "POST" && path === "/api/v2/method/frappe.client.get_list"))
+    throw AppError.conflict("Sending records to Frappe is disabled. Only imports are available.");
   const { baseUrl, apiKey, apiSecret, enabled } = settings;
   if (!enabled) throw AppError.conflict("Frappe sync is disabled.");
   if (!baseUrl || !apiKey || !apiSecret) {
@@ -291,7 +262,7 @@ export async function requestFrappe<T>(
     throw AppError.validation("Frappe could not find a referenced record or DocType.");
   }
   if (!response.ok) throw upstreamError(`Frappe returned HTTP ${response.status}.`);
-  if (response.status === 204 || method === "DELETE") return {} as T;
+  if (response.status === 204) return {} as T;
   const data = await readResponse(response);
   try {
     return JSON.parse(data) as T;

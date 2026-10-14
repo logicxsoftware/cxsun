@@ -1,11 +1,13 @@
 {
   "name": "@cxsun/hrms-web",
-  "version": "1.0.93",
+  "version": "1.0.94",
   "private": true,
   "type": "module",
   "exports": {
     "./modules/employee": "./src/modules/employee/index.ts",
     "./modules/attendance": "./src/modules/attendance/index.ts",
+    "./modules/department": "./src/modules/department/index.ts",
+    "./modules/designation": "./src/modules/designation/index.ts",
     ".": "./src/index.ts",
     "./modules/overview": "./src/modules/overview/index.ts",
     "./modules/overview/gateway": "./src/modules/overview/overview.services.ts"
@@ -16,7 +18,7 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.93",
+    "@cxsun/ui": "^1.0.94",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.41",
     "@tanstack/react-table": "^9.2.6",

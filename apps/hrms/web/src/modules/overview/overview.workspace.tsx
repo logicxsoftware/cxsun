@@ -83,9 +83,9 @@ function OverviewDashboard({
         />
         <Metric
           icon={CircleAlert}
-          label="Not marked"
+          label="No record today"
           value={attendance.notMarkedToday}
-          detail={`${attendance.markedToday} attendance records today`}
+          detail={`${attendance.markedToday} active employees have a record`}
         />
         <Metric
           icon={BarChart3}
@@ -108,8 +108,10 @@ function OverviewDashboard({
       ) : null}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="text-base font-semibold">Attendance this week</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Daily records by attendance status.</p>
+          <h2 className="text-base font-semibold">Recorded attendance this week</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Daily records by attendance status. This view does not account for work schedules.
+          </p>
           <div
             className="mt-5 flex items-end gap-3"
             role="img"

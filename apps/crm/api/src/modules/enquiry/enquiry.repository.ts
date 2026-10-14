@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { sql, type Kysely, type Selectable, type Transaction } from "kysely";
 import { AppError } from "@cxsun/framework/errors";
 import type {
@@ -17,7 +16,6 @@ import type {
   EnquirySearchColumn
 } from "./enquiry.types.js";
 import { sanitizeCommentHtml } from "./enquiry.comment-html.js";
-import { EnquirySyncRepository } from "./enquiry.sync.repository.js";
 
 type PersistedRow = Selectable<EnquiryRow> & {
   list_name: string | null;
@@ -28,11 +26,7 @@ type PersistedRow = Selectable<EnquiryRow> & {
 };
 
 export class EnquiryRepository {
-  private readonly sync: EnquirySyncRepository;
-
-  constructor(private readonly database: Kysely<EnquiryDatabase>) {
-    this.sync = new EnquirySyncRepository(database);
-  }
+  constructor(private readonly database: Kysely<EnquiryDatabase>) {}
 
   async listPage(options: EnquiryListOptions): Promise<EnquiryPage> {
     let query = this.scopedQuery(options);
@@ -350,8 +344,7 @@ export class EnquiryRepository {
   async create(
     input: EnquiryInput,
     actor: string,
-    resolveContact?: (transaction: Transaction<EnquiryDatabase>) => Promise<EnquiryInput>,
-    queueOutbound = true
+    resolveContact?: (transaction: Transaction<EnquiryDatabase>) => Promise<EnquiryInput>
   ) {
     const id = await this.database.transaction().execute(async (transaction) => {
       const prepared = resolveContact ? await resolveContact(transaction) : input;
@@ -404,16 +397,6 @@ export class EnquiryRepository {
         `Enquiry #${enquiryNo} created`,
         actor
       );
-      if (queueOutbound)
-        await this.sync.enqueue(
-          {
-            actorEmail: actor,
-            correlationId: randomUUID(),
-            enquiryId,
-            eventType: "enquiry-upsert"
-          },
-          transaction
-        );
       return enquiryId;
     });
     return this.get(id);
@@ -425,8 +408,7 @@ export class EnquiryRepository {
     actor: string,
     details = "Enquiry updated",
     expectedStatusId?: number,
-    resolveContact?: (transaction: Transaction<EnquiryDatabase>) => Promise<EnquiryInput>,
-    queueOutbound = true
+    resolveContact?: (transaction: Transaction<EnquiryDatabase>) => Promise<EnquiryInput>
   ) {
     await this.database.transaction().execute(async (transaction) => {
       const previous = await transaction
@@ -476,16 +458,6 @@ export class EnquiryRepository {
         );
       }
       await insertEnquiryActivity(transaction, id, "updated", details, actor);
-      if (queueOutbound)
-        await this.sync.enqueue(
-          {
-            actorEmail: actor,
-            correlationId: randomUUID(),
-            enquiryId: id,
-            eventType: "enquiry-upsert"
-          },
-          transaction
-        );
     });
     return this.get(id);
   }
@@ -573,8 +545,7 @@ export class EnquiryRepository {
     parentId: number | null,
     body: string,
     bodyFormat: "plain" | "html",
-    actor: string,
-    queueOutbound = true
+    actor: string
   ) {
     const result = await this.database.transaction().execute(async (transaction) => {
       const inserted = await transaction
@@ -597,17 +568,6 @@ export class EnquiryRepository {
         parentId ? "Reply added" : "Comment added",
         actor
       );
-      if (queueOutbound)
-        await this.sync.enqueue(
-          {
-            actorEmail: actor,
-            correlationId: randomUUID(),
-            entityId: Number(inserted.insertId),
-            enquiryId,
-            eventType: "comment-add"
-          },
-          transaction
-        );
       return inserted;
     });
     const row = await this.database
@@ -652,15 +612,6 @@ export class EnquiryRepository {
         })
         .execute();
       await insertEnquiryActivity(transaction, id, "new-call-opened", "New call opened", actor);
-      await this.sync.enqueue(
-        {
-          actorEmail: actor,
-          correlationId: randomUUID(),
-          enquiryId: id,
-          eventType: "enquiry-upsert"
-        },
-        transaction
-      );
     });
     return this.get(id);
   }

@@ -86,6 +86,7 @@ export function AttendanceWorkspace({ gateway }: { gateway: AttendanceGateway })
           className="max-w-44"
           aria-label="Attendance date"
           type="date"
+          max={utcDate()}
           value={filters.date}
           onChange={(event) => setFilters((current) => ({ ...current, date: event.target.value }))}
         />
@@ -233,7 +234,9 @@ export function AttendanceWorkspace({ gateway }: { gateway: AttendanceGateway })
 }
 
 function localDate() {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
+  return utcDate();
+}
+
+function utcDate() {
+  return new Date().toISOString().slice(0, 10);
 }

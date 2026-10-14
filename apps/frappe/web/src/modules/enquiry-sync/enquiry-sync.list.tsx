@@ -1,10 +1,10 @@
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
-import { formatDate, formatDateTime } from "@cxsun/ui/workspace";
+import { formatDate } from "@cxsun/ui/workspace";
 import { Button } from "@cxsun/ui/components/button";
 import { Checkbox } from "@cxsun/ui/components/checkbox";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
-import type { LocalEnquiry, RemoteEnquiry } from "./enquiry-sync.types";
+import type { RemoteEnquiry } from "./enquiry-sync.types";
 
 export function RemoteEnquiryList({
   records,
@@ -85,7 +85,7 @@ export function RemoteEnquiryList({
           disabled={!enabled || busy}
           onClick={() => onPull(row.original.name)}
         >
-          {row.original.localEnquiryId ? "Pull update" : "Pull"}
+          {row.original.localEnquiryId ? "Update local" : "Import"}
         </Button>
       )
     }
@@ -95,109 +95,6 @@ export function RemoteEnquiryList({
       columns={columns}
       data={records}
       emptyState="No Frappe enquiries found."
-      isLoading={loading}
-      minWidth="950px"
-    />
-  );
-}
-
-export function LocalEnquiryList({
-  records,
-  loading,
-  selected,
-  busy,
-  enabled,
-  onSelect,
-  onSelectAll,
-  onPost
-}: {
-  records: LocalEnquiry[];
-  loading: boolean;
-  selected: Set<number>;
-  busy: boolean;
-  enabled: boolean;
-  onSelect: (id: number, checked: boolean) => void;
-  onSelectAll: (checked: boolean) => void;
-  onPost: (id: number) => void;
-}) {
-  const allSelected = records.length > 0 && records.every((item) => selected.has(item.id));
-  const someSelected = records.some((item) => selected.has(item.id));
-  const columns: ColumnDef<LocalEnquiry>[] = [
-    {
-      id: "select",
-      header: () => (
-        <Checkbox
-          aria-label="Select all shown local enquiries"
-          checked={allSelected ? true : someSelected ? "indeterminate" : false}
-          onCheckedChange={(checked) => onSelectAll(checked === true)}
-          disabled={!records.length || busy}
-        />
-      ),
-      size: 48,
-      enableSorting: false,
-      cell: ({ row }) => (
-        <Checkbox
-          aria-label={`Select local enquiry ${row.original.enquiryNo}`}
-          checked={selected.has(row.original.id)}
-          onCheckedChange={(checked) => onSelect(row.original.id, checked === true)}
-          disabled={busy}
-        />
-      )
-    },
-    {
-      accessorKey: "enquiryNo",
-      header: "CRM ID",
-      size: 110,
-      cell: ({ row }) => `#${row.original.enquiryNo}`
-    },
-    { accessorKey: "title", header: "ENQUIRY" },
-    { accessorKey: "status", header: "CRM STATUS", size: 135 },
-    {
-      id: "frappe",
-      header: "FRAPPE",
-      size: 125,
-      cell: ({ row }) => (
-        <WorkspaceStatusBadge
-          label={row.original.remoteName ? "Linked" : "Not posted"}
-          tone={row.original.remoteName ? "success" : "warning"}
-        />
-      )
-    },
-    {
-      accessorKey: "remoteName",
-      header: "FRAPPE ID",
-      size: 150,
-      cell: ({ row }) => row.original.remoteName || "—"
-    },
-    {
-      accessorKey: "updatedAt",
-      header: "LOCAL UPDATED",
-      size: 175,
-      cell: ({ row }) => formatDateTime(row.original.updatedAt)
-    },
-    {
-      id: "action",
-      header: "ACTION",
-      size: 130,
-      enableSorting: false,
-      cell: ({ row }) => (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={!enabled || busy}
-          onClick={() => onPost(row.original.id)}
-        >
-          {row.original.remoteName ? "Post update" : "Post"}
-        </Button>
-      )
-    }
-  ];
-  return (
-    <WorkspaceTable
-      columns={columns}
-      data={records}
-      emptyState="No local enquiries found."
       isLoading={loading}
       minWidth="950px"
     />

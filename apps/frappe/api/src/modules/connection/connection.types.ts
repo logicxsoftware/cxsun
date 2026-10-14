@@ -43,6 +43,9 @@ export type FrappeDataSourceRow = {
 };
 
 export type FrappeDatabase = EnquiryDatabase & {
+  frappe_contact_imports: { id: number; remote_name: string; local_contact_id: number; created_at: string; updated_at: string };
+  frappe_activity_imports: { id: number; remote_name: string; local_activity_id: number; created_at: string; updated_at: string };
+  frappe_import_state: { id: number; completed_at: string | Date | null; completed_by: string | null; updated_at: string | Date };
   frappe_connection_settings: FrappeConnectionRow;
   frappe_data_sources: FrappeDataSourceRow;
   frappe_enquiry_sync: FrappeSyncRow;

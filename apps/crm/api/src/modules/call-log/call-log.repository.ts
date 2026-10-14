@@ -4,10 +4,6 @@ import type { CallLogComment, CallLogFilters, CallLogInput } from "./call-log.ty
 
 type Row = {
   id: number;
-  remote_name: string | null;
-  sync_status: string | null;
-  sync_error: string | null;
-  sync_event_id: number | null;
   direction: string;
   from_number: string;
   to_number: string;
@@ -33,11 +29,10 @@ export class CallLogRepository {
     }
     const where = sql.join(conditions, sql` AND `);
     const result =
-      await sql<Row>`SELECT log.id, log.remote_name, log.direction, log.from_number, log.to_number, log.call_status,
-      log.duration_seconds, log.user_email, log.created_at, log.started_at,
-      event.status AS sync_status, event.last_error AS sync_error, event.id AS sync_event_id
-      FROM crm_call_logs log LEFT JOIN crm_call_log_sync_events event ON event.call_log_id=log.id
-      WHERE ${where} ORDER BY log.id DESC LIMIT ${filters.pageSize + 1} OFFSET ${(filters.page - 1) * filters.pageSize}`.execute(
+      await sql<Row>`SELECT log.id, log.direction, log.from_number, log.to_number, log.call_status,
+      log.duration_seconds, log.user_email, log.created_at, log.started_at
+      FROM crm_call_logs log WHERE ${where}
+      ORDER BY log.id DESC LIMIT ${filters.pageSize + 1} OFFSET ${(filters.page - 1) * filters.pageSize}`.execute(
         this.database
       );
     return {
@@ -51,10 +46,7 @@ export class CallLogRepository {
         receiver: row.direction === "Incoming" ? (row.user_email ?? "") : "",
         caller: row.direction === "Outgoing" ? (row.user_email ?? "") : "",
         createdAt: new Date(row.created_at).toISOString(),
-        startedAt: new Date(row.started_at).toISOString(),
-        syncStatus: row.sync_status ?? (row.remote_name ? "synced" : "pending"),
-        syncError: row.sync_error,
-        syncEventId: row.sync_event_id
+        startedAt: new Date(row.started_at).toISOString()
       })),
       page: filters.page,
       pageSize: filters.pageSize,
@@ -71,7 +63,7 @@ export class CallLogRepository {
     return rows.rows.map((user) => ({ value: user.email, label: user.name || user.email }));
   }
 
-  async create(input: CallLogInput, actorEmail: string, queueOutbound = true) {
+  async create(input: CallLogInput, actorEmail: string) {
     if (input.sourceReference) {
       const existing = await sql<{ id: number }>`SELECT id FROM crm_call_logs
         WHERE source_reference=${input.sourceReference} LIMIT 1`.execute(this.database);
@@ -96,10 +88,6 @@ export class CallLogRepository {
         transaction
       );
       const id = Number(insert.insertId);
-      if (queueOutbound)
-        await sql`INSERT INTO crm_call_log_sync_events (call_log_id) VALUES (${id})`.execute(
-          transaction
-        );
       return { name: `CL-${id}` };
     });
   }

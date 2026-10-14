@@ -9,6 +9,7 @@ export type FrappeConnection = {
   verificationStatus: "unverified" | "verified" | "failed";
   lastCheckedAt: string | null;
   lastVerifiedAt: string | null;
+  importCompletedAt: string | null;
 };
 
 export type FrappeConnectionInput = {

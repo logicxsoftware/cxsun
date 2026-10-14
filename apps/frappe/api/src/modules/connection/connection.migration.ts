@@ -25,6 +25,20 @@ export const frappeTenantMigrationBatch: MigrationBatch<FrappeDatabase> = {
       description: "Add standard identity and audit columns without replacing integration keys.",
       version: 2,
       up: standardizeFrappeTenantSchema
+    },
+    {
+      name: "frappe.connection.initial-import-links-v3",
+      checksum: "frappe.connection.initial-import-links-v3",
+      description: "Track Frappe contacts and enquiry activities imported into local CRM.",
+      version: 3,
+      up: addInitialImportLinks
+    },
+    {
+      name: "frappe.connection.local-cutover-v4",
+      checksum: "frappe.connection.local-cutover-v4",
+      description: "Record when Frappe imports end and CRM becomes fully local.",
+      version: 4,
+      up: addLocalCutover
     }
   ]
 };
@@ -94,6 +108,53 @@ async function standardizeFrappeTenantSchema(database: Kysely<FrappeDatabase>) {
     "frappe_connection_settings",
     "frappe_enquiry_sync"
   ]);
+}
+
+async function addInitialImportLinks(database: Kysely<FrappeDatabase>) {
+  await sql
+    .raw(
+      `CREATE TABLE IF NOT EXISTS frappe_contact_imports (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    remote_name VARCHAR(191) NOT NULL UNIQUE,
+    local_contact_id INT NOT NULL,
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:frappe-import',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    )
+    .execute(database);
+  await sql
+    .raw(
+      `CREATE TABLE IF NOT EXISTS frappe_activity_imports (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(8) NOT NULL DEFAULT (LOWER(SUBSTRING(MD5(UUID()),1,8))) UNIQUE,
+    remote_name VARCHAR(191) NOT NULL UNIQUE,
+    local_activity_id INT NOT NULL,
+    status VARCHAR(24) NOT NULL DEFAULT 'active',
+    created_by VARCHAR(191) NOT NULL DEFAULT 'system:frappe-import',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    )
+    .execute(database);
+}
+
+async function addLocalCutover(database: Kysely<FrappeDatabase>) {
+  await sql
+    .raw(
+      `CREATE TABLE IF NOT EXISTS frappe_import_state (
+    id INT NOT NULL PRIMARY KEY,
+    completed_at DATETIME NULL,
+    completed_by VARCHAR(191) NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    )
+    .execute(database);
+  await sql`INSERT INTO frappe_import_state (id) VALUES (1) ON DUPLICATE KEY UPDATE id=id`.execute(
+    database
+  );
 }
 
 export async function convertNaturalPrimaryKey(

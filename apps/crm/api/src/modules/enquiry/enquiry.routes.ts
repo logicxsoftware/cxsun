@@ -5,7 +5,6 @@ import { registerContractRoute } from "@cxsun/framework/http";
 import { AppError } from "@cxsun/framework/errors";
 import type {} from "@cxsun/framework/api";
 import { EnquiryRepository } from "./enquiry.repository.js";
-import { EnquirySyncRepository } from "./enquiry.sync.repository.js";
 import { EnquiryService, type EnquiryRelations } from "./enquiry.service.js";
 import { EnquiryReadService } from "./enquiry.read-source.js";
 import type { EnquiryDatabase } from "./enquiry.types.js";
@@ -121,9 +120,6 @@ const listQuerySchema = z.object({
   listInId: z.string().trim().min(1).max(191).optional(),
   createdBy: z.string().trim().min(1).max(191).optional(),
   assignedUserId: z.string().trim().min(1).max(191).optional(),
-  group: z.string().trim().min(1).max(191).optional(),
-  creatorEmployee: z.string().trim().min(1).max(191).optional(),
-  assigneeEmployee: z.string().trim().min(1).max(191).optional(),
   fromDate: z.iso.date().optional(),
   toDate: z.iso.date().optional()
 });
@@ -256,8 +252,7 @@ export function registerEnquiryRoutes(
         body.body,
         body.parentId === null ? null : localId(body.parentId),
         current.scope.actorEmail,
-        body.bodyFormat,
-        false
+        body.bodyFormat
       );
       return localViewComment(saved);
     }
@@ -324,12 +319,6 @@ export function registerEnquiryRoutes(
         suppliers: []
       };
     }
-  });
-  registerContractRoute(app, {
-    method: "GET",
-    url: "/crm/enquiries/source",
-    schemas: { response: z.object({ provider: z.enum(["local", "frappe"]) }) },
-    handler: async ({ request }) => ({ provider: await (await service(request)).read.source() })
   });
   registerContractRoute(app, {
     method: "GET",
@@ -411,37 +400,6 @@ export function registerEnquiryRoutes(
     },
     handler: async ({ params, request }) =>
       (await service(request)).enquiry.readAlert(params.alertId)
-  });
-  registerContractRoute(app, {
-    method: "GET",
-    url: "/crm/enquiries/:id/sync-status",
-    schemas: {
-      params: viewIdSchema,
-      response: z.array(
-        z.object({
-          id: referenceSchema,
-          eventType: z.enum(["enquiry-upsert", "comment-add", "job-upsert", "estimate-upsert"]),
-          status: z.enum(["pending", "processing", "synced", "retry", "failed"]),
-          attempts: z.number().int().nonnegative(),
-          remoteName: nullableText,
-          lastError: nullableText,
-          createdAt: z.string(),
-          validation: z
-            .object({
-              status: z.enum(["valid", "invalid", "warning"]),
-              errors: z.array(z.string()),
-              checkedAt: z.string()
-            })
-            .nullable()
-        })
-      )
-    },
-    handler: async ({ params, request }) => {
-      const current = await service(request);
-      const id = localId(params.id);
-      await current.enquiry.get(id);
-      return new EnquirySyncRepository(current.scope.database).listForEnquiry(id);
-    }
   });
   registerContractRoute(app, {
     method: "GET",

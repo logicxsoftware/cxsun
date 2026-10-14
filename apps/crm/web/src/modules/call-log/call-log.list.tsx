@@ -1,7 +1,6 @@
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { WorkspaceTable } from "@cxsun/ui/workspace/table";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
-import { Button } from "@cxsun/ui/components/button";
 import type { CallLogRecord } from "./call-log.types";
 
 export const callLogColumns = [
@@ -11,11 +10,9 @@ export const callLogColumns = [
   { id: "from", label: "From" },
   { id: "to", label: "To" },
   { id: "status", label: "Status" },
-  { id: "syncStatus", label: "Frappe sync" },
   { id: "duration", label: "Duration" },
   { id: "receiver", label: "Call received by" },
   { id: "caller", label: "Caller" },
-  { id: "retry", label: "Action" }
 ] as const;
 
 type CallLogCell = { row: { original: CallLogRecord } };
@@ -23,13 +20,11 @@ type CallLogCell = { row: { original: CallLogRecord } };
 export function CallLogList({
   records,
   loading,
-  visibleColumns,
-  onRetry
+  visibleColumns
 }: {
   records: CallLogRecord[];
   loading: boolean;
   visibleColumns: Record<string, boolean>;
-  onRetry: (eventId: number) => void;
 }) {
   const columns: ColumnDef<CallLogRecord>[] = [
     { id: "name", accessorKey: "name", header: "ID" },
@@ -54,14 +49,6 @@ export function CallLogList({
       )
     },
     {
-      id: "syncStatus",
-      accessorKey: "syncStatus",
-      header: "FRAPPE SYNC",
-      cell: ({ row }: CallLogCell) => (
-        <span title={row.original.syncError ?? undefined}>{row.original.syncStatus}</span>
-      )
-    },
-    {
       id: "duration",
       accessorKey: "duration",
       header: "DURATION",
@@ -79,21 +66,6 @@ export function CallLogList({
       header: "CALLER",
       cell: ({ row }: CallLogCell) => row.original.caller || "—"
     },
-    {
-      id: "retry",
-      header: "ACTION",
-      cell: ({ row }: CallLogCell) =>
-        row.original.syncStatus === "failed" && row.original.syncEventId ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => onRetry(row.original.syncEventId!)}
-          >
-            Retry sync
-          </Button>
-        ) : null
-    }
   ].filter((column) => visibleColumns[column.id] !== false);
   return (
     <WorkspaceTable

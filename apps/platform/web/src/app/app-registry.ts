@@ -11,11 +11,14 @@ import {
   CreditCardIcon,
   FileTextIcon,
   Globe2Icon,
+  HashIcon,
   InboxIcon,
   LandmarkIcon,
   LayersIcon,
   MailIcon,
   MapPinnedIcon,
+  MegaphoneIcon,
+  MessageCircleIcon,
   MessagesSquareIcon,
   NotebookPenIcon,
   PackageIcon,
@@ -1093,6 +1096,30 @@ export function appMenuItemsFor(
         title: "Overview"
       },
       {
+        icon: ContactRoundIcon,
+        isActive: activePage === "frappe.contacts",
+        onSelect: () => onSelect("frappe.contacts"),
+        title: "Import contacts"
+      },
+      {
+        icon: ClipboardListIcon,
+        isActive: activePage === "frappe.enquiries",
+        onSelect: () => onSelect("frappe.enquiries"),
+        title: "Import enquiries"
+      },
+      {
+        icon: LogsIcon,
+        isActive: activePage === "frappe.activities",
+        onSelect: () => onSelect("frappe.activities"),
+        title: "Import activities"
+      },
+      {
+        icon: PhoneCallIcon,
+        isActive: activePage === "frappe.call-logs",
+        onSelect: () => onSelect("frappe.call-logs"),
+        title: "Import call logs"
+      },
+      {
         icon: RefreshCwIcon,
         isActive: activePage === "frappe.enquiry-sync",
         onSelect: () => onSelect("frappe.enquiry-sync"),
@@ -1311,7 +1338,31 @@ export function appMenuItemsFor(
         icon: MessagesSquareIcon,
         isActive: activePage === "chat.overview",
         onSelect: () => onSelect("chat.overview"),
-        title: "Channels"
+        title: "All"
+      },
+      {
+        icon: MessageCircleIcon,
+        isActive: activePage === "chat.direct",
+        onSelect: () => onSelect("chat.direct"),
+        title: "Direct Chat"
+      },
+      {
+        icon: UsersIcon,
+        isActive: activePage === "chat.groups",
+        onSelect: () => onSelect("chat.groups"),
+        title: "Group"
+      },
+      {
+        icon: HashIcon,
+        isActive: activePage === "chat.channels",
+        onSelect: () => onSelect("chat.channels"),
+        title: "Channel"
+      },
+      {
+        icon: MegaphoneIcon,
+        isActive: activePage === "chat.broadcast",
+        onSelect: () => onSelect("chat.broadcast"),
+        title: "Broadcast"
       }
     ];
   }

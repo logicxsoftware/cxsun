@@ -20,7 +20,9 @@ export {
 } from "./modules/enquiry-sync/index.js";
 export { processLocalEnquirySync } from "./modules/enquiry-sync/index.js";
 export { processLocalCallLogSync } from "./modules/call-log-sync/index.js";
-export { importFrappeCallLogs, frappeCallLogSyncModule } from "./modules/call-log-sync/index.js";
+export { importFrappeCallLogs, previewFrappeCallLogs, pullFrappeCallLog, frappeCallLogSyncModule } from "./modules/call-log-sync/index.js";
+export { frappeContactImportModule } from "./modules/contact-import/index.js";
+export { frappeActivityImportModule } from "./modules/activity-import/index.js";
 export type { CallLogImportProgress } from "./modules/call-log-sync/index.js";
 export type { ImportProgress } from "./modules/enquiry-sync/index.js";
 export { frappeUserSyncModule } from "./modules/user-sync/index.js";

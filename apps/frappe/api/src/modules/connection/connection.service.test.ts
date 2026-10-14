@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import type { Kysely } from "kysely";
-import { FrappeConnectionService } from "./connection.service.js";
+import { FrappeConnectionService, requestFrappe } from "./connection.service.js";
 import type { FrappeDatabase } from "./connection.types.js";
 
 const originalFetch = globalThis.fetch;
 const emptyDatabase = {
   selectFrom: () => ({
+    select: () => ({ where: () => ({ executeTakeFirst: async () => undefined }) }),
     selectAll: () => ({ where: () => ({ executeTakeFirst: async () => undefined }) })
   })
 } as unknown as Kysely<FrappeDatabase>;
@@ -82,43 +83,39 @@ test("a different verification URL requires new credentials", async () => {
   );
 });
 
-test("first outbound enquiry post uses the mapped employee code", async () => {
-  const database = {
-    selectFrom: () => ({
-      selectAll: () => ({ where: () => ({ executeTakeFirst: async () => null }) }),
-      select: () => ({ where: () => ({ executeTakeFirst: async () => null }) })
-    }),
-    insertInto: () => ({
-      values: () => ({ onDuplicateKeyUpdate: () => ({ execute: async () => undefined }) })
-    })
-  } as unknown as Kysely<FrappeDatabase>;
-  let posted: Record<string, unknown> = {};
-  globalThis.fetch = async (_input, init) => {
-    posted = JSON.parse(String(init?.body)) as Record<string, unknown>;
-    return Response.json({ data: { name: "ENQ-1" } });
+test("outbound enquiry posting remains disabled", async () => {
+  globalThis.fetch = async () => {
+    throw new Error("unexpected network request");
   };
   const service = new FrappeConnectionService(
-    database,
+    emptyDatabase,
     { baseUrl: "https://frappe.example", apiKey: "key", apiSecret: "secret", enabled: true },
-    async () =>
-      ({
-        title: "Test enquiry",
-        description: "Details",
-        capturedPhone: "",
-        enquiredAt: "2026-10-08T00:00:00.000Z",
-        dueDate: null,
-        priorityName: "Medium",
-        statusName: "Open",
-        createdBy: "local@example.com"
-      }) as never,
-    { actorEmail: "local@example.com", actorUserId: 1, canViewAll: false },
-    "",
-    async (email, baseUrl) => {
-      assert.equal(email, "local@example.com");
-      assert.equal(baseUrl, "https://frappe.example");
-      return "HR-EMP-00042";
-    }
+    async () => {
+      throw new Error("unexpected local read");
+    },
+    { actorEmail: "local@example.com", actorUserId: 1, canViewAll: false }
   );
-  await service.sync(1);
-  assert.equal(posted.user_employee, "HR-EMP-00042");
+  await assert.rejects(() => service.sync(1), /disabled/);
+});
+
+test("Frappe transport rejects writes but permits read-only list calls", async () => {
+  const calls: string[] = [];
+  globalThis.fetch = async (input) => {
+    calls.push(String(input));
+    return Response.json({ message: [] });
+  };
+  const settings = {
+    baseUrl: "https://frappe.example",
+    apiKey: "key",
+    apiSecret: "secret",
+    enabled: true
+  };
+  await assert.rejects(
+    () => requestFrappe("/api/resource/Enquiry", "POST", settings, {}),
+    /disabled/
+  );
+  await requestFrappe("/api/v2/method/frappe.client.get_list", "POST", settings, {
+    doctype: "Enquiry"
+  });
+  assert.equal(calls.length, 1);
 });

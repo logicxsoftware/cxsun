@@ -64,22 +64,21 @@ export class EnquiryService {
     return this.withContact(record);
   }
 
-  async create(input: EnquiryInput, actor: string, imported = false) {
-    if (!imported && input.capturedPhone?.trim() && !/^\d{10}$/.test(input.capturedPhone.trim())) {
+  async create(input: EnquiryInput, actor: string) {
+    if (input.capturedPhone?.trim() && !/^\d{10}$/.test(input.capturedPhone.trim())) {
       throw AppError.validation("Enter a 10-digit mobile number.");
     }
     const prepared = await this.prepare(input, null);
     const record = await this.repository.create(
       prepared,
       actor,
-      (transaction) => this.resolveContact(prepared, transaction),
-      !imported && prepared.source !== "mobile"
+      (transaction) => this.resolveContact(prepared, transaction)
     );
     if (!record) throw AppError.notFound("Enquiry could not be created.");
     return this.withContact(record);
   }
 
-  async update(id: number, input: EnquiryInput, actor: string, imported = false) {
+  async update(id: number, input: EnquiryInput, actor: string) {
     const current = await this.get(id);
     const prepared = await this.prepare(input, current);
     const record = await this.repository.update(
@@ -88,8 +87,7 @@ export class EnquiryService {
       actor,
       "Enquiry updated",
       current.statusId,
-      (transaction) => this.resolveContact(prepared, transaction),
-      !imported
+      (transaction) => this.resolveContact(prepared, transaction)
     );
     if (!record) throw AppError.notFound("Enquiry was not found.");
     return this.withContact(record);
@@ -172,8 +170,7 @@ export class EnquiryService {
     body: string,
     parentId: number | null,
     actor: string,
-    bodyFormat: "plain" | "html" = "plain",
-    queueOutbound = true
+    bodyFormat: "plain" | "html" = "plain"
   ) {
     await this.get(id);
     const text = bodyFormat === "html" ? sanitizeCommentHtml(body) : body.trim();
@@ -186,7 +183,7 @@ export class EnquiryService {
         throw AppError.validation("Select a comment from this enquiry to reply to.");
       }
     }
-    return this.repository.addComment(id, parentId, text, bodyFormat, actor, queueOutbound);
+    return this.repository.addComment(id, parentId, text, bodyFormat, actor);
   }
 
   private async prepare(input: EnquiryInput, current: EnquiryRecord | null): Promise<EnquiryInput> {

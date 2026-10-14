@@ -1,7 +1,7 @@
 # CXSUN HRMS Plan
 
 **App key:** `hrms`  
-**Current state:** Employee management, manual attendance, and an attendance-linked overview are implemented.
+**Current state:** Employee management, manual attendance, an attendance-linked overview, and standalone Department and Designation API/UI leaves are implemented. Both masters await Platform composition and employee-reference migration.
 
 ## Purpose and scope
 
@@ -18,12 +18,16 @@ Payroll, recruitment, expenses, performance, training, biometric collection, and
 
 ## Existing behavior
 
-| Area | Implemented behavior | Known gap |
-| --- | --- | --- |
-| Employees | Tenant-scoped employee code and profile, optional unique existing-user link, list/search, separate create/edit pages, details, soft-delete lifecycle, and activity history. | Department and designation are free text. There is no manager relationship or employment end date. |
-| Attendance | Manual present, absent, leave, and holiday records; one employee/date key; active-employee selection; date/status filters; soft delete/restore; activity history. | Future dates are accepted. Shifts, work schedules, half days, and device punches are not supported. |
-| Overview | Read-only active employee and daily attendance totals, seven-day chart, recent records, and links to employee/attendance pages. | “Not marked” currently means active employees without a record, even when they may not be scheduled to work. |
-| Platform integration | Tenant-scoped migrations, permissions, API composition, and HRMS navigation are in place for current modules. | Future modules still need their own routes, permissions, migrations, seeds, and UI composition. |
+| Area                 | Implemented behavior                                                                                                                                                                         | Known gap                                                                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Employees            | Tenant-scoped employee code and profile, optional unique existing-user link, list/search, separate create/edit pages, details, soft-delete lifecycle, and activity history.                  | Department and designation remain free text pending safe employee migration and lookup integration. There is no manager relationship or employment end date. |
+| Departments          | Standalone tenant-scoped API and UI leaf with permissions, unique names, validation, lifecycle, and activity history.                                                                        | Platform route, navigation, migration and permission-seed composition are pending.                                                                           |
+| Designations         | Standalone tenant-scoped API and UI leaf with permissions, unique names, validation, lifecycle, and activity history.                                                                        | Platform route, navigation, migration and permission-seed composition are pending.                                                                           |
+| Attendance           | Manual present, absent, leave, and holiday records; one employee/date key; active-employee selection; date/status filters; soft delete/restore; activity history. Future dates are rejected. | Shifts, work schedules, half days, and device punches are not supported.                                                                                     |
+| Overview             | Read-only active employee and recorded daily attendance totals, seven-day chart, recent records, and links to employee/attendance pages.                                                     | “Not marked” means active employees without a record; it does not account for work schedules.                                                                |
+| Platform integration | Tenant-scoped migrations, permissions, API composition, and HRMS navigation are in place for current modules.                                                                                | Future modules still need their own routes, permissions, migrations, seeds, and UI composition.                                                              |
+
+The local data review on 2026-10-14 found 11 development tenant databases with the HRMS employee table. All 11 contained zero employee rows, so there were no legacy labels to compare. Production tenant data was not queried and still needs a pre-migration inventory.
 
 The README and this plan must describe shipped behavior accurately. Update documentation when a phase changes that behavior.
 
@@ -34,13 +38,15 @@ The README and this plan must describe shipped behavior accurately. Update docum
 - Keep employee code unique within a tenant. Keep the existing tenant-user mapping optional and unique.
 - Employee records must not create user accounts, credentials, roles, or permissions.
 - Add separate Department and Designation modules. Migrate existing text values without dropping or silently merging data.
+- Each master has a required tenant-unique name up to 120 characters, optional description up to 500 characters, and active/inactive status. Names stay reserved while deleted. Use view, create, update, and delete permissions. Restore as inactive; allow permanent deletion only after soft deletion and block it once employee references exist.
+- Before converting legacy text, inventory each tenant. Keep blanks unassigned and preserve the source text until verification. Trim values for comparison and report case-insensitive duplicates for review. Do not merge duplicate values without an approved mapping.
 - Add an optional manager relationship using employee public IDs. Reject missing managers, self-reporting, and reporting cycles.
 - Define employment status and end-date transitions before adding offboarding behavior. Preserve employee history and user accounts.
 - Device badge mappings and future shift assignments must end when employment ends; historical records remain available.
 
 ### Attendance and overview
 
-- Keep manual attendance usable without a device. Enforce tenant-local work dates, status-specific fields, and valid check-in/out order.
+- Keep manual attendance usable without a device. Use the tenant database calendar date for today's boundary; database connections currently use UTC because tenants have no configurable time zone. Enforce status-specific fields and valid check-in/out order.
 - Reject future attendance dates. Retain one attendance result per employee and work date, including deleted records, unless restore or replacement is handled explicitly.
 - Record who changed attendance, when, why, and from which source. A device replay must not silently overwrite a reviewed manual result.
 - Add a half-day only after its effect on hours and reporting is defined.
@@ -66,7 +72,7 @@ The README and this plan must describe shipped behavior accurately. Update docum
 ## Delivery phases
 
 1. **Attendance correctness:** close validation and reporting gaps in the existing manual workflow.
-2. **Employee foundation:** add department/designation references, manager relationships, and employment lifecycle rules.
+2. **Employee foundation:** profile existing text values, compose Department and Designation, migrate references, then add manager relationships and employment lifecycle rules.
 3. **Scheduled attendance:** add shifts and holidays only to support agreed scheduling and missing-attendance calculations.
 4. **ZKTeco integration:** implement one device model after the customer and protocol gate is satisfied.
 5. **Leave:** add request and approval workflows after manager relationships and access rules are ready.

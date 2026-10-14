@@ -10,6 +10,13 @@ export const attendanceSchema = z
     notes: z.string().trim().max(2000)
   })
   .superRefine((record, context) => {
+    if (record.workDate > utcDate()) {
+      context.addIssue({
+        code: "custom",
+        message: "Attendance date cannot be in the future.",
+        path: ["workDate"]
+      });
+    }
     if (record.status === "present" && Boolean(record.checkIn) !== Boolean(record.checkOut)) {
       context.addIssue({
         code: "custom",
@@ -32,3 +39,7 @@ export const attendanceSchema = z
       });
     }
   });
+
+function utcDate() {
+  return new Date().toISOString().slice(0, 10);
+}

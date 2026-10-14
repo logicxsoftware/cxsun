@@ -11,22 +11,23 @@ Track [PLAN.md](./PLAN.md). Check a task only after implementation and verificat
 - [x] 0.5 Implement attendance search, create/edit, soft delete/restore, activity history, and overview totals.
 - [x] 0.6 Connect the read-only overview to employee and attendance data.
 
-## Phase 1 - Attendance correctness (recommended next)
+## Phase 1 - Attendance correctness
 
-- [ ] 1.1 Confirm tenant-local date behavior and the rule for attendance on the current date.
-- [ ] 1.2 Reject future work dates in the backend and form; cover boundary dates with focused tests.
-- [ ] 1.3 Verify create, edit, delete, and restore cannot produce duplicate employee/date records.
-- [ ] 1.4 Define and enforce allowed attendance statuses and check-in/out combinations.
-- [ ] 1.5 Label current overview figures as recorded attendance; avoid schedule-based claims until shifts exist.
-- [ ] 1.6 Verify API permissions, tenant isolation, migration reruns, and composed browser flows.
-- [ ] 1.7 Update `apps/hrms/README.md` to match current employee, attendance, and overview behavior.
+- [x] 1.1 Set the current date rule to the tenant database calendar date; connections currently use UTC.
+- [x] 1.2 Reject future work dates in the backend and form; cover boundary dates with focused checks.
+- [x] 1.3 Verify create, edit, delete, and restore cannot produce duplicate employee/date records.
+- [x] 1.4 Define and enforce allowed attendance statuses and check-in/out combinations.
+- [x] 1.5 Label current overview figures as recorded attendance; avoid schedule-based claims until shifts exist.
+- [x] 1.6 Verify HRMS API permissions, tenant isolation, migration reruns, and permission seeding.
+- [ ] 1.7 Verify HRMS employee, attendance, and overview flows in the Platform-composed browser app.
+- [x] 1.8 Update `apps/hrms/README.md` to match current employee, attendance, and overview behavior.
 
 ## Phase 2 - Employee and organization foundation
 
-- [ ] 2.1 Review existing tenant department/designation text values and document migration handling for blanks and duplicates.
-- [ ] 2.2 Define Department and Designation fields, permissions, lifecycle, and safe-delete rules.
-- [ ] 2.3 Implement separate Department backend and frontend modules.
-- [ ] 2.4 Implement separate Designation backend and frontend modules.
+- [x] 2.1 Review existing tenant department/designation text values and document migration handling for blanks and duplicates.
+- [x] 2.2 Define Department and Designation fields, permissions, lifecycle, and safe-delete rules.
+- [x] 2.3 Implement separate Department backend and frontend modules.
+- [x] 2.4 Implement separate Designation backend and frontend modules.
 - [ ] 2.5 Migrate employee text values to master references without losing existing values.
 - [ ] 2.6 Add employee form lookups and validate selected master records in the backend.
 - [ ] 2.7 Define manager relationship and employment status/end-date transitions.

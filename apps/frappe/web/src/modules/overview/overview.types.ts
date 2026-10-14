@@ -2,6 +2,7 @@ export type FrappeConnection = {
   configured: boolean;
   enabled: boolean;
   baseUrl: string | null;
+  importCompletedAt: string | null;
 };
 
 export type FrappeRecord = {

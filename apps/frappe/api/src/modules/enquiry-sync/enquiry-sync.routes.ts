@@ -2,7 +2,10 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { EnquirySyncRepository } from "@cxsun/crm-api/enquiry-sync";
 import { registerContractRoute } from "@cxsun/framework/http";
+import { AppError } from "@cxsun/framework/errors";
 import type {} from "@cxsun/framework/api";
+import type { FrappeSettings } from "../connection/index.js";
+import { FrappeEnquirySyncService } from "./enquiry-sync.service.js";
 import type { EnquirySyncContext } from "./enquiry-sync.types.js";
 
 const queueEventSchema = z.object({
@@ -17,10 +20,25 @@ const queueEventSchema = z.object({
   lastError: z.string().nullable(),
   createdAt: z.string()
 });
+const importProgressSchema = z.object({
+  scanned: z.number().int().nonnegative(),
+  created: z.number().int().nonnegative(),
+  skipped: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
+  failures: z.array(z.object({ name: z.string(), message: z.string() }))
+});
+const importJobSchema = z.object({
+  jobId: z.number().int().positive(),
+  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+  progress: importProgressSchema.nullable(),
+  errorMessage: z.string().nullable()
+});
 
 export function registerFrappeEnquirySyncRoutes(
   app: FastifyInstance,
-  context: (request: FastifyRequest) => Promise<Pick<EnquirySyncContext, "database">>,
+  context: (request: FastifyRequest) => Promise<EnquirySyncContext>,
+  settings: FrappeSettings,
+  encryptionSecret: string,
   backfill: {
     start: (request: FastifyRequest) => Promise<{ jobId: number; status: string }>;
     status: (
@@ -32,8 +50,74 @@ export function registerFrappeEnquirySyncRoutes(
       progress: import("./enquiry-sync.types.js").ImportProgress | null;
       errorMessage: string | null;
     }>;
+    latest: (request: FastifyRequest) => Promise<z.infer<typeof importJobSchema> | null>;
   }
 ) {
+  const service = async (request: FastifyRequest) =>
+    new FrappeEnquirySyncService(await context(request), settings, encryptionSecret);
+
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/frappe/enquiries/remote",
+    schemas: {
+      querystring: z.object({ page: z.coerce.number().int().positive().max(100_000).default(1) }),
+      response: z.object({
+        hasMore: z.boolean(),
+        items: z.array(
+          z.object({
+            name: z.string(),
+            title: z.string(),
+            mobile: z.string().nullable(),
+            date: z.string().nullable(),
+            status: z.string().nullable(),
+            priority: z.string().nullable(),
+            modifiedAt: z.string().nullable(),
+            localEnquiryId: z.number().int().positive().nullable()
+          })
+        ),
+        page: z.number().int().positive(),
+        pageSize: z.number().int().positive()
+      })
+    },
+    handler: async ({ query, request }) => (await service(request)).preview(query.page)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/frappe/enquiries/pull",
+    schemas: {
+      body: z.object({ remoteName: z.string().trim().min(1).max(255) }).strict(),
+      response: z.object({
+        remoteName: z.string(),
+        enquiryId: z.number().int().positive(),
+        status: z.enum(["created", "updated", "linked"])
+      })
+    },
+    handler: async ({ body, request }) => (await service(request)).pull(body.remoteName)
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/frappe/enquiries/import",
+    schemas: { response: importJobSchema.nullable() },
+    handler: async ({ request }) => {
+      await context(request);
+      return backfill.latest(request);
+    }
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/frappe/enquiries/import",
+    schemas: {
+      body: z.object({}).strict(),
+      response: z.object({
+        jobId: z.number().int().positive(),
+        status: z.string()
+      })
+    },
+    handler: async ({ request }) => {
+      await context(request);
+      return backfill.start(request);
+    }
+  });
   registerContractRoute(app, {
     method: "GET",
     url: "/frappe/enquiries/sync-queue",
@@ -67,8 +151,11 @@ export function registerFrappeEnquirySyncRoutes(
       body: z.object({}).strict(),
       response: z.object({ id: z.number().int().positive(), status: z.literal("pending") })
     },
-    handler: async ({ params, request }) =>
-      new EnquirySyncRepository((await context(request)).database).retry(params.eventId)
+    handler: async ({ params, request }) => {
+      await context(request);
+      void params;
+      throw AppError.conflict("Sending CRM enquiries to Frappe is disabled.");
+    }
   });
   registerContractRoute(app, {
     method: "POST",
@@ -90,15 +177,7 @@ export function registerFrappeEnquirySyncRoutes(
       response: z.object({
         jobId: z.number().int().positive(),
         status: z.string(),
-        progress: z
-          .object({
-            scanned: z.number().int(),
-            created: z.number().int(),
-            skipped: z.number().int(),
-            failed: z.number().int(),
-            failures: z.array(z.object({ name: z.string(), message: z.string() }))
-          })
-          .nullable(),
+        progress: importProgressSchema.nullable(),
         errorMessage: z.string().nullable()
       })
     },

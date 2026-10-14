@@ -180,27 +180,31 @@ export class FrappeEnquirySyncService {
     linked: Awaited<ReturnType<FrappeConnectionRepository["byRemoteName"]>>,
     baseUrl: string
   ): Promise<EnquiryInput> {
-    const phone = remote.mobile?.trim() || null;
+    const phone = normalizeMobile(remote.mobile, remote.name);
     const customer = remote.customer?.trim() || null;
     if (!phone && !customer)
       throw AppError.validation("The Frappe enquiry needs a mobile or customer before import.");
     const date = remote.date?.trim();
     if (!date || !/^\d{4}-\d{2}-\d{2}$/u.test(date) || Number.isNaN(Date.parse(date)))
       throw AppError.validation("The Frappe enquiry has an invalid date.");
+    const statusName = localStatusName(remote.status);
+    const priorityName = localPriorityName(remote.priority);
     const status = await this.context.database
       .selectFrom("crm_enquiry_statuses")
       .select(["id", "code"])
-      .where("name", "=", remote.status?.trim() || "New")
+      .where("name", "=", statusName)
       .where("status", "=", "active")
       .executeTakeFirst();
     const priority = await this.context.database
       .selectFrom("crm_enquiry_priorities")
       .select("id")
-      .where("name", "=", remote.priority?.trim() || "Normal")
+      .where("name", "=", priorityName)
       .where("status", "=", "active")
       .executeTakeFirst();
-    if (!status || !priority)
-      throw AppError.validation("Match the Frappe status and priority in CRM before import.");
+    if (!status)
+      throw AppError.validation(`CRM has no active enquiry status matching ${statusName}.`);
+    if (!priority)
+      throw AppError.validation(`CRM has no active enquiry priority matching ${priorityName}.`);
     const dueDate = remote.due_date?.trim() || null;
     if (dueDate && (!/^\d{4}-\d{2}-\d{2}$/u.test(dueDate) || Number.isNaN(Date.parse(dueDate))))
       throw AppError.validation("The Frappe enquiry has an invalid due date.");
@@ -245,4 +249,27 @@ function utcMillis(value: string | Date) {
       "The stored enquiry sync time is invalid. Review this link before pulling."
     );
   return timestamp;
+}
+
+function localStatusName(value: string | null | undefined) {
+  const name = value?.trim() || "New";
+  const aliases: Record<string, string> = { pending: "Open", hold: "Long Hold" };
+  return aliases[name.toLowerCase()] ?? name;
+}
+
+function localPriorityName(value: string | null | undefined) {
+  const name = value?.trim() || "Normal";
+  return name.toLowerCase() === "medium" ? "Normal" : name;
+}
+
+function normalizeMobile(value: string | null | undefined, remoteName: string) {
+  const raw = value?.trim();
+  if (!raw) return null;
+  const digits = raw.replace(/[^\d]/gu, "");
+  if (/^\d{10}$/u.test(digits)) return digits;
+  if (/^91\d{10}$/u.test(digits)) return digits.slice(2);
+  if (/^0\d{10}$/u.test(digits)) return digits.slice(1);
+  throw AppError.validation(
+    `Frappe enquiry ${remoteName} needs a 10-digit mobile number for local CRM.`
+  );
 }

@@ -86,3 +86,29 @@ test("a verified tenant connection supplies Ecommerce credentials", async () => 
     credentials.mock.restore();
   }
 });
+
+test("completed import disables environment fallback credentials", async () => {
+  const importState = mock.method(
+    FrappeConnectionRepository.prototype,
+    "importState",
+    async () => ({
+      completedAt: "2026-10-14T10:00:00.000Z",
+      completedBy: "admin@example.com"
+    })
+  );
+  try {
+    const database = {
+      introspection: {
+        getTables: async () => [
+          { name: "frappe_import_state" },
+          { name: "frappe_connection_settings" }
+        ]
+      }
+    } as unknown as Kysely<FrappeDatabase>;
+    const access = new FrappeConnectionAccess(database, "secret", defaults);
+    assert.equal((await access.state()).usable, false);
+    assert.equal(await access.credentials(), null);
+  } finally {
+    importState.mock.restore();
+  }
+});

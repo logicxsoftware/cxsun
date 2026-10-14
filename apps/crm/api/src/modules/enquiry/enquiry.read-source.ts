@@ -168,34 +168,16 @@ export type LiveScopeSummary = {
   oldestActiveDays?: number | null;
 };
 
-type ReadQuery = Omit<EnquiryListOptions, "actorEmail" | "actorUserId" | "canViewAll"> & {
-  group?: string | undefined;
-  creatorEmployee?: string | undefined;
-  assigneeEmployee?: string | undefined;
-  fromDate?: string | undefined;
-  toDate?: string | undefined;
-};
+type ReadQuery = Omit<EnquiryListOptions, "actorEmail" | "actorUserId" | "canViewAll">;
 
 export class EnquiryReadService {
   constructor(private readonly local: EnquiryService) {}
-
-  source() {
-    return Promise.resolve("local" as const);
-  }
 
   async list(query: ReadQuery) {
     for (const value of [query.listInId, query.assignedUserId]) {
       if (value && value !== "none" && !/^[1-9]\d*$/.test(value))
         throw AppError.validation("A Local enquiry filter has an invalid identifier.");
     }
-    if (
-      query.group ||
-      query.creatorEmployee ||
-      query.assigneeEmployee ||
-      query.fromDate ||
-      query.toDate
-    )
-      throw AppError.validation("Frappe report filters cannot filter Local enquiries.");
     const page = await this.local.listPage(query);
     return { source: "local" as const, ...page, items: page.items.map(localViewRecord) };
   }

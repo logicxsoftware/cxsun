@@ -29,24 +29,6 @@ export type EnquiryImportJob = {
   errorMessage: string | null;
 };
 
-export type LocalEnquiry = {
-  id: number;
-  enquiryNo: number;
-  title: string;
-  status: string;
-  updatedAt: string;
-  remoteName: string | null;
-  syncedAt: string | null;
-};
-
-export type LocalEnquiryPage = {
-  counts: { total: number; synced: number; pending: number };
-  items: LocalEnquiry[];
-  page: number;
-  pageSize: number;
-  total: number;
-};
-
 export type FrappeConnectionState = {
   configured: boolean;
   enabled: boolean;

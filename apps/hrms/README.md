@@ -6,21 +6,22 @@ HRMS means **Human Resource Management System**. Its purpose is people and workf
 
 - Separate `@cxsun/hrms-api` and `@cxsun/hrms-web` workspaces, versioned with the repository.
 - Tenant launcher entry, app switching and default-landing selection.
-- An app-owned desk with **Overview**, **Employees** and **Getting Started** side-menu entries.
-- Authenticated, permission-checked overview showing the current tenant, signed-in user and last checked time. Loading, retry and access-error states use shared UI components.
+- An app-owned desk with **Overview**, **Employees** and **Attendance** side-menu entries.
+- Authenticated, permission-checked overview with employee and attendance summaries, recent attendance, and links to current HRMS workflows.
 
 | Contract                     | Value                                  |
 | ---------------------------- | -------------------------------------- |
 | App / entitlement key        | `hrms`                                 |
 | Overview module / permission | `hrms.overview` / `hrms.overview.view` |
 | Desk URL                     | `/app/hrms/overview`                   |
-| Getting Started URL          | `/app/hrms/guide`                      |
 | Employees URL                | `/app/hrms/employees`                  |
+| Attendance URL               | `/app/hrms/attendance`                 |
 | New employee URL             | `/app/hrms/employees/new`              |
 | Edit employee URL            | `/app/hrms/employees/{uuid}/edit`      |
 | Browser employee API         | `/api/app/hrms/employees`              |
 | Browser overview API         | `GET /api/app/hrms/overview`           |
 | Module-owned API route       | `GET /hrms/overview`                   |
+| Attendance API route         | `/hrms/attendance`                     |
 
 The desk uses Platform's existing `TenantMainLayout`, including top menu, sidebar, app header, workspace and status bar. The frontend is composed into Platform Web on its configured port; this foundation does not start an additional web server. Backend routes are composed through the app's public export in Platform API. No app has a separate login or stores browser tokens.
 
@@ -37,19 +38,18 @@ The API resolves the active tenant and its isolated database from the authentica
 
 ## Ownership and database impact
 
-Core remains owner of shared contacts and organisation. HRMS will own employment, attendance, leave and payroll records. Reuse public Core identity lookups; do not store staff salaries in Core or Platform auth tables.
+Core remains owner of shared contacts and organization. HRMS owns employment and attendance records. Reuse public Core identity lookups; do not store staff data in Platform auth tables.
 
 The employee module owns `hrms_employees` and `hrms_employee_activity` in each tenant database.
-Migration scope `hrms.employee`, batch 1, step 1 creates these tables after tenant identity and Core prerequisites.
-Existing tenants need this migration before they open Employees. The migration does not alter existing Core or user tables.
-Permission seeds run only for enabled HRMS tenants. They preserve disabled permissions and role grants.
+The Department leaf owns `hrms_departments` and `hrms_department_activity`, its API permissions, and repeatable permission seeding. The Designation leaf owns `hrms_designations` and `hrms_designation_activity`, its API permissions, and repeatable permission seeding. Both tenant migrations and seeds exist in HRMS, but Platform does not yet register or invoke them.
+Existing tenants need the employee and attendance migrations before they open those modules. These migrations do not alter existing Core or user tables. Permission seeds run only for enabled HRMS tenants and preserve disabled permissions and role grants.
 
 The overview remains read-only and has no business table or CRUD lifecycle.
 
 ## Employees
 
 Employees include a required employee code and name, plus email, phone, department, designation, joining date, notes and status.
-Department and designation are text fields until their master modules exist.
+Department and designation remain text fields until Platform composes both masters and a reviewed tenant data migration converts the values.
 Employee codes use uppercase letters, numbers, hyphens and underscores, with a maximum of 40 characters.
 Codes are unique within each tenant database.
 
@@ -68,18 +68,24 @@ Suspend and restore change employee status. They do not change user account acce
 Delete moves an employee to Deleted employees. Restore from that list returns the employee as inactive.
 Deleted employees retain their code and user mapping until permanent deletion or a later edit after restoration.
 Force delete requires prior deletion and retains activity history.
-No attendance, payroll or other employee-dependent records exist in this module yet.
-Future dependent modules must add public deletion blockers before they register employee relationships.
 
 The module uses `hrms.employee.view`, `hrms.employee.create`, `hrms.employee.update` and `hrms.employee.delete`.
 Each API operation checks the matching permission and live HRMS activation.
 Employee APIs use eight-character public UUIDs. Integer employee IDs remain database-internal.
 
-## Planned modules
+## Attendance and overview
 
-Department/position masters, attendance and shifts, leave requests and approvals, payroll and statutory exports, recruitment and onboarding.
+Attendance records one daily status per employee and work date. Supported statuses are present, absent, leave, and holiday. Present records may include check-in and check-out times; both must be set together, and check-out must be later. Other statuses do not accept times.
 
-These workflows remain planned. Employee business records are entered by users and are not seeded.
+HRMS uses the tenant database calendar date for today's attendance boundary. Database connections use UTC. The API rejects future attendance dates, and the form uses the same UTC date rule. The tenant does not currently have a configurable time zone.
+
+Attendance supports date and status filters, employee search, edit, soft delete/restore, and activity history. Only active employees can receive attendance records. The overview reports active employees, recorded status totals, a seven-day recorded-attendance chart, and recent records. Its “not marked” count compares active employees with today's attendance records; it does not account for shifts or non-working days.
+
+## Organization masters and planned work
+
+Department and Designation API and frontend leaves are implemented, including search, create/edit, detail, status, delete/restore, and activity history. Neither is available in Platform navigation or runtime because Platform composition is pending. Employee lookups and migration of existing text values also remain planned. A read-only review on 2026-10-14 found 11 local development tenant databases with the HRMS employee table, all empty. Production tenants still need a pre-migration inventory. Keep blank values unassigned. Preserve the original text until conversion is verified. Trim values when profiling, report case-insensitive collisions for review, and do not merge distinct values automatically.
+
+Other planned work includes manager relationships, employment end dates, shifts and holidays, one confirmed ZKTeco integration, and leave requests and approvals. ZKTeco integration requires a confirmed device model and protocol. Payroll, recruitment, and other larger HR workflows are out of scope. Employee business records are entered by users and are not seeded.
 
 ## Development and verification
 

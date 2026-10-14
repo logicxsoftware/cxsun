@@ -28,7 +28,7 @@ export class CallLogService {
     return this.repository.users(search);
   }
 
-  create(input: CallLogInput, queueOutbound = true) {
+  create(input: CallLogInput) {
     if (
       !callTypes.includes(input.type) ||
       !callStatuses.includes(input.status as (typeof callStatuses)[number])
@@ -36,7 +36,7 @@ export class CallLogService {
       throw AppError.validation("Select a valid call type and status.");
     if (!input.from.trim() || !input.to.trim())
       throw AppError.validation("Enter the caller and recipient.");
-    return this.repository.create(input, this.actorEmail, queueOutbound);
+    return this.repository.create(input, this.actorEmail);
   }
 
   listComments(id: number) {

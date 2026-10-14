@@ -17,21 +17,31 @@ const defaults = {
   enabled: true
 };
 
-function database(link?: {
-  enquiryId: number;
-  syncedAt: string;
-  updatedAt: string;
-  source: string;
-  contactId: number | null;
-  assignedUserId: number | null;
-  listInId: number | null;
-}) {
+function database(
+  link?: {
+    enquiryId: number;
+    syncedAt: string;
+    updatedAt: string;
+    source: string;
+    contactId: number | null;
+    assignedUserId: number | null;
+    listInId: number | null;
+  },
+  lookups: string[] = []
+) {
   let saved = false;
   const query = (table: string) => {
     const builder = {
       selectAll: () => builder,
       select: () => builder,
-      where: () => builder,
+      where: (...args: unknown[]) => {
+        if (
+          (table === "crm_enquiry_statuses" || table === "crm_enquiry_priorities") &&
+          args[0] === "name"
+        )
+          lookups.push(String(args[2]));
+        return builder;
+      },
       innerJoin: () => builder,
       execute: async () => [],
       executeTakeFirst: async () => {
@@ -264,6 +274,42 @@ test("pull creates a local enquiry and records the remote identity", async () =>
   assert.equal(created[0]?.assignedUserId, 7);
   assert.equal(created[0]?.listInId, 9);
   assert.equal(scope.wasSaved(), true);
+});
+
+test("pull translates Frappe status, priority, and Indian mobile formatting", async () => {
+  const lookups: string[] = [];
+  const scope = database(undefined, lookups);
+  const created: EnquiryInput[] = [];
+  globalThis.fetch = async () =>
+    Response.json({
+      data: {
+        name: "ENQ28",
+        title: "Service enquiry",
+        mobile: "+91 99948 85548",
+        date: "2026-10-06",
+        status: "Pending",
+        priority: "Medium"
+      }
+    });
+  const service = new FrappeEnquirySyncService(
+    {
+      database: scope.value,
+      createEnquiry: async (input) => {
+        created.push(input);
+        return { id: 43 } as EnquiryRecord;
+      },
+      updateEnquiry: async () => {
+        throw new Error("Unexpected update");
+      },
+      localUserForEmployee: async () => null,
+      listInForName: async () => null
+    },
+    defaults,
+    "secret"
+  );
+  await service.pull("ENQ28");
+  assert.equal(created[0]?.capturedPhone, "9994885548");
+  assert.deepEqual(lookups, ["Open", "Normal"]);
 });
 
 test("pull rejects a linked enquiry with newer local edits", async () => {

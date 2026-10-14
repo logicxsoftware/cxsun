@@ -9,9 +9,6 @@ export type CallLogRecord = {
   caller: string;
   createdAt: string;
   startedAt: string;
-  syncStatus: string;
-  syncError: string | null;
-  syncEventId: number | null;
 };
 
 export type CallLogPage = {

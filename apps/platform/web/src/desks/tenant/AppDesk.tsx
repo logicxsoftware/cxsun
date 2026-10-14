@@ -149,6 +149,26 @@ const FrappeEnquirySyncWorkspace = lazyWorkspace(() =>
     (module) => module.FrappeEnquirySyncWorkspace
   )
 );
+const FrappeEnquiryImportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/enquiry-sync").then(
+    (module) => module.FrappeEnquiryImportWorkspace
+  )
+);
+const FrappeContactImportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/contact-import").then(
+    (module) => module.FrappeContactImportWorkspace
+  )
+);
+const FrappeActivityImportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/activity-import").then(
+    (module) => module.FrappeActivityImportWorkspace
+  )
+);
+const FrappeCallLogImportWorkspace = lazyWorkspace(() =>
+  import("@cxsun/frappe-web/modules/call-log-import").then(
+    (module) => module.FrappeCallLogImportWorkspace
+  )
+);
 const FrappeConnectionWorkspace = lazyWorkspace(() =>
   import("@cxsun/frappe-web/modules/connection").then((module) => module.FrappeConnectionWorkspace)
 );
@@ -479,6 +499,10 @@ const TenantRolePermissionWorkspace = lazy(() =>
 type AppPage =
   | "zetro.chat"
   | "frappe.overview"
+  | "frappe.contacts"
+  | "frappe.enquiries"
+  | "frappe.activities"
+  | "frappe.call-logs"
   | "frappe.enquiry-sync"
   | "frappe.connection"
   | "frappe.users"
@@ -572,6 +596,10 @@ type AppPage =
   | "mail.trash"
   | "notes.overview"
   | "chat.overview"
+  | "chat.direct"
+  | "chat.groups"
+  | "chat.channels"
+  | "chat.broadcast"
   | "task-manager.overview"
   | "task-manager.todos"
   | "core.common.location.countries"
@@ -1070,7 +1098,8 @@ export function AppDesk() {
 
   return (
     <TenantMainLayout
-      fullBleed={safePage === "chat.overview"}
+      fullBleed={safePage.startsWith("chat.")}
+      hideAppHeader={safePage.startsWith("chat.")}
       headerActionsAlignment={
         safePage === "hrms.employees"
           ? location.pathname === "/app/hrms/employees"
@@ -1202,10 +1231,10 @@ export function AppDesk() {
           </Button>
         ) : null
       }
-      hideSidebarBrand={activeApp === "crm" || activeApp === "hrms"}
+      hideSidebarBrand={activeApp === "crm" || activeApp === "hrms" || activeApp === "chat"}
       homeHref={appRootUrl(activeApp)}
       menuItems={menuItems}
-      omitWorkspaceBreadcrumb={activeApp === "crm" || activeApp === "hrms"}
+      omitWorkspaceBreadcrumb={activeApp === "crm" || activeApp === "hrms" || activeApp === "chat"}
       onLogout={handleLogout}
       onOpenSettings={() => requestListNavigation("application.settings")}
       settingsActive={safePage === "application.settings"}
@@ -1225,7 +1254,7 @@ export function AppDesk() {
     >
       <main
         className={
-          safePage === "chat.overview"
+          safePage.startsWith("chat.")
             ? "flex flex-1 min-h-0 w-full flex-col overflow-hidden"
             : "mx-auto w-[calc(100%-2rem)] max-w-[92rem] space-y-5 py-4 lg:w-[calc(100%-3rem)] lg:py-5"
         }
@@ -1321,6 +1350,10 @@ export function AppDesk() {
             />
           ) : null}
           {safePage === "frappe.enquiry-sync" ? <FrappeEnquirySyncWorkspace /> : null}
+          {safePage === "frappe.contacts" ? <FrappeContactImportWorkspace /> : null}
+          {safePage === "frappe.enquiries" ? <FrappeEnquiryImportWorkspace /> : null}
+          {safePage === "frappe.activities" ? <FrappeActivityImportWorkspace /> : null}
+          {safePage === "frappe.call-logs" ? <FrappeCallLogImportWorkspace /> : null}
           {safePage === "frappe.connection" ? <FrappeConnectionWorkspace /> : null}
           {safePage === "frappe.users" ? <FrappeUserSyncWorkspace /> : null}
           {safePage === "frappe.user-mapping" ? <FrappeUserMappingWorkspace /> : null}
@@ -1492,8 +1525,11 @@ export function AppDesk() {
             <MailWorkspace mailbox={mailboxForPage(safePage)} />
           ) : null}
           {safePage === "notes.overview" ? <NotesWorkspace /> : null}
-          {safePage === "chat.overview" ? (
-            <ChatWorkspace currentUserEmail={signedInUser.email} />
+          {safePage.startsWith("chat.") ? (
+            <ChatWorkspace
+              currentUserEmail={signedInUser.email}
+              filterKind={chatFilterForPage(safePage)}
+            />
           ) : null}
           {safePage === "task-manager.overview" || safePage === "task-manager.todos" ? (
             <TaskManagerWorkspace desk="tenant" />
@@ -1682,6 +1718,10 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "himsx.guide" ||
     key === "zetro.chat" ||
     key === "frappe.overview" ||
+    key === "frappe.contacts" ||
+    key === "frappe.enquiries" ||
+    key === "frappe.activities" ||
+    key === "frappe.call-logs" ||
     key === "frappe.enquiry-sync" ||
     key === "frappe.connection" ||
     key === "frappe.users" ||
@@ -1754,6 +1794,10 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "mail.trash" ||
     key === "notes.overview" ||
     key === "chat.overview" ||
+    key === "chat.direct" ||
+    key === "chat.groups" ||
+    key === "chat.channels" ||
+    key === "chat.broadcast" ||
     key === "task-manager.overview" ||
     key === "task-manager.todos" ||
     key === "core.common.location.countries" ||
@@ -2263,6 +2307,10 @@ function titleForPage(page: AppPage) {
     "himsx.guide": "Getting Started",
     "q-cafe.overview": "Q Cafe",
     "frappe.overview": "Frappe",
+    "frappe.contacts": "Import contacts",
+    "frappe.enquiries": "Import enquiries",
+    "frappe.activities": "Import activities",
+    "frappe.call-logs": "Import call logs",
     "frappe.enquiry-sync": "Sync queue",
     "frappe.connection": "Frappe connection",
     "frappe.users": "Frappe users",
@@ -2339,7 +2387,11 @@ function titleForPage(page: AppPage) {
     "mail.failed": "Failed",
     "mail.trash": "Trash",
     "notes.overview": "Notes",
-    "chat.overview": "Chat",
+    "chat.overview": "All Chats",
+    "chat.direct": "Direct Chat",
+    "chat.groups": "Group",
+    "chat.channels": "Channel",
+    "chat.broadcast": "Broadcast",
     "task-manager.overview": "Task Manager",
     "task-manager.todos": "Todo",
     "core.common.location.cities": "Cities",
@@ -2472,6 +2524,14 @@ function mailboxForPage(page: AppPage) {
     mailbox === "trash"
     ? mailbox
     : "inbox";
+}
+
+function chatFilterForPage(page: AppPage): "channel" | "dm" | "group" | "broadcast" | undefined {
+  if (page === "chat.direct") return "dm";
+  if (page === "chat.groups") return "group";
+  if (page === "chat.channels") return "channel";
+  if (page === "chat.broadcast") return "broadcast";
+  return undefined;
 }
 
 function pageForApp(app: PlatformAppId): AppPage {

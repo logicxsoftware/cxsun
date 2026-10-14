@@ -1,8 +1,11 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { registerContractRoute } from "@cxsun/framework/http";
+import type { previewFrappeCallLogs, pullFrappeCallLog } from "./call-log-sync.service.js";
 
 export type CallLogImportRoutes = {
+  preview: (request: FastifyRequest, page: number) => ReturnType<typeof previewFrappeCallLogs>;
+  pull: (request: FastifyRequest, remoteName: string) => ReturnType<typeof pullFrappeCallLog>;
   start: (request: FastifyRequest) => Promise<{ jobId: number; status: string }>;
   status: (
     request: FastifyRequest,
@@ -17,6 +20,39 @@ export type CallLogImportRoutes = {
 };
 
 export function registerCallLogImportRoutes(app: FastifyInstance, callbacks: CallLogImportRoutes) {
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/frappe/call-logs/remote",
+    schemas: {
+      querystring: z.object({ page: z.coerce.number().int().positive().default(1) }),
+      response: z.object({
+        page: z.number(),
+        pageSize: z.number(),
+        hasMore: z.boolean(),
+        items: z.array(
+          z.object({
+            name: z.string(),
+            from: z.string().nullable(),
+            to: z.string().nullable(),
+            direction: z.string().nullable(),
+            status: z.string().nullable(),
+            startedAt: z.string().nullable(),
+            localCallLogId: z.number().nullable()
+          })
+        )
+      })
+    },
+    handler: async ({ request, query }) => callbacks.preview(request, query.page)
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/frappe/call-logs/pull",
+    schemas: {
+      body: z.object({ remoteName: z.string().trim().min(1).max(191) }).strict(),
+      response: z.object({ remoteName: z.string(), localId: z.number(), status: z.string() })
+    },
+    handler: async ({ request, body }) => callbacks.pull(request, body.remoteName)
+  });
   registerContractRoute(app, {
     method: "POST",
     url: "/frappe/call-logs/sync-queue/:eventId/retry",

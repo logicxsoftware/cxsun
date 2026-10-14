@@ -1,4 +1,5 @@
 import type { FrappeConnection, FrappeOverview } from "./overview.types";
+import { frappeRequest as requestImport } from "../../frappe-request";
 
 type Envelope<T> = { data: T; success: true } | { error: { message: string }; success: false };
 
@@ -27,12 +28,9 @@ async function frappeRequest<T>(path: string, method: "GET" | "POST" = "GET"): P
 export const getFrappeConnection = () => frappeRequest<FrappeConnection>("/frappe/connection");
 export const verifyFrappeConnection = () =>
   frappeRequest<{ connected: boolean; user: string }>("/frappe/connection/verify", "POST");
+export const completeFrappeImport = () =>
+  requestImport<{ completedAt: string; completedBy: string }>("POST", "/frappe/import-state/complete", { confirmation: "STOP_FRAPPE" });
 export const getFrappeOverview = (page: number, pageSize: number, search: string) =>
   frappeRequest<FrappeOverview>(
     `/frappe/overview?${new URLSearchParams({ page: String(page), pageSize: String(pageSize), search })}`
-  );
-export const syncFrappeEnquiry = (id: number) =>
-  frappeRequest<{ enquiryId: number; remoteName: string; syncedAt: string }>(
-    `/frappe/enquiries/${id}/sync`,
-    "POST"
   );

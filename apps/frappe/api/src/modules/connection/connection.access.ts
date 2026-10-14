@@ -11,6 +11,13 @@ export class FrappeConnectionAccess {
 
   async state() {
     const tables = await this.database.introspection.getTables();
+    if (tables.some(({ name }) => name === "frappe_import_state")) {
+      const importState = await new FrappeConnectionRepository(this.database).importState();
+      if (importState.completedAt) return {
+        configured: false, enabled: false, verified: false, usable: false,
+        baseUrl: null, verificationStatus: "unverified" as const, source: "tenant" as const
+      };
+    }
     if (!tables.some(({ name }) => name === "frappe_connection_settings"))
       return this.environmentState();
     const row = await new FrappeConnectionRepository(this.database).connection();

@@ -27,10 +27,19 @@ completion evidence.
 - [ ] **0.2** Remove Frappe provider switching, remote CRM reads, CRM imports,
   sync event creation, and sync workers from CRM routes and Platform composition.
   Preserve local records and sync history. Keep later Frappe transfer in its own
-  approved plan.
+  approved plan. CRM provider selection, remote-facing call-log controls, and
+  CRM-owned sync event creation are removed. Platform queue registration remains
+  open because this task is scoped to `apps/crm` only.
 - [ ] **0.3** Run a local-only smoke flow for web and mobile enquiry, call-log,
   and comment actions with Frappe disabled. Confirm writes reach the tenant CRM
-  database.
+  database. Web live smoke on 2026-10-14 created enquiry #11, added a comment,
+  and created call log CL-19. Direct reads from the local tenant CRM database
+  confirmed all three records; both CRM enquiry and call-log sync event counts
+  were zero. The Platform queue relay was not changed or independently disabled
+  because it is outside this CRM-only scope. Automated checks pass: local
+  Enquiry/List In database E2E (5/5),
+  mobile Flutter tests (19/19), and mobile analysis. Mobile live write
+  confirmation remains open because no Android device is connected.
 - [ ] **0.4** Approve Sales Enquiry stages, close outcomes, required fields, and
   permitted transitions.
 - [ ] **0.5** Approve Service Request outcomes, closure reasons, rework rules, and

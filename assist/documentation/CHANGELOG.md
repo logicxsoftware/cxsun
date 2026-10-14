@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.93
+Current version: 1.0.94
 
-Release tag: v-1.0.93
+Release tag: v-1.0.94
 
-Changelog label: v 1.0.93
+Changelog label: v 1.0.94
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -19,6 +19,23 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 #### App Codebase Changes
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
+
+## v-1.0.94
+
+### [v 1.0.94] 2026-10-14 9:31 am - CRM mobile local sync verification
+
+#### Database Changes
+
+- Database update: No (manual).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.94.
+- Verified that web-created enquiry #12 appears in the signed-in Android CRM app.
+- Verified that an Android-created enquiry, its activity entry, a selected device call log, and its comment persist in the tenant-local database.
+- Confirmed that the mobile enquiry and call-log test records have no Frappe sync queue events.
+- The local test records remain: enquiry #13 has the title `CRM%`, and call log #20 has a test comment.
+- Web UI verification of mobile-created records remains pending because the browser session expired during an API restart.
 
 ## v-1.0.93
 

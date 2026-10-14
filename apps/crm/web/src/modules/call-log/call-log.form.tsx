@@ -44,7 +44,7 @@ export function CallLogForm({
       open={open}
       onClose={onCancel}
       title="Log a Call"
-      description="Record a call locally. It will sync to Frappe when available."
+      description="Record a call in this CRM."
     >
       <CallLogFields
         key={String(open)}

@@ -11,6 +11,13 @@ import type {
 export class AttendanceRepository {
   constructor(private readonly database: Kysely<AttendanceDatabase>) {}
 
+  async today() {
+    const result = await sql<{ today: string }>`
+      SELECT DATE_FORMAT(CURRENT_DATE(), '%Y-%m-%d') today
+    `.execute(this.database);
+    return result.rows[0]!.today;
+  }
+
   async list(filters: AttendanceFilters) {
     let query = recordQuery(this.database).where("a.deleted_at", "is", null);
     if (filters.date) query = query.where("a.work_date", "=", filters.date);
@@ -196,10 +203,7 @@ export class AttendanceRepository {
   }
 
   async overviewToday() {
-    const date = await sql<{
-      today: string;
-    }>`SELECT DATE_FORMAT(CURRENT_DATE(),'%Y-%m-%d') today`.execute(this.database);
-    const today = date.rows[0]!.today;
+    const today = await this.today();
     return this.overview(today, addDays(today, -6));
   }
 }

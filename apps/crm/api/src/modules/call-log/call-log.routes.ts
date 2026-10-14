@@ -41,10 +41,7 @@ const recordSchema = z.object({
   receiver: z.string(),
   caller: z.string(),
   createdAt: z.string(),
-  startedAt: z.string(),
-  syncStatus: z.string(),
-  syncError: z.string().nullable(),
-  syncEventId: z.number().int().positive().nullable()
+  startedAt: z.string()
 });
 
 export function registerCallLogRoutes(
@@ -97,7 +94,7 @@ export function registerCallLogRoutes(
     method: "POST",
     url: "/crm/mobile/call-logs",
     schemas: { body: inputSchema, response: z.object({ name: z.string() }) },
-    handler: async ({ body, request }) => (await service(request)).create(body, false)
+    handler: async ({ body, request }) => (await service(request)).create(body)
   });
   registerContractRoute(app, {
     method: "GET",

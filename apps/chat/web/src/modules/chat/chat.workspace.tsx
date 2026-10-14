@@ -66,6 +66,7 @@ import { chatMemberSchema, chatMessageSchema } from "./chat.schema";
 import type {
   ChatAttachmentPayload,
   ChatChannel,
+  ChatChannelKind,
   ChatChannelSavePayload,
   ChatMemberRole,
   ChatMessage
@@ -78,7 +79,13 @@ const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", 
 
 type PendingAttachment = ChatAttachmentPayload & { sizeBytes: number };
 
-export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: string }) {
+export function ChatWorkspace({
+  currentUserEmail = "",
+  filterKind
+}: {
+  currentUserEmail?: string;
+  filterKind?: ChatChannelKind | undefined;
+}) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ChatChannel | null>(null);
   const [channelForm, setChannelForm] = useState<{ channel: ChatChannel | null; open: boolean }>({
@@ -111,13 +118,23 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
 
   const channels = useMemo(
     () =>
-      [...(chat.channels.data ?? [])].sort((left, right) => {
-        const leftTime = left.lastMessageAt ?? left.updatedAt;
-        const rightTime = right.lastMessageAt ?? right.updatedAt;
-        return rightTime.localeCompare(leftTime);
-      }),
-    [chat.channels.data]
+      [...(chat.channels.data ?? [])]
+        .filter((channel) => !filterKind || channel.kind === filterKind)
+        .sort((left, right) => {
+          const leftTime = left.lastMessageAt ?? left.updatedAt;
+          const rightTime = right.lastMessageAt ?? right.updatedAt;
+          return rightTime.localeCompare(leftTime);
+        }),
+    [chat.channels.data, filterKind]
   );
+
+  const panelTitle = useMemo(() => {
+    if (filterKind === "dm") return "Direct Chats";
+    if (filterKind === "group") return "Groups";
+    if (filterKind === "channel") return "Channels";
+    if (filterKind === "broadcast") return "Broadcasts";
+    return "Chats";
+  }, [filterKind]);
 
   const messages = chat.messages.data ?? [];
   const memberRecords = members.members.data ?? [];
@@ -146,13 +163,15 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
     setEmojiBarOpen(false);
   }, [selected?.uuid]);
 
-  const initialAutoSelected = useRef(false);
   useEffect(() => {
-    if (!initialAutoSelected.current && channels.length > 0) {
-      initialAutoSelected.current = true;
-      setSelected((prev) => prev ?? channels[0] ?? null);
+    if (channels.length > 0) {
+      if (!selected || (filterKind && selected.kind !== filterKind)) {
+        setSelected(channels[0] ?? null);
+      }
+    } else {
+      setSelected(null);
     }
-  }, [channels]);
+  }, [channels, filterKind]);
 
   function select(channel: ChatChannel) {
     setSelected(channel);
@@ -299,10 +318,13 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
   return (
     <div className="flex h-full w-full overflow-hidden bg-background">
       {/* LEFT PANEL: CONTACTS / CHATS LIST */}
-      <section className="flex w-[320px] shrink-0 flex-col border-r border-border bg-card text-card-foreground overflow-hidden">
+      <section
+        className="flex w-[320px] shrink-0 flex-col border-r border-border bg-card text-card-foreground overflow-hidden"
+        style={{ width: "320px" }}
+      >
         {/* Left Header: "Chats" + Add Button */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Chats</h2>
+          <h2 className="text-xl font-bold tracking-tight text-foreground">{panelTitle}</h2>
           <Button
             size="icon"
             variant="outline"
@@ -315,14 +337,14 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
           </Button>
         </div>
 
-        {/* Search input: "Chats search..." */}
+        {/* Search input */}
         <div className="shrink-0 p-3 pb-2">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Chats search..."
+              placeholder={`Search ${panelTitle.toLowerCase()}...`}
               aria-label="Search chats"
               className="h-9 rounded-lg bg-background pl-9 text-sm"
             />
@@ -671,9 +693,10 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
 
       {/* MODALS */}
       <ChatChannelForm
-        key={channelForm.channel?.uuid ?? "new"}
+        key={channelForm.channel?.uuid ?? `new-${filterKind ?? "default"}`}
         busy={chat.createChannel.isPending || chat.renameChannel.isPending}
         channel={channelForm.channel}
+        defaultKind={filterKind ?? "channel"}
         open={channelForm.open}
         onOpenChange={(open) => !open && setChannelForm({ channel: null, open: false })}
         onSubmit={saveChannel}

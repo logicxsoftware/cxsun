@@ -5,6 +5,7 @@ import { z } from "zod";
 import { registerContractRoute } from "@cxsun/framework/http";
 import type {} from "@cxsun/framework/api";
 import { FrappeConnectionService } from "./connection.service.js";
+import { FrappeConnectionRepository } from "./connection.repository.js";
 import type { FrappeDatabase, FrappeSettings } from "./connection.types.js";
 
 const idSchema = z.object({ id: z.coerce.number().int().positive() });
@@ -48,7 +49,8 @@ const connectionResponseSchema = z.object({
   appSecretConfigured: z.boolean(),
   verificationStatus: z.enum(["unverified", "verified", "failed"]),
   lastCheckedAt: z.string().nullable(),
-  lastVerifiedAt: z.string().nullable()
+  lastVerifiedAt: z.string().nullable(),
+  importCompletedAt: z.string().nullable()
 });
 const providerSchema = z.object({
   moduleKey: z.literal("crm.enquiries"),
@@ -110,6 +112,29 @@ export function registerFrappeRoutes(
     url: "/frappe/connection",
     schemas: { response: connectionResponseSchema },
     handler: async ({ request }) => (await service(request)).configured()
+  });
+  registerContractRoute(app, {
+    method: "GET",
+    url: "/frappe/import-state",
+    schemas: {
+      response: z.object({ completedAt: z.string().nullable(), completedBy: z.string().nullable() })
+    },
+    handler: async ({ request }) => {
+      const scope = await context(request);
+      return new FrappeConnectionRepository(scope.database).importState();
+    }
+  });
+  registerContractRoute(app, {
+    method: "POST",
+    url: "/frappe/import-state/complete",
+    schemas: {
+      body: z.object({ confirmation: z.literal("STOP_FRAPPE") }).strict(),
+      response: z.object({ completedAt: z.string().nullable(), completedBy: z.string().nullable() })
+    },
+    handler: async ({ request }) => {
+      const scope = await context(request);
+      return new FrappeConnectionRepository(scope.database).completeImport(scope.actorEmail);
+    }
   });
   registerContractRoute(app, {
     method: "GET",
