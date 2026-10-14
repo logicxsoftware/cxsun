@@ -174,6 +174,14 @@ function launchChild() {
       env: {
         ...(app !== "platform-api" ? env : {}),
         ...process.env,
+        ...(["platform-api", "platform-web"].includes(app)
+          ? {
+              NODE_OPTIONS: withMaxHttpHeaderSize(
+                process.env.NODE_OPTIONS ?? env.NODE_OPTIONS,
+                65_536
+              )
+            }
+          : {}),
         ...(app === "platform-api"
           ? {
               CXSUN_DB_FRESH_SESSION_FILE: join(
@@ -203,6 +211,15 @@ function launchChild() {
     console.error(`  x Failed to launch ${config.displayName}: ${error.message}`);
     process.exit(1);
   });
+}
+
+function withMaxHttpHeaderSize(nodeOptions, size) {
+  const option = `--max-http-header-size=${size}`;
+  const current = String(nodeOptions ?? "").trim();
+  const existingOption = /--max-http-header-size(?:=|\s+)\d+/u;
+  return existingOption.test(current)
+    ? current.replace(existingOption, option)
+    : [current, option].filter(Boolean).join(" ");
 }
 
 function qCafeApiEnvironment(runtimeEnv, port) {

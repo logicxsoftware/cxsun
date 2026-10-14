@@ -8,9 +8,14 @@ const root = createRoot(document.getElementById("root") as HTMLElement);
 const hasPublicHomeShell = window.location.pathname === "/";
 
 async function start() {
-  if (!hasPublicHomeShell) root.render(<GlobalLoader />);
+  if (!hasPublicHomeShell) {
+    root.render(<GlobalLoader message="Connecting to Platform…" />);
+  }
   try {
     window.__CXSUN_RUNTIME_CONFIG__ = Object.freeze(await loadRuntimeConfig());
+    if (!hasPublicHomeShell) {
+      root.render(<GlobalLoader message="Opening your workspace…" />);
+    }
     const [{ PlatformWebApp }] = await Promise.all([
       import("./app/PlatformWebApp"),
       hasPublicHomeShell ? import("./public/tenant-home") : Promise.resolve()

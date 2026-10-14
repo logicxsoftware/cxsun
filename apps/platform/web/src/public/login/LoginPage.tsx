@@ -177,6 +177,11 @@ export function LoginPage({ desk, title }: LoginPageProps) {
           type="password"
           value={password}
         />
+        {desk === "tenant" && !tenantContext && !message ? (
+          <p className="auth-context-status" role="status" aria-live="polite">
+            Checking this workspace…
+          </p>
+        ) : null}
         <Button
           disabled={loading}
           type="button"

@@ -22,6 +22,7 @@ import {
   type TopMenuSearchItem,
   type TopMenuUser
 } from "@cxsun/ui/layouts/main-layouts";
+import { cn } from "@cxsun/ui/lib/utils";
 
 type TenantMainLayoutProps = {
   headerActionsAlignment?: "edge" | "workspace" | "form";
@@ -29,6 +30,7 @@ type TenantMainLayoutProps = {
   appItems: TopMenuAppItem[];
   brand: SidebarBrand;
   children: ReactNode;
+  fullBleed?: boolean;
   headerActions?: ReactNode;
   headerContent?: ReactNode;
   headerTitle: string;
@@ -68,6 +70,7 @@ function TenantMainShell({
   appItems,
   brand,
   children,
+  fullBleed,
   headerActions,
   headerContent,
   headerTitle,
@@ -171,7 +174,10 @@ function TenantMainShell({
           )}
           <div
             aria-label="Workspace canvas"
-            className="workspace-scroll min-h-0 flex-1 overflow-y-auto"
+            className={cn(
+              "workspace-scroll min-h-0 flex-1",
+              fullBleed ? "flex flex-col overflow-hidden" : "overflow-y-auto"
+            )}
           >
             {children}
           </div>

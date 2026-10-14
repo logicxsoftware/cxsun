@@ -7,71 +7,83 @@ completion evidence.
 ## Progress Rules
 
 - Keep every task unchecked until its completion evidence exists.
-- Complete a task only when its owner contract, implementation, permissions,
-  migration, user flow, and required checks are complete.
+- Complete a review task when it has current source evidence and a clear result.
+- Complete an implementation task only when its owner contract, implementation,
+  permissions, migration, user flow, and required checks are complete.
 - Record a short evidence link or test name beside a completed task.
 - Do not mark a phase complete while one of its required tasks or exit checks is
   open.
-- Keep CRM data local and authoritative. Do not add a live external CRM read or
-  outbound sync to these tasks.
+- Keep CRM data local and authoritative. Remove existing external reads, imports,
+  and outbound CRM sync paths before adding new CRM workflows.
 - Keep Core, Billing, Inventory, and Zetro records in their owning modules. Use
   their public contracts.
 - Add a real module only when it owns behavior. Do not add placeholder role files.
 
-## Phase 0: Product Contracts and Decisions
+## Phase 0: Local-only Cutover and Product Contracts
 
-- [ ] **0.1** Approve Sales Enquiry stages, close outcomes, required fields, and
+- [x] **0.1** Review current CRM web, mobile, API, database, and queue behavior.
+  Evidence: source review recorded in [PLAN.md](./PLAN.md#current-implementation-baseline)
+  on 2026-10-14. This review did not verify live database persistence.
+- [ ] **0.2** Remove Frappe provider switching, remote CRM reads, CRM imports,
+  sync event creation, and sync workers from CRM routes and Platform composition.
+  Preserve local records and sync history. Keep later Frappe transfer in its own
+  approved plan.
+- [ ] **0.3** Run a local-only smoke flow for web and mobile enquiry, call-log,
+  and comment actions with Frappe disabled. Confirm writes reach the tenant CRM
+  database.
+- [ ] **0.4** Approve Sales Enquiry stages, close outcomes, required fields, and
   permitted transitions.
-- [ ] **0.2** Approve Service Request outcomes, closure reasons, rework rules, and
+- [ ] **0.5** Approve Service Request outcomes, closure reasons, rework rules, and
   permitted transitions.
-- [ ] **0.3** Confirm the Billing quote-to-order contract, order identity, accepted
+- [ ] **0.6** Confirm the Billing quote-to-order contract, order identity, accepted
   quote behavior, and split-order rules.
-- [ ] **0.4** Confirm Core public contracts for Contacts, products, units, taxes,
+- [ ] **0.7** Confirm Core public contracts for Contacts, products, units, taxes,
   and work-order type masters.
-- [ ] **0.5** Confirm the Inventory contract for availability, reservation,
+- [ ] **0.8** Confirm the Inventory contract for availability, reservation,
   purchase, issue, and fulfillment status.
-- [ ] **0.6** Confirm CRM ownership of Sales Delivery Work, Service Work Orders,
+- [ ] **0.9** Confirm CRM ownership of Sales Delivery Work, Service Work Orders,
   Resource, Booking, Material Request, and Verification until another owner takes
   those records.
-- [ ] **0.7** Define tenant settings for stage templates, currency, date and time
+- [ ] **0.10** Define tenant settings for stage templates, currency, date and time
   zone, working calendars, consent, retention, and approval thresholds.
-- [ ] **0.8** Define roles, record-level access, protected actions, audit events,
+- [ ] **0.11** Define roles, record-level access, protected actions, audit events,
   stable public IDs, and deletion or archive rules.
-- [ ] **0.9** Define lead-to-contact match, duplicate review, merge, and conversion
+- [ ] **0.12** Define lead-to-contact match, duplicate review, merge, and conversion
   rules without moving Contact ownership from Core.
-- [ ] **0.10** Approve the module dependency graph, migration order, seed order,
+- [ ] **0.13** Approve the module dependency graph, migration order, seed order,
   route names, navigation groups, and public exports.
 
-**Exit check:** Every entity has one owner, public contract, permission boundary,
-tenant scope, and migration path.
+**Exit check:** CRM uses only local tenant data. Every planned entity has one
+owner, public contract, permission boundary, tenant scope, and migration path.
 
 ## Phase 1: Local CRM Foundation
 
 ### Persistence and Existing Modules
 
-- [ ] **1.1** Audit current Enquiry, Activity, Task, Call Log, Assignment, Status,
-  Priority, List In, and Reports behavior against local-only ownership.
-- [ ] **1.2** Ensure Enquiry, Activity, Task, Call Log, and Assignment persist in the
-  tenant database and survive restart.
-- [ ] **1.3** Ensure web and mobile use the same typed local contracts for Enquiry,
-  Call Log, comments, and activity history.
-- [ ] **1.4** Make mobile retries idempotent and prevent duplicate calls, comments,
-  enquiries, activities, and assignments.
+- [ ] **1.1** Record per-tenant counts, IDs, links, comments, and activity order
+  before changing existing CRM schemas or behavior.
+- [ ] **1.2** Prove local records survive API restart and remain isolated between
+  two tenant databases.
+- [ ] **1.3** Trace each web and mobile operation to its typed local API and tenant
+  database write. Record any flow that only reads or stores data on the device.
+- [ ] **1.4** Make mobile enquiry, call-log, and comment retries idempotent. Test
+  repeated requests and concurrent duplicate submissions.
 - [ ] **1.5** Preserve current record IDs, links, comments, creators, timestamps,
-  assignment history, and activity order during upgrades.
+  and activity order during upgrades.
 - [ ] **1.6** Keep CRM Contact screens on Core Contact public contracts. Do not add a
   second CRM-owned Contact identity table.
 
 ### Shared CRM Modules
 
-- [ ] **1.7** Complete Assignment with owner, team, queue, reassignment history,
+- [ ] **1.7** Build Assignment with owner, team, queue, reassignment history,
   access checks, and audit events.
-- [ ] **1.8** Complete Activity as an append-only business event stream with actor,
-  action, record reference, timestamp, and safe summary.
-- [ ] **1.9** Complete Task with owner, due date, priority, recurrence, completion,
+- [ ] **1.8** Extend Activity from enquiry-only rows to an append-only event stream
+  for supported CRM records, with actor, action, timestamp, and safe summary.
+- [ ] **1.9** Build Task with owner, due date, priority, recurrence, completion,
   record links, and reminder rules.
-- [ ] **1.10** Complete Call Log with selected mobile calls, comments, supported
-  record links, deduplication, and retry behavior.
+- [ ] **1.10** Complete Call Log with selected mobile calls, local comments,
+  supported record links, atomic deduplication, and retry behavior. Do not create
+  an external sync event.
 - [ ] **1.11** Complete Consent with purpose, channel, source, capture time, expiry,
   and withdrawal history.
 - [ ] **1.12** Complete Attachment metadata, access checks, retention policy, and
@@ -89,11 +101,12 @@ tenant scope, and migration path.
 
 - [ ] **1.17** Test fresh tenant migrations, existing tenant upgrades, and repeatable
   seeds for affected modules.
-- [ ] **1.18** Test local database persistence after API and mobile restarts.
+- [ ] **1.18** Verify mobile reconnect reads server-saved records and retries
+  supported pending writes without creating duplicates.
 - [ ] **1.19** Test role access, record access, tenant isolation, duplicate retries,
   and deletion blockers.
-- [ ] **1.20** Reconcile existing CRM counts and relationships before and after
-  migration.
+- [ ] **1.20** Compare upgraded tenant data with the 1.1 baseline. Reconcile counts,
+  IDs, links, comments, and activity order.
 
 **Exit check:** Existing CRM work is local-first and persistent. Web and mobile
 share the local contracts, and migration reconciliation passes.

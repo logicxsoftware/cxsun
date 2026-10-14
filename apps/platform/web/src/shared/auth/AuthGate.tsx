@@ -52,7 +52,7 @@ export function AuthGate({ children, desk }: { children: ReactElement; desk: Des
   }
 
   if (serverValid === null) {
-    return <GlobalLoader />;
+    return <GlobalLoader message="Checking your session…" />;
   }
 
   return (

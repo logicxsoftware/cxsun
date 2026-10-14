@@ -911,6 +911,15 @@
     width: 100%;
   }
 
+  .global-loader-message {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    margin: -4px 0 0;
+    text-align: center;
+  }
+
   .global-loader-mark {
     height: 168px;
     position: relative;

@@ -146,12 +146,13 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
     setEmojiBarOpen(false);
   }, [selected?.uuid]);
 
-  // Automatically select first channel if none is selected and channels exist on desktop
+  const initialAutoSelected = useRef(false);
   useEffect(() => {
-    if (!selected && channels.length > 0 && window.innerWidth >= 768) {
-      setSelected(channels[0] ?? null);
+    if (!initialAutoSelected.current && channels.length > 0) {
+      initialAutoSelected.current = true;
+      setSelected((prev) => prev ?? channels[0] ?? null);
     }
-  }, [channels, selected]);
+  }, [channels]);
 
   function select(channel: ChatChannel) {
     setSelected(channel);
@@ -296,14 +297,9 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
   }
 
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] min-h-[580px] w-full gap-4">
+    <div className="flex h-full w-full overflow-hidden bg-background">
       {/* LEFT PANEL: CONTACTS / CHATS LIST */}
-      <section
-        className={cn(
-          "flex w-full md:w-[320px] lg:w-[340px] shrink-0 flex-col rounded-xl border bg-card text-card-foreground shadow-xs overflow-hidden",
-          selected ? "hidden md:flex" : "flex"
-        )}
-      >
+      <section className="flex w-[320px] shrink-0 flex-col border-r border-border bg-card text-card-foreground overflow-hidden">
         {/* Left Header: "Chats" + Add Button */}
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
           <h2 className="text-xl font-bold tracking-tight text-foreground">Chats</h2>
@@ -352,12 +348,7 @@ export function ChatWorkspace({ currentUserEmail = "" }: { currentUserEmail?: st
       </section>
 
       {/* RIGHT PANEL: CHAT WINDOW */}
-      <section
-        className={cn(
-          "flex flex-1 min-w-0 flex-col rounded-xl border bg-card text-card-foreground shadow-xs overflow-hidden",
-          selected ? "flex" : "hidden md:flex"
-        )}
-      >
+      <section className="flex flex-1 min-w-0 flex-col bg-background text-card-foreground overflow-hidden">
         {selected ? (
           <>
             {/* Top Active Chat Header */}

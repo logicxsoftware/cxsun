@@ -46,7 +46,9 @@ export default defineConfig(({ command, mode }) => {
         "@cxsun/frappe-web",
         "@cxsun/zetro-web",
         "@cxsun/docs-web",
-        "@cxsun/hrms-web"
+        "@cxsun/hrms-web",
+        "@cxsun/notes-web",
+        "@cxsun/chat-web"
       ],
       include: [
         "react-markdown",
@@ -200,7 +202,12 @@ export default defineConfig(({ command, mode }) => {
         "@cxsun/core-web/modules/master/contact": resolve(
           configDir,
           "../../core/web/src/modules/master/contact/index.ts"
-        )
+        ),
+        "@cxsun/chat-web/modules/chat": resolve(
+          configDir,
+          "../../chat/web/src/modules/chat/index.ts"
+        ),
+        "@cxsun/chat-web": resolve(configDir, "../../chat/web/src/index.ts")
       },
       preserveSymlinks: true
     },

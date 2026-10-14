@@ -10,9 +10,14 @@ const ringTransition = {
 type GlobalLoaderProps = {
   className?: string;
   fullScreen?: boolean;
+  message?: string;
 };
 
-export function GlobalLoader({ className, fullScreen = true }: GlobalLoaderProps) {
+export function GlobalLoader({
+  className,
+  fullScreen = true,
+  message = "Loading…"
+}: GlobalLoaderProps) {
   return (
     <div
       className={cn(
@@ -21,7 +26,7 @@ export function GlobalLoader({ className, fullScreen = true }: GlobalLoaderProps
         className
       )}
     >
-      <div className="global-loader-mark" role="status" aria-label="Loading">
+      <div className="global-loader-mark" aria-hidden="true">
         <div className="global-loader-core" />
         <motion.div
           animate={{ rotate: 360 }}
@@ -43,6 +48,9 @@ export function GlobalLoader({ className, fullScreen = true }: GlobalLoaderProps
           <img className="hidden dark:block" src="/logo/logo-dark.svg" alt="" />
         </div>
       </div>
+      <p className="global-loader-message" role="status" aria-live="polite">
+        {message}
+      </p>
     </div>
   );
 }

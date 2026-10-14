@@ -9,6 +9,31 @@ CRM manages customer-facing work from first contact through follow-up. The local
 tenant database is the source of truth for CRM records. Billing remains the
 source of truth for invoices, receipts, payments, and balances.
 
+## Current Implementation Baseline
+
+Repository source reviewed on 2026-10-14. Recheck this baseline during Phase 0
+before changing runtime behavior.
+
+- Enquiries, call logs, call-log comments, and enquiry activities have local
+  tenant-database tables and API routes.
+- The Flutter app reads and writes through the Platform API. It creates enquiries,
+  comments, and work updates, and can upload selected device calls with comments.
+- Mobile call-log uploads use a source reference for duplicate detection. Call-log
+  comments do not have a retry key, so a repeated request can add another comment.
+- Web-created enquiries and call logs can create Frappe sync events. Mobile writes
+  skip those events. Platform also registers Frappe import and sync processors.
+- Enquiry reads return Local data, but the API keeps provider and remote-source
+  contracts. Remove these leftovers when CRM becomes local-only.
+- The Activities list currently reads enquiry activity rows. It is not yet a
+  cross-module event history. No dedicated Task or Assignment module was found.
+- Source review does not prove persistence after restart or a complete mobile-to-
+  server flow. Phase 0 must verify both with the running local database and app.
+
+CRM writes must stay in the tenant database. The mobile app sends records to the
+CRM API, which saves them locally. CRM must not read from, import from, or enqueue
+writes to an external CRM. Any later Frappe transfer belongs to the separate
+Frappe app and requires its own approved scope.
+
 ## Product Shape
 
 Use one CRM foundation with two separate workstreams.
@@ -344,28 +369,41 @@ does not own CRM permissions or perform business mutations.
 
 ## Delivery Plan
 
-### Phase 0: Resolve Contracts and Decisions
+### Phase 0: Local Boundary and Product Contracts
 
-1. Confirm Sales Enquiry stages and Service Request outcomes.
-2. Confirm whether Billing owns order creation and map its quote-to-order contract.
-3. Map Core product and work-order type APIs, Billing quotation APIs, and
+1. Record current web, mobile, API, database, and queue behavior. Use the baseline
+   above and update it with test evidence.
+2. Remove Frappe provider switching, remote reads, imports, sync event creation,
+   and sync workers from CRM routes and Platform CRM composition. Preserve existing
+   local records and sync history during this cutover.
+3. Run a local-only smoke flow for web and mobile enquiry, call-log, and comment
+   actions with Frappe disabled. Confirm writes reach the tenant CRM database.
+4. Confirm Sales Enquiry stages and Service Request outcomes.
+5. Confirm Billing owns order creation and map its quote-to-order contract.
+6. Map Core product and work-order type APIs, Billing quotation APIs, and
    Inventory material APIs.
-4. Define permission roles, source IDs, audit events, and tenant migration rules.
-5. Confirm which work and scheduling records CRM will own until a dedicated
+7. Define permission roles, source IDs, audit events, and tenant migration rules.
+8. Confirm which work and scheduling records CRM will own until a dedicated
    execution module exists.
-6. Define global defaults and tenant-configurable stage templates, date/time zone,
+9. Define global defaults and tenant-configurable stages, date and time zones,
    currency, units, consent, retention, and approval settings.
 
-**Exit:** Each record has one owner, one public contract, and one migration path.
+**Exit:** CRM uses only local tenant data, and each planned record has one owner,
+one public contract, and one migration path.
 
 ### Phase 1: Stabilize Current CRM Foundation
 
-1. Complete local Enquiry, Activity, Task, Call Log, Assignment, and Customer 360
-   contracts.
-2. Preserve current vendor estimates and define migration separately from the new
-   Sales and Service Estimate modules.
-3. Add retry-safe mobile writes, record links, and audit coverage.
-4. Reconcile current records and preserve existing user URLs.
+1. Verify fresh migrations, upgrades, tenant isolation, and persistence after API
+   restart for existing CRM records.
+2. Complete local Enquiry, Activity, Task, Call Log, Assignment, and Customer 360
+   contracts. Keep Activity history linked to any supported CRM record.
+3. Make mobile writes retry-safe, including enquiry comments and call-log comments.
+4. Preserve record links, IDs, creators, timestamps, comments, and activity order.
+5. Preserve current vendor estimates and define their migration separately from
+   Sales and Service Estimates.
+6. Complete Consent, Attachment, Saved View, Notification, and operational Report
+   modules only where the current CRM workflow needs them.
+7. Reconcile current records and preserve existing user URLs.
 
 **Exit:** Current CRM data survives upgrade and restart. Mobile and web use the
 same local contracts.

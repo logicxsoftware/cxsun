@@ -14,7 +14,9 @@ const SaDesk = lazy(() =>
   import("../desks/sa/SaDesk").then((module) => ({ default: module.SaDesk }))
 );
 const AppDesk = lazy(() =>
-  import("../desks/tenant/AppDesk").then((module) => ({ default: module.AppDesk }))
+  import("../desks/tenant/TenantAppDeskRoute").then((module) => ({
+    default: module.TenantAppDeskRoute
+  }))
 );
 const BillingPrintRoute = lazy(() =>
   import("../desks/tenant/BillingPrintRoute").then((module) => ({
