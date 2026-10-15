@@ -4,7 +4,9 @@
 
 Add local CRM modules for reusable procedures, employee duties, completion
 reports, and report search. The tenant CRM database is the only business-data
-source. Web and mobile clients use the same CRM API and permissions.
+source of truth. Web and mobile clients use the same CRM API and permissions.
+CRM sends selected SOP and duty records to Frappe through a durable outbound
+queue. CRM never reads these records back from Frappe.
 
 ## Reference Model Reviewed
 
@@ -38,14 +40,16 @@ Keep each persisted entity in its own CRM backend and frontend leaf module.
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | SOP             | Procedure identity, purpose, owner, lifecycle, and revision policy.                                                                                             |
 | SOP Item        | Ordered instruction within an SOP, department, frequency, required evidence guidance, and immutable published revisions.                                        |
-| Duty Assignment | Assignment of a published SOP Item revision to a user or team, display order, active period, recurrence, and assignment history.                                |
+| Duty Assignment | Assignment of a published SOP Item revision to one active CRM user in V1, with display order, active period, recurrence, and assignment history.              |
 | Duty Report     | Immutable employee submission against one active assignment and SOP Item revision.                                                                              |
 | Duty Reporting  | Read-only report search, history, completion summaries, and export contracts. It queries Duty Report through its public API and does not own a duplicate table. |
+| Frappe Sync     | Durable outbound queue, retry state, and remote record names for SOP Items, Duty Assignments, and Duty Reports. It does not become their data owner. |
 
 Composition may order module registration, migration, seed, navigation, and
 public route aggregation. It must not own entity SQL, validation, permissions,
 CRUD, or report definitions. A report reads through the owning module's fixed
-contract. Do not read, import, synchronize, or cache Frappe data.
+contract. Frappe sync is outbound only; local CRM remains authoritative and
+continues to work while Frappe is unavailable.
 
 ## Local Data Model
 
@@ -59,13 +63,18 @@ timestamp fields, foreign keys, and indexes that support list filters.
 3. `crm_sop_item_revisions`: item reference, revision number, instructions,
    evidence guidance, publication status, effective dates, author, and immutable
    snapshot fields. Published revisions cannot be edited in place.
-4. `crm_duty_assignments`: revision reference, assignee user or team, display
+4. `crm_duty_assignments`: revision reference, assignee user in V1, display
    order, recurrence, start/end dates, active status, assigning actor, and
    timestamps. Deactivate or supersede assignments instead of erasing history.
 5. `crm_duty_reports`: assignment and revision references, assignee, performed
    date, actions, optional result and issue details, idempotency key, submitted
    actor, and timestamps. Reports remain immutable; corrections use a linked
    correction record or audited correction event.
+6. `crm_frappe_sync_queue`: entity type, local record ID, pending/processing/
+   synced/failed state, attempt count, next-attempt time, last error, and Frappe
+   record name. Write the queue row in the same tenant transaction as each
+   publish, assignment, or report that must be sent. Keep Frappe credentials in
+   the Frappe connection module; never put them in queue payloads.
 
 Do not store duplicate SOP name, department, steps, frequency, or assignee
 labels as authoritative report data. Report reads may return snapshots from the
@@ -78,8 +87,8 @@ meaning after later revisions.
 - Only active published SOP Item revisions can receive new assignments.
 - A user can list and report only their own active duties unless a dedicated
   supervisor permission grants team or all-duty access.
-- An assignment must resolve to exactly one user or one team. Team membership
-  and assignment-time eligibility must use the owning public user/team contract.
+- V1 assignments target one active CRM user. Team assignment stays deferred
+  until CRM has an owning public team and membership contract.
 - Reporting validates assignment ownership, active dates, recurrence window,
   revision, required fields, and idempotency before saving.
 - Define whether a duty can be reported more than once per recurrence period.
@@ -88,10 +97,21 @@ meaning after later revisions.
 - Reports include the reporting date and server creation time. Store dates in
   the agreed API format and display dates as `DD-MM-YYYY`; display date-times as
   `DD-MM-YYYY HH:mm`.
-- Record assignment, publication, deactivation, and report actions in the shared
-  CRM Activity contract with actor and stable record IDs.
+- Keep actor and timestamp audit fields on assignments, publications,
+  deactivations, and reports. The existing Activity module is enquiry-specific;
+  cross-record Activity events remain a separate CRM foundation task until its
+  public contract is extended.
 - Avoid hard delete for SOPs, revisions, assignments, and reports that have
   downstream references or history.
+- Sync only published SOP Item revisions, Duty Assignments, and saved Duty
+  Reports to `SOP Item`, `SOP Assigned`, and `SOP Reporting`. Resolve assigned
+  users through the verified local-user to Frappe Employee mapping. A missing
+  mapping or remote DocType must leave a retryable or failed queue event without
+  undoing the local save.
+- Preserve remote names after create and update the same remote SOP Item on later
+  changes. Deliver dependent records in order: SOP Item, Duty Assignment, then
+  Duty Report. Retry failures with bounded backoff and store a safe error.
+  Never use Frappe responses as local display data.
 
 ## API and UI Contracts
 
@@ -100,8 +120,8 @@ types, permissions, and query invalidation. Use fixed routes and public IDs.
 
 - SOP and SOP Item workspaces: searchable lists, filters, create/edit drafts,
   publish a revision, deactivate, and view revision history.
-- Duty Assignment workspace: assign a published SOP Item revision to users or
-  teams, order duties, set active dates and recurrence, and review assignment
+- Duty Assignment workspace: assign a published SOP Item revision to an active
+  CRM user, order duties, set active dates and recurrence, and review assignment
   history.
 - My Duties: list active assignments with SOP title, department, frequency,
   instructions, due/report state, and a clear report action.
@@ -113,6 +133,8 @@ types, permissions, and query invalidation. Use fixed routes and public IDs.
   summary totals only where the counting rules are defined and tested.
 - Mobile: show the same signed-in employee's assigned duties, SOP steps, report
   form, saved report state, and retry behavior through the same API contracts.
+- Web navigation includes SOP authoring, My Duties, and Duty Reporting. Mobile
+  shows only the signed-in user's active Duties and posts reports to CRM.
 - Empty, loading, permission denied, validation, offline, duplicate retry, and
   server error states must be explicit on web and mobile.
 
@@ -130,19 +152,24 @@ Define CRM permissions before implementation:
   audit requirements are implemented.
 
 Enforce every permission and record-scope check in the API service. UI hiding is
-not authorization. Audit publication, assignment changes, report submission,
-correction, and export with actor, action, timestamp, and source record IDs.
+not authorization. Persist actor and timestamp fields on each owned record.
+Cross-module Activity events for publication, assignment changes, report
+submission, correction, and export remain open until Activity supports
+non-enquiry records.
 
 ## Delivery Phases
 
 ### Phase A: Rules and Contracts
 
-- Approve SOP ownership, allowed frequencies, recurrence windows, completion
-  outcomes, evidence requirements, team assignment behavior, and correction
-  policy.
+- V1 uses individual active CRM users, daily, weekly, monthly, quarterly, annual,
+  or one-time recurrence, completed or blocked outcomes, immutable idempotent
+  reports, and required issue details for blocked reports. Team assignment,
+  evidence attachments, and correction workflows remain future work.
 - Define stable public IDs, table ownership, permission names, route contracts,
-  activity actions, and migration/seed order.
-- Confirm user and team lookup contracts with Core before implementation.
+  audit fields, and migration/seed order. Shared Activity event integration is
+  deferred until that module supports non-enquiry records.
+- Use the Core-backed active CRM user lookup for V1. Defer team assignments until
+  Core exposes a public team and membership contract.
 
 ### Phase B: SOP Catalog
 
@@ -154,8 +181,9 @@ correction, and export with actor, action, timestamp, and source record IDs.
 ### Phase C: Duty Assignment and My Duties
 
 - Build Duty Assignment and signed-in employee duty list for web and mobile.
-- Add assignment order, effective dates, recurrence, user/team validation, and
-  assignment history.
+- Add assignment order, effective dates, recurrence, active-user validation, and
+  assignment history. Team assignment and reassignment history remain follow-up
+  work.
 - Test own/team/all access and inactive or superseded assignments.
 
 ### Phase D: Duty Reports
@@ -174,10 +202,20 @@ correction, and export with actor, action, timestamp, and source record IDs.
   audit behavior.
 - Compare report totals with direct owner-module records in test databases.
 
+### Phase F: Frappe Outbound Queue
+
+- Write a tenant-local queue event atomically with each publish, assignment, and
+  report that requires Frappe delivery.
+- Send mapped records to `SOP Item`, `SOP Assigned`, and `SOP Reporting` in
+  dependency order using the verified Frappe connection and Employee mapping.
+- Retry failures without blocking CRM writes; retain status, attempt count, and
+  a safe error message. Test duplicate delivery and recovery after worker restart.
+
 ## Acceptance Criteria
 
-- CRM owns all SOP and duty persistence locally. No Frappe or external CRM read,
-  queue, sync, or cache is part of the feature.
+- CRM owns all SOP and duty persistence locally. Frappe receives outbound copies
+  only through the queue. CRM lists, details, assignments, and reports work while
+  Frappe is unavailable.
 - A supervisor can publish a revision, assign it, and see assignment history.
 - An employee can read assigned instructions and submit one valid report for
   the allowed recurrence window.
@@ -187,4 +225,5 @@ correction, and export with actor, action, timestamp, and source record IDs.
   scope.
 - Web and mobile display and mutate the same saved records.
 - Fresh and upgrade migrations, tenant isolation, API permissions, module
-  boundaries, report totals, and mobile retry flows pass their checks.
+  boundaries, report totals, mobile retry flows, queue ordering, and Frappe retry
+  behavior pass their checks.

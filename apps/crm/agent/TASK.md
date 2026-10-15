@@ -13,8 +13,9 @@ completion evidence.
 - Record a short evidence link or test name beside a completed task.
 - Do not mark a phase complete while one of its required tasks or exit checks is
   open.
-- Keep CRM data local and authoritative. Remove existing external reads, imports,
-  and outbound CRM sync paths before adding new CRM workflows.
+- Keep CRM business data local and authoritative. Existing enquiry and call-log
+  flows do not sync outbound. SOP and Duty records use the explicitly approved
+  CRM-to-Frappe queue, and CRM screens never read those records from Frappe.
 - Keep Core, Billing, Inventory, and Zetro records in their owning modules. Use
   their public contracts.
 - Add a real module only when it owns behavior. Do not add placeholder role files.
@@ -24,19 +25,18 @@ completion evidence.
 - [x] **0.1** Review current CRM web, mobile, API, database, and queue behavior.
   Evidence: source review recorded in [PLAN.md](./PLAN.md#current-implementation-baseline)
   on 2026-10-14. This review did not verify live database persistence.
-- [ ] **0.2** Remove Frappe provider switching, remote CRM reads, CRM imports,
-  sync event creation, and sync workers from CRM routes and Platform composition.
-  Preserve local records and sync history. Keep later Frappe transfer in its own
-  approved plan. CRM provider selection, remote-facing call-log controls, and
-  CRM-owned sync event creation are removed. Platform queue registration remains
-  open because this task is scoped to `apps/crm` only.
+- [ ] **0.2** Keep Enquiry and Call Log reads and writes local, and remove their
+  legacy provider switching and import paths. Preserve local records and history.
+  SOP and Duty outbound sync is an approved exception tracked in
+  [DUTIES-SOP-PLAN.md](./DUTIES-SOP-PLAN.md); it does not make Frappe a CRM read
+  source.
 - [ ] **0.3** Run a local-only smoke flow for web and mobile enquiry, call-log,
   and comment actions with Frappe disabled. Confirm writes reach the tenant CRM
   database. Web live smoke on 2026-10-14 created enquiry #11, added a comment,
   and created call log CL-19. Direct reads from the local tenant CRM database
   confirmed all three records; both CRM enquiry and call-log sync event counts
-  were zero. The Platform queue relay was not changed or independently disabled
-  because it is outside this CRM-only scope. Automated checks pass: local
+  were zero. This check predates SOP/Duty sync and did not verify its relay.
+  Automated checks pass: local
   Enquiry/List In database E2E (5/5),
   mobile Flutter tests (19/19), and mobile analysis. Mobile live write
   confirmation remains open because no Android device is connected.
@@ -61,8 +61,11 @@ completion evidence.
   rules without moving Contact ownership from Core.
 - [ ] **0.13** Approve the module dependency graph, migration order, seed order,
   route names, navigation groups, and public exports.
-- [ ] **0.14** Review `DUTIES-SOP-PLAN.md` and approve SOP revisions, frequencies,
-  recurrence limits, report corrections, team assignment, and evidence rules.
+- [x] **0.14** Review `DUTIES-SOP-PLAN.md` and approve the V1 contracts: individual
+  user assignments, frequency-based recurrence, immutable idempotent reports,
+  completed/blocked outcomes, and CRM-to-Frappe outbound sync. Team assignments,
+  evidence attachments, and report corrections remain deferred.
+  Evidence: [DUTIES-SOP-PLAN.md](./DUTIES-SOP-PLAN.md#delivery-phases).
 
 **Exit check:** CRM uses only local tenant data. Every planned entity has one
 owner, public contract, permission boundary, tenant scope, and migration path.
@@ -110,20 +113,42 @@ owner, public contract, permission boundary, tenant scope, and migration path.
 
 ### Duties, SOP, and Reporting Modules
 
-- [ ] **1.17** Build the SOP module for procedure identity, lifecycle, ownership,
-  and revision policy.
-- [ ] **1.18** Build SOP Item with ordering, department, frequency, instruction
-  revisions, evidence guidance, publish history, and immutable published records.
-- [ ] **1.19** Build Duty Assignment for user or team allocation, order, active
-  dates, recurrence, assignment history, and permission-checked lookups.
-- [ ] **1.20** Build the signed-in employee's My Duties list for web and mobile
-  using the same local API contract.
-- [ ] **1.21** Build Duty Report as an immutable, idempotent submission linked to
-  an active assignment and exact SOP Item revision.
-- [ ] **1.22** Build Duty Reporting filters, history, and tested summary totals
-  through the Duty Report public contract. Add audited export only when allowed.
-- [ ] **1.23** Test recurrence enforcement, duplicate retries, report corrections,
-  permission scopes, revision history, and mobile reconnect behavior.
+- [x] **1.17** Build SOP identity, ownership, lifecycle, permission-checked
+  create, update, activate, and deactivate routes, with web create/edit/lifecycle
+  controls. Evidence: `crm-duties.e2e.ts` and SOP workspace flows.
+- [x] **1.18** Build SOP Items with department, frequency, ordered instructions,
+  draft revisions, immutable published revisions, web editing, and revision
+  history. Evidence: `crm-duties.e2e.ts` and SOP workspace flows.
+- [x] **1.19** Build individual-user Duty Assignments with active dates, order,
+  published-revision validation, active-user lookup, and deactivation. Team
+  allocation and reassignment history remain deferred. Evidence: assignment E2E.
+  Remote deactivation remains open because Frappe's current `SOP Assigned`
+  contract has no inactive field, and CRM preserves remote assignment history.
+- [x] **1.20** Build web SOP authoring and My Duties, plus the signed-in mobile
+  Duties list, on shared local CRM API contracts. Evidence: CRM web/API/mobile
+  typechecks, mobile widget tests, and `crm-duties.e2e.ts`.
+- [x] **1.21** Build immutable, recurrence-idempotent Duty Reports tied to an
+  active assignment and its published revision, including completed/blocked
+  results and required blocked issue details. Evidence: duty-report unit tests
+  and `crm-duties.e2e.ts`.
+- [x] **1.22** Build own/all permission-scoped Duty Report history through the
+  Duty Report API and web reporting workspace, with search/date/result filters,
+  summary totals, and pagination. Export remains follow-up work. Evidence:
+  `crm-duties.e2e.ts` and CRM web/API checks.
+- [ ] **1.23** Verify permission denial and tenant isolation, recurrence edge
+  cases, mobile offline reconnect, and correction workflows. Corrections remain
+  deferred from V1; current tests cover recurrence keys and duplicate retries.
+- [ ] **1.28** Persist outbound Frappe queue events atomically with SOP Item
+  publication/updates, assignments, and reports. SOP title changes now requeue
+  all published child items. Assignment deactivation remains local until the
+  Frappe contract supports an inactive state; no remote deletion is performed.
+- [x] **1.29** Verify the worker's DocType field mapping, Employee mapping,
+  dependency order, canonical queue key, atomic event claim, and successful queue
+  state changes against a mocked Frappe endpoint. Evidence: `crm-duties.e2e.ts`;
+  the relay and live Frappe endpoint remain unverified.
+- [ ] **1.30** Verify failure retry/recovery and delivery against a test Frappe
+  site. Live Frappe credentials and remote delivery have not been exercised in
+  this environment.
 
 ### Foundation Verification
 

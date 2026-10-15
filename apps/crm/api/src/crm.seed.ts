@@ -11,6 +11,8 @@ import { seedPriorityMaster } from "./modules/priority/index.js";
 import type { PriorityDatabase } from "./modules/priority/index.js";
 import { seedClosurePermissions } from "./modules/closure/index.js";
 import { seedCrmContactPermissions } from "./modules/contact/index.js";
+import { seedSopPermissions } from "./modules/sop/index.js";
+import { seedTaskPermissions } from "./modules/task/index.js";
 
 export async function seedCrmTenantDatabase(database: Kysely<EnquiryDatabase>) {
   await seedListInMaster(database as unknown as Kysely<ListInDatabase>);
@@ -22,5 +24,11 @@ export async function seedCrmTenantDatabase(database: Kysely<EnquiryDatabase>) {
   );
   await seedCallLogPermissions(database);
   await seedCrmContactPermissions(database);
+  await seedSopPermissions(
+    database as unknown as Kysely<import("./modules/sop/index.js").SopDatabase>
+  );
+  await seedTaskPermissions(
+    database as unknown as Kysely<import("./modules/task/index.js").TaskDatabase>
+  );
   await seedContact360Database(database);
 }

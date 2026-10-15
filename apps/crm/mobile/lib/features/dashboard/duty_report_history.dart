@@ -5,7 +5,7 @@ import '../../core/api/crm_mobile_api.dart';
 class DutyReportHistory extends StatelessWidget {
   const DutyReportHistory({required this.reports, super.key});
 
-  final List<HrDutyReport> reports;
+  final List<CrmDutyReport> reports;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class DutyReportHistory extends StatelessWidget {
 class _DutyReportCard extends StatelessWidget {
   const _DutyReportCard({required this.report});
 
-  final HrDutyReport report;
+  final CrmDutyReport report;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -58,7 +58,7 @@ class _DutyReportCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
-              Text(report.date, style: Theme.of(context).textTheme.labelSmall),
+              Text(_dateLabel(report.date), style: Theme.of(context).textTheme.labelSmall),
             ],
           ),
           const SizedBox(height: 7),
@@ -69,7 +69,15 @@ class _DutyReportCard extends StatelessWidget {
   );
 }
 
-List<HrDutyReport> _lastThreeDays(List<HrDutyReport> reports) {
+String _dateLabel(String value) {
+  final date = DateTime.tryParse(value);
+  if (date == null) return value;
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  return '$day-$month-${date.year}';
+}
+
+List<CrmDutyReport> _lastThreeDays(List<CrmDutyReport> reports) {
   final today = DateTime.now();
   final firstDay = DateTime(
     today.year,

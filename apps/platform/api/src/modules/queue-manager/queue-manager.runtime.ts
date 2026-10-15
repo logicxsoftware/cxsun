@@ -25,6 +25,9 @@ export function startQueueManagerWorker(app: FastifyInstance, service = new Queu
       .currentBackend()
       .then(async (backend) => {
         if (backend === "bullmq-redis") {
+          startBullMqWorker("chat", (queueJobId) =>
+            service.runJob(queueJobId, { fromWorker: true })
+          );
           startBullMqWorker("crm", (queueJobId) =>
             service.runJob(queueJobId, { fromWorker: true })
           );

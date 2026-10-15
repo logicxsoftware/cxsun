@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/crm-web",
-  "version": "1.0.97",
+  "version": "1.0.98",
   "private": true,
   "type": "module",
   "exports": {
@@ -17,7 +17,10 @@
     "./modules/status": "./src/modules/status/index.ts",
     "./modules/priority": "./src/modules/priority/index.ts",
     "./modules/contact-360": "./src/modules/contact-360/index.ts",
-    "./modules/contact": "./src/modules/contact/index.ts"
+    "./modules/contact": "./src/modules/contact/index.ts",
+    "./modules/task": "./src/modules/task/index.ts",
+    "./modules/sop": "./src/modules/sop/index.ts",
+    "./modules/duties": "./src/modules/duties/index.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
@@ -25,8 +28,8 @@
     "lint": "oxlint src"
   },
   "dependencies": {
-    "@cxsun/core-web": "^1.0.97",
-    "@cxsun/ui": "^1.0.97",
+    "@cxsun/core-web": "^1.0.98",
+    "@cxsun/ui": "^1.0.98",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-table": "^9.2.6",
     "lucide-react": "^1.52.0",

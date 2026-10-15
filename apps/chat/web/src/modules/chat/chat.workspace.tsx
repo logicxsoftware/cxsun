@@ -83,10 +83,16 @@ type PendingAttachment = ChatAttachmentPayload & { sizeBytes: number };
 
 export function ChatWorkspace({
   currentUserEmail = "",
-  filterKind
+  filterKind,
+  channelUuids,
+  title,
+  onConfigure
 }: {
   currentUserEmail?: string;
   filterKind?: ChatChannelKind | undefined;
+  channelUuids?: string[];
+  title?: string;
+  onConfigure?: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ChatChannel | null>(null);
@@ -123,21 +129,23 @@ export function ChatWorkspace({
     () =>
       [...(chat.channels.data ?? [])]
         .filter((channel) => !filterKind || channel.kind === filterKind)
+        .filter((channel) => !channelUuids || channelUuids.includes(channel.uuid))
         .sort((left, right) => {
           const leftTime = left.lastMessageAt ?? left.updatedAt;
           const rightTime = right.lastMessageAt ?? right.updatedAt;
           return rightTime.localeCompare(leftTime);
         }),
-    [chat.channels.data, filterKind]
+    [chat.channels.data, filterKind, channelUuids]
   );
 
   const panelTitle = useMemo(() => {
+    if (title) return title;
     if (filterKind === "dm") return "Chat";
     if (filterKind === "group") return "Groups";
     if (filterKind === "channel") return "Channels";
     if (filterKind === "broadcast") return "Broadcasts";
     return "Chat";
-  }, [filterKind]);
+  }, [filterKind, title]);
 
   const messages = chat.messages.data ?? [];
   const memberRecords = members.members.data ?? [];
@@ -168,7 +176,7 @@ export function ChatWorkspace({
 
   useEffect(() => {
     if (channels.length > 0) {
-      if (!selected || (filterKind && selected.kind !== filterKind)) {
+      if (!selected || !channels.some((channel) => channel.uuid === selected.uuid)) {
         setSelected(channels[0] ?? null);
       }
     } else {
@@ -369,9 +377,9 @@ export function ChatWorkspace({
             size="icon"
             variant="outline"
             type="button"
-            title="New conversation"
+            title={onConfigure ? "Telegram settings" : "New conversation"}
             className="size-8 rounded-lg"
-            onClick={handleNewChat}
+            onClick={onConfigure ?? handleNewChat}
           >
             <Plus className="size-4" />
           </Button>
@@ -494,6 +502,9 @@ export function ChatWorkspace({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem asChild>
+                      <a href="/app/chat/telegram/settings">Telegram settings</a>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setMembersOpen(true)}>
                       <Users className="mr-2 size-4" />
                       Channel info & members
@@ -719,11 +730,7 @@ export function ChatWorkspace({
               Choose a conversation from the left to start messaging, share documents, or view
               history.
             </p>
-            <Button
-              variant="outline"
-              className="mt-5 rounded-lg"
-              onClick={handleNewChat}
-            >
+            <Button variant="outline" className="mt-5 rounded-lg" onClick={handleNewChat}>
               <Plus className="mr-2 size-4" />
               Start a new conversation
             </Button>

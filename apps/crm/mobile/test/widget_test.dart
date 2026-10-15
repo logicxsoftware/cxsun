@@ -178,25 +178,17 @@ void main() {
   });
 
   test('maps live SOP duties and reporting for mobile', () {
-    final duty = HrDuty.fromJson({
+    final duty = CrmDuty.fromJson({
       'department': 'Stores - TMR',
       'frequency': 'Daily',
-      'index': 1,
-      'reports': [
-        {
-          'actions': '<p>Opening checklist completed.</p>',
-          'createdAt': '2026-08-31T05:30:00.000Z',
-          'date': '2026-08-31',
-          'name': 'REPORTING305',
-        },
-      ],
-      'sopItem': 'SOP-1',
-      'sopName': 'Store Opening Check List',
-      'steps': '<p>Check the counter.</p>',
+      'id': 42,
+      'itemTitle': 'Opening Checklist',
+      'instructions': '<p>Check the counter.</p>',
+      'sopTitle': 'Store Opening',
     });
 
-    expect(duty.sopItem, 'SOP-1');
-    expect(duty.reports.single.actions, 'Opening checklist completed.');
+    expect(duty.assignmentId, 42);
+    expect(duty.sopName, 'Store Opening · Opening Checklist');
     expect(duty.steps, 'Check the counter.');
   });
 
@@ -438,6 +430,9 @@ void main() {
     await tester.tap(find.text('Log location'));
     await tester.pumpAndSettle();
     expect(fakeApi.postedComments, contains('Location logged from mobile.'));
+    expect(fakeApi.loggedLocations, isNotEmpty);
+    expect(fakeApi.loggedLocations.first.latitude, 13.0827);
+    expect(fakeApi.loggedLocations.first.longitude, 80.2707);
 
     await tester.tap(find.byTooltip('Add action'));
     await tester.pumpAndSettle();
@@ -465,6 +460,7 @@ void main() {
       find.text('Completion sent. Waiting for web approval.'),
       findsOneWidget,
     );
+    expect(fakeApi.loggedLocations.length, greaterThanOrEqualTo(2));
 
     await tester.enterText(
       find.byType(TextField),
@@ -755,7 +751,7 @@ class _FakeCrmMobileApi extends CrmMobileApi {
   Future<List<CrmJob>> assignedJobDetails(String accessToken) async => [_job];
 
   @override
-  Future<List<HrDuty>> duties(String accessToken) async => [];
+  Future<List<CrmDuty>> duties(String accessToken) async => [];
 
   @override
   Future<List<CrmJob>> createdEnquiries(String accessToken) async => [_job];
@@ -972,11 +968,13 @@ class _FakeCrmMobileApi extends CrmMobileApi {
     activities: _job.activities,
   );
 
+  var loggedLocations = <CrmEnquiryLocation>[];
+
   @override
   Future<List<CrmEnquiryLocation>> enquiryLocations({
     required String accessToken,
     required String enquiryId,
-  }) async => [];
+  }) async => loggedLocations;
 
   @override
   Future<CrmEnquiryLocation> logEnquiryLocation({
@@ -986,14 +984,18 @@ class _FakeCrmMobileApi extends CrmMobileApi {
     required double longitude,
     required double? accuracyMeters,
     required DateTime capturedAt,
-  }) async => CrmEnquiryLocation(
-    id: 9,
-    latitude: latitude,
-    longitude: longitude,
-    capturedAt: capturedAt,
-    createdBy: 'vijay@example.com',
-    accuracyMeters: accuracyMeters,
-  );
+  }) async {
+    final item = CrmEnquiryLocation(
+      id: 9 + loggedLocations.length,
+      latitude: latitude,
+      longitude: longitude,
+      capturedAt: capturedAt,
+      createdBy: 'vijay@example.com',
+      accuracyMeters: accuracyMeters,
+    );
+    loggedLocations.add(item);
+    return item;
+  }
 
   @override
   Future<ClosureRequest?> latestClosureRequest({

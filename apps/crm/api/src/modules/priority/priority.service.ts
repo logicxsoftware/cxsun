@@ -51,6 +51,12 @@ export async function getActivePriorityForDatabase(database: Kysely<PriorityData
   return record?.status === "active" ? record : null;
 }
 
+export async function listActivePrioritiesForDatabase(database: Kysely<PriorityDatabase>) {
+  return (await new PriorityRepository(database).list()).filter(
+    (record) => record.status === "active"
+  );
+}
+
 function validate(input: PriorityInput): PriorityInput {
   const name = input.name.trim();
   if (!name) throw AppError.validation("Priority name is required.");

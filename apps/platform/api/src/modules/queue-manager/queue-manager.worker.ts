@@ -18,6 +18,7 @@ export function queueJobProcessor(jobName: string) {
 export const queueManagerWorker = {
   backends: ["database", "bullmq-redis"],
   jobs: [
+    "chat.telegram.sync",
     "client-artifact.prepare",
     "crm.enquiry.frappe-sync",
     "crm.call-log.frappe-sync",
@@ -30,7 +31,7 @@ export const queueManagerWorker = {
     "mail.system-send",
     "queue.probe"
   ],
-  queues: ["crm", "maintenance", "mail", "reports", "system"]
+  queues: ["chat", "crm", "maintenance", "mail", "reports", "system"]
 } as const;
 
 export function queueJobCanRunInline(job: QueueJobRecord) {

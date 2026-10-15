@@ -95,11 +95,16 @@ import { publishDesktopWorkspace } from "../../shared/desktop/desktop-bridge";
 import { publishAccountingYear, publishCompanyContext } from "../../shared/tenant/runtime-context";
 import { blogEditorHost } from "../../modules/blog/blog-host";
 import { useCrmNavigationCounts } from "@cxsun/crm-web/modules/enquiry/hooks";
-import { useChatNavigationCounts } from "@cxsun/chat-web/modules/chat";
+import {
+  chatTelegramLauncherItem,
+  chatTelegramMenuItems,
+  useChatNavigationCounts
+} from "@cxsun/chat-web/modules/chat";
 import { ZetroLogo } from "@cxsun/zetro-web/logo";
 import { landingAppChoices } from "./landing-app-choices";
 import { CrmContactApplicationHeader } from "./crm-contact-application-header";
 import { newEnquiryFormId, type EnquiryReportFilters } from "@cxsun/crm-web/modules/enquiry";
+import { TaskWorkspace, useTaskNavigationCount } from "@cxsun/crm-web/modules/task";
 import { auditorClientGateway } from "../../modules/auditor/auditor-host";
 import {
   logicxErpOverviewGateway,
@@ -211,6 +216,15 @@ const EnquiryWorkspace = lazyWorkspace(() =>
 );
 const ActivitiesWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/activities").then((module) => module.ActivitiesWorkspace)
+);
+const SopWorkspace = lazyWorkspace(() =>
+  import("@cxsun/crm-web/modules/sop").then((module) => module.SopWorkspace)
+);
+const MyDutiesWorkspace = lazyWorkspace(() =>
+  import("@cxsun/crm-web/modules/duties").then((module) => module.MyDutiesWorkspace)
+);
+const DutyReportingWorkspace = lazyWorkspace(() =>
+  import("@cxsun/crm-web/modules/duties").then((module) => module.DutyReportingWorkspace)
 );
 const ClosureWorkspace = lazyWorkspace(() =>
   import("@cxsun/crm-web/modules/closure").then((module) => module.ClosureWorkspace)
@@ -478,6 +492,12 @@ const NotesWorkspace = lazyWorkspace(() =>
 const ChatWorkspace = lazyWorkspace(() =>
   import("@cxsun/chat-web/modules/chat").then((module) => module.ChatWorkspace)
 );
+const ChatTelegramWorkspace = lazyWorkspace(() =>
+  import("@cxsun/chat-web/modules/chat").then((module) => module.ChatTelegramWorkspace)
+);
+const ChatTelegramSettingsWorkspace = lazyWorkspace(() =>
+  import("@cxsun/chat-web/modules/chat").then((module) => module.ChatTelegramSettingsWorkspace)
+);
 const AccountsOverviewWorkspace = lazyWorkspace(() =>
   loadAccountsOverviewModule().then((module) => module.AccountsOverviewWorkspace)
 );
@@ -578,6 +598,10 @@ type AppPage =
   | "crm.activities"
   | "crm.closures"
   | "crm.call-logs"
+  | "crm.sops"
+  | "crm.tasks"
+  | "crm.duties"
+  | "crm.duty-reporting"
   | "crm.enquiries.new"
   | "crm.my-job"
   | "crm.my-calls"
@@ -637,6 +661,8 @@ type AppPage =
   | "chat.groups"
   | "chat.channels"
   | "chat.broadcast"
+  | "chat.telegram"
+  | "chat.telegram.settings"
   | "task-manager.overview"
   | "task-manager.todos"
   | "core.common.location.countries"
@@ -658,12 +684,14 @@ export function AppDesk() {
   const signedInUser = signedInTenantUser();
   const routePage = pageFromUrl(null, location.pathname);
   const crmCounts = useCrmNavigationCounts(signedInUser.email, routePage.startsWith("crm."));
+  const crmTaskCount = useTaskNavigationCount(routePage.startsWith("crm."));
   const chatCounts = useChatNavigationCounts(Boolean(signedInUser.email));
   const [pendingListPage, setPendingListPage] = useState<{
     page: AppPage;
     search?: Record<string, string>;
   } | null>(null);
   const [crmListRevision, setCrmListRevision] = useState(0);
+  const [taskEditAction, setTaskEditAction] = useState<{ run: () => void } | null>(null);
   const [crmReportTitle, setCrmReportTitle] = useState("List in");
   const [crmContactHeader, setCrmContactHeader] = useState<{
     code: string;
@@ -795,7 +823,9 @@ export function AppDesk() {
           ? crmReportTitle
           : safePage === "crm.enquiries"
             ? "Enquiries"
-            : titleForPage(safePage);
+            : safePage === "crm.tasks" && location.pathname === "/app/crm/tasks/new"
+              ? "New task"
+              : titleForPage(safePage);
   const accountingYear = selectedFinancialYear?.name ?? "Accounting year";
   const defaultSelectionMutation = useMutation({
     mutationFn: saveDefaultCompany,
@@ -958,6 +988,14 @@ export function AppDesk() {
     });
   }
 
+  function openTaskRecord(key: string) {
+    void navigate({ params: { _splat: `crm/tasks/${encodeURIComponent(key)}` }, to: "/app/$" });
+  }
+
+  function openNewTask() {
+    void navigate({ params: { _splat: "crm/tasks/new" }, to: "/app/$" });
+  }
+
   function openNewContact() {
     void navigate({ params: { _splat: "crm/contacts/new" }, to: "/app/$" });
   }
@@ -1054,8 +1092,10 @@ export function AppDesk() {
     });
   }
 
-  const activeWorkspaceTitle =
-    platformAppRegistry.find((app) => app.id === activeApp)?.label ?? "Application";
+  const telegramWorkspace = safePage.startsWith("chat.telegram");
+  const activeWorkspaceTitle = telegramWorkspace
+    ? "Telegram"
+    : (platformAppRegistry.find((app) => app.id === activeApp)?.label ?? "Application");
   const showingCrmContact =
     safePage === "crm.contacts" && /^\/app\/crm\/contacts\/[^/]+\/show$/.test(location.pathname);
   const docsCatalog = useKnowledgeCatalog(docsKnowledgeGateway, activeApp === "docs");
@@ -1063,29 +1103,38 @@ export function AppDesk() {
   const openDocPage = (page: string) => {
     void navigate({ to: "/app/$", params: { _splat: "docs/library" }, search: { page } });
   };
-  const menuItems = [
-    ...appMenuItemsFor(
-      activeApp,
-      safePage === "crm.enquiries.new" ? "crm.enquiries" : safePage,
-      (nextPage) => requestListNavigation(nextPage as AppPage),
-      billingSettingsQuery.data?.features,
-      crmCounts,
-      enabledApps.includes("billing"),
-      chatCounts
-    ),
-    ...(activeApp === "docs"
-      ? buildKnowledgeMenu(docsCatalog.data?.pages ?? [], selectedDocKey, openDocPage)
-      : [])
-  ];
+  const menuItems = telegramWorkspace
+    ? chatTelegramMenuItems(safePage, requestListNavigation)
+    : [
+        ...appMenuItemsFor(
+          activeApp,
+          safePage === "crm.enquiries.new" ? "crm.enquiries" : safePage,
+          (nextPage) => requestListNavigation(nextPage as AppPage),
+          billingSettingsQuery.data?.features,
+          crmCounts,
+          enabledApps.includes("billing"),
+          chatCounts,
+          crmTaskCount
+        ),
+        ...(activeApp === "docs"
+          ? buildKnowledgeMenu(docsCatalog.data?.pages ?? [], selectedDocKey, openDocPage)
+          : [])
+      ];
   const workspaceItems = appWorkspaceItems(switchableApps, activeApp).map((item) => ({
     ...item,
+    active: item.active && !telegramWorkspace,
     onSelect: () =>
       item.appId === "ecommerce"
         ? void navigate({ params: { _splat: "ecommerce" }, to: "/app/$" })
         : requestListNavigation(pageForApp(item.appId))
   }));
   const addonWorkspaceItems = workspaceItems.filter((item) => deskAddonAppIds.includes(item.appId));
-  const appLauncherItems = workspaceItems.filter((item) => !deskAddonAppIds.includes(item.appId));
+  const appLauncherItems = [
+    ...workspaceItems.filter((item) => !deskAddonAppIds.includes(item.appId)),
+    ...(switchableApps.includes("chat")
+      ? [chatTelegramLauncherItem(telegramWorkspace, () => requestListNavigation("chat.telegram"))]
+      : [])
+  ];
 
   const contextError =
     !defaultCompanyQuery.isLoading && runtime?.tenant && !activeDefaultCompany
@@ -1140,8 +1189,8 @@ export function AppDesk() {
 
   return (
     <TenantMainLayout
-      fullBleed={safePage.startsWith("chat.")}
-      hideAppHeader={safePage.startsWith("chat.")}
+      fullBleed={safePage.startsWith("chat.") && safePage !== "chat.telegram.settings"}
+      hideAppHeader={safePage.startsWith("chat.") && safePage !== "chat.telegram.settings"}
       headerActionsAlignment={
         safePage === "hrms.employees"
           ? location.pathname === "/app/hrms/employees"
@@ -1149,15 +1198,18 @@ export function AppDesk() {
             : "form"
           : safePage === "crm.enquiries.new"
             ? "form"
-            : safePage === "crm.enquiries" ||
-                (safePage === "crm.contacts" && location.pathname === "/app/crm/contacts")
-              ? "workspace"
-              : "edge"
+            : safePage === "crm.tasks" && location.pathname === "/app/crm/tasks/new"
+              ? "form"
+              : safePage === "crm.enquiries" ||
+                  safePage === "crm.tasks" ||
+                  (safePage === "crm.contacts" && location.pathname === "/app/crm/contacts")
+                ? "workspace"
+                : "edge"
       }
       appItems={appLauncherItems}
       addonAppItems={addonWorkspaceItems}
       brand={{
-        href: appRootUrl(activeApp),
+        href: telegramWorkspace ? "/app/chat/telegram" : appRootUrl(activeApp),
         ...(companyBranding.lightLogoUrl ? { logoSrc: companyBranding.lightLogoUrl } : {}),
         ...(companyBranding.darkLogoUrl ? { logoDarkSrc: companyBranding.darkLogoUrl } : {}),
         logoAlt: `${companyBranding.brandName ?? "Company"} logo`,
@@ -1257,6 +1309,38 @@ export function AppDesk() {
               Ctrl E
             </kbd>
           </Button>
+        ) : safePage === "crm.tasks" && location.pathname === "/app/crm/tasks" ? (
+          <Button key="new-task" size="sm" className="h-7 px-3" type="button" onClick={openNewTask}>
+            <PlusIcon className="size-4" />
+            New task
+          </Button>
+        ) : safePage === "crm.tasks" && location.pathname === "/app/crm/tasks/new" ? (
+          <Button
+            key="save-task"
+            size="sm"
+            className="h-7 px-3"
+            type="submit"
+            form="crm-new-task-form"
+            aria-keyshortcuts="Control+S"
+          >
+            Save task
+            <kbd className="ml-1 rounded bg-background/15 px-1.5 py-0.5 text-[10px] font-medium text-background/75">
+              Ctrl S
+            </kbd>
+          </Button>
+        ) : safePage === "crm.tasks" &&
+          /^\/app\/crm\/tasks\/[^/]+$/.test(location.pathname) &&
+          location.pathname !== "/app/crm/tasks/new" &&
+          taskEditAction ? (
+          <Button
+            key="edit-task"
+            size="sm"
+            className="h-7 px-3"
+            type="button"
+            onClick={taskEditAction.run}
+          >
+            Edit
+          </Button>
         ) : safePage === "crm.enquiries.new" ? (
           <Button
             key="save-enquiry"
@@ -1279,12 +1363,14 @@ export function AppDesk() {
         activeApp === "chat" ||
         activeApp === "frappe"
       }
-      homeHref={appRootUrl(activeApp)}
+      homeHref={telegramWorkspace ? "/app/chat/telegram" : appRootUrl(activeApp)}
       menuItems={menuItems}
       omitWorkspaceBreadcrumb={activeApp === "crm" || activeApp === "hrms" || activeApp === "chat"}
       onLogout={handleLogout}
-      onOpenSettings={() => requestListNavigation("application.settings")}
-      settingsActive={safePage === "application.settings"}
+      onOpenSettings={() =>
+        requestListNavigation(telegramWorkspace ? "chat.telegram.settings" : "application.settings")
+      }
+      settingsActive={safePage === "application.settings" || safePage === "chat.telegram.settings"}
       user={signedInUser}
       versionLabel={`v ${__APP_VERSION__}`}
       workspaceName={activeWorkspaceTitle}
@@ -1463,6 +1549,20 @@ export function AppDesk() {
               onOpenEnquiry={(id) => openEnquiryRecord(String(id))}
             />
           ) : null}
+          {safePage === "crm.sops" ? <SopWorkspace /> : null}
+          {safePage === "crm.tasks" ? (
+            <TaskWorkspace
+              key={`${safePage}:${location.pathname}:${crmListRevision}`}
+              initialRecordKey={taskRecordKeyFromLocation(location.href)}
+              initialCreate={location.pathname === "/app/crm/tasks/new"}
+              onOpenRecord={openTaskRecord}
+              onCloseCreate={() => completeListNavigation("crm.tasks", true)}
+              onCancelCreate={() => requestListNavigation("crm.tasks")}
+              onEditActionChange={setTaskEditAction}
+            />
+          ) : null}
+          {safePage === "crm.duties" ? <MyDutiesWorkspace /> : null}
+          {safePage === "crm.duty-reporting" ? <DutyReportingWorkspace /> : null}
           {safePage === "crm.closures" ? (
             <ClosureWorkspace
               key={`${safePage}:${crmListRevision}`}
@@ -1599,7 +1699,18 @@ export function AppDesk() {
             <MailWorkspace mailbox={mailboxForPage(safePage)} />
           ) : null}
           {safePage === "notes.overview" ? <NotesWorkspace /> : null}
-          {safePage.startsWith("chat.") ? (
+          {safePage === "chat.telegram" ? (
+            <ChatTelegramWorkspace
+              currentUserEmail={signedInUser.email}
+              onOpenSettings={() => requestListNavigation("chat.telegram.settings")}
+            />
+          ) : null}
+          {safePage === "chat.telegram.settings" ? (
+            <ChatTelegramSettingsWorkspace
+              onCreateConversation={() => requestListNavigation("chat.groups")}
+            />
+          ) : null}
+          {safePage.startsWith("chat.") && !telegramWorkspace ? (
             <ChatWorkspace
               currentUserEmail={signedInUser.email}
               filterKind={chatFilterForPage(safePage)}
@@ -1692,9 +1803,13 @@ function isCrmListPage(page: AppPage) {
   return (
     page === "crm.contacts" ||
     page === "crm.enquiries" ||
+    page === "crm.tasks" ||
     page === "crm.activities" ||
     page === "crm.closures" ||
     page === "crm.call-logs" ||
+    page === "crm.sops" ||
+    page === "crm.duties" ||
+    page === "crm.duty-reporting" ||
     page === "crm.list-in"
   );
 }
@@ -1721,6 +1836,13 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     children[1] !== "new"
   )
     return "crm.enquiries";
+
+  if (
+    app === "crm" &&
+    children[0] === "tasks" &&
+    (children.length === 1 || (children.length === 2 && Boolean(children[1])))
+  )
+    return "crm.tasks";
 
   if (
     app === "crm" &&
@@ -1821,9 +1943,13 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "crm.overview" ||
     key === "crm.reports" ||
     key === "crm.enquiries" ||
+    key === "crm.tasks" ||
     key === "crm.activities" ||
     key === "crm.closures" ||
     key === "crm.call-logs" ||
+    key === "crm.sops" ||
+    key === "crm.duties" ||
+    key === "crm.duty-reporting" ||
     key === "crm.enquiries.new" ||
     key === "crm.my-job" ||
     key === "crm.my-calls" ||
@@ -1884,6 +2010,8 @@ function pageFromUrl(landingApp: PlatformAppId | null, pathname: string): AppPag
     key === "chat.groups" ||
     key === "chat.channels" ||
     key === "chat.broadcast" ||
+    key === "chat.telegram" ||
+    key === "chat.telegram.settings" ||
     key === "task-manager.overview" ||
     key === "task-manager.todos" ||
     key === "core.common.location.countries" ||
@@ -1913,6 +2041,7 @@ function tenantPathMatchesPage(pathname: string, page: AppPage): boolean {
   const canonicalPath = `/app/${page.replaceAll(".", "/")}`;
   if (pathname === canonicalPath) return true;
   if (page === "crm.enquiries") return Boolean(enquiryKeyFromPath(pathname));
+  if (page === "crm.tasks") return /^\/app\/crm\/tasks(?:\/[^/]+)?$/.test(pathname);
   if (
     [
       "billing.quotation",
@@ -2290,6 +2419,16 @@ function enquiryRecordKeyFromLocation(href: string) {
   return enquiryKeyFromPath(url.pathname) ?? url.searchParams.get("record") ?? undefined;
 }
 
+function taskRecordKeyFromLocation(href: string) {
+  const match = /^\/app\/crm\/tasks\/([^/]+)$/.exec(new URL(href, window.location.origin).pathname);
+  if (!match || match[1] === "new") return undefined;
+  try {
+    return decodeURIComponent(match[1]!);
+  } catch {
+    return undefined;
+  }
+}
+
 function enquiryKeyFromPath(pathname: string) {
   const match = /^\/app\/crm\/enquiries\/([^/]+)$/.exec(pathname);
   if (!match || match[1] === "new") return undefined;
@@ -2435,9 +2574,13 @@ function titleForPage(page: AppPage) {
     "crm.overview": "Overview",
     "crm.reports": "List in",
     "crm.enquiries": "All Enquiries",
+    "crm.tasks": "Tasks",
     "crm.activities": "Activities",
     "crm.closures": "Closure Approvals",
     "crm.call-logs": "Call Logs",
+    "crm.sops": "SOPs",
+    "crm.duties": "My Duties",
+    "crm.duty-reporting": "Duty Reporting",
     "crm.enquiries.new": "New enquiry",
     "crm.my-job": "My Job",
     "crm.my-calls": "My Calls",
@@ -2490,6 +2633,8 @@ function titleForPage(page: AppPage) {
     "notes.overview": "Notes",
     "chat.overview": "All Chats",
     "chat.direct": "Chat",
+    "chat.telegram": "Telegram",
+    "chat.telegram.settings": "Telegram Settings",
     "chat.groups": "Group",
     "chat.channels": "Channel",
     "chat.broadcast": "Broadcast",

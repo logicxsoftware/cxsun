@@ -68,6 +68,23 @@ export class ChatConnectionManager {
 export class ChatRealtimeBus {
   constructor(private readonly manager: ChatConnectionManager) {}
 
+  async messageCreatedInScope(context: ChatRuntimeContext, message: ChatMessage): Promise<void> {
+    const frame = realtimeFrame("message.created", { channelUuid: message.channelUuid, message });
+    for (const connection of this.manager.subscribers(message.channelUuid)) {
+      if (
+        connection.context.tenantId === context.tenantId &&
+        connection.context.tenantDatabase === context.tenantDatabase &&
+        connection.context.companyId === context.companyId
+      )
+        try {
+          await connection.context.authorize("chat.manage");
+          connection.socket.send(frame);
+        } catch {
+          // Revoked subscribers must not receive imported Telegram messages.
+        }
+    }
+  }
+
   messageCreated(channelUuid: string, message: ChatMessage): void {
     this.publish(channelUuid, realtimeFrame("message.created", { channelUuid, message }));
   }

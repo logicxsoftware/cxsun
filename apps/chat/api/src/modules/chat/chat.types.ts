@@ -1,5 +1,6 @@
 import type { FastifyRequest } from "fastify";
 import type { Kysely } from "kysely";
+import type { TelegramDependencies } from "./chat.telegram.types.js";
 
 export type ChatChannelKind = "channel" | "dm" | "group" | "broadcast";
 export type ChatStatus = "active" | "inactive";
@@ -20,6 +21,8 @@ export type ChatRuntimeContext = {
 };
 
 export type ChatModuleDependencies = {
+  telegram?: TelegramDependencies;
+  audit?: (context: ChatRuntimeContext, action: string, uuid: string) => Promise<void>;
   events?: ChatRealtimeEvents;
   resolveContext: (request: FastifyRequest) => ChatRuntimeContext | Promise<ChatRuntimeContext>;
 };

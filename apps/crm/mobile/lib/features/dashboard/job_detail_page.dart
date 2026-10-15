@@ -224,6 +224,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         id: widget.initialJob.sourceId,
       ),
     );
+    _logActionLocation();
   }
 
   Future<void> _stopJob() async {
@@ -239,6 +240,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         jobName: running.name,
       ),
     );
+    _logActionLocation();
   }
 
   Future<void> _requestClosure() async {
@@ -254,6 +256,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
       );
       if (mounted) {
         setState(() => _closureRequest = closureRequest);
+        _logActionLocation();
         await _refresh();
         if (!mounted) return;
         ScaffoldMessenger.of(context)
@@ -282,32 +285,28 @@ class _JobDetailPageState extends State<JobDetailPage> {
     try {
       final position =
           await (widget.capturePosition ?? _captureDevicePosition)();
-      final saved = await widget.api.logEnquiryLocation(
-        accessToken: widget.session.accessToken,
-        enquiryId: widget.initialJob.sourceId,
-        latitude: position.latitude,
-        longitude: position.longitude,
-        accuracyMeters: position.accuracy.isFinite ? position.accuracy : null,
-        capturedAt: position.timestamp,
-      );
+      final results = await Future.wait([
+        widget.api.logEnquiryLocation(
+          accessToken: widget.session.accessToken,
+          enquiryId: widget.initialJob.sourceId,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracyMeters: position.accuracy.isFinite ? position.accuracy : null,
+          capturedAt: position.timestamp,
+        ),
+        widget.api.addJobComment(
+          accessToken: widget.session.accessToken,
+          id: widget.initialJob.sourceId,
+          comment: 'Location logged from mobile.',
+        ),
+      ]);
+      final saved = results[0] as CrmEnquiryLocation;
+      final updated = results[1] as CrmJob;
       if (mounted) {
-        setState(() => _locations = [saved, ..._locations]);
-        try {
-          final updated = await widget.api.addJobComment(
-            accessToken: widget.session.accessToken,
-            id: widget.initialJob.sourceId,
-            comment: 'Location logged from mobile.',
-          );
-          if (mounted) setState(() => _job = updated);
-        } on CrmMobileApiException catch (error) {
-          if (mounted) {
-            _showError(
-              'Location saved, but its comment could not be posted: ${error.message}',
-            );
-          }
-          return;
-        }
-        if (!mounted) return;
+        setState(() {
+          _locations = [saved, ..._locations];
+          _job = updated;
+        });
         widget.onJobChanged?.call();
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -320,13 +319,36 @@ class _JobDetailPageState extends State<JobDetailPage> {
     } on LocationServiceDisabledException {
       if (mounted) _showError('Turn on device location and try again.');
     } on PermissionDeniedException {
-      if (mounted)
+      if (mounted) {
         _showError('Allow location access to log this enquiry location.');
+      }
     } catch (error) {
       if (mounted) _showError('Could not get location: $error');
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
+  }
+
+  void _logActionLocation() {
+    () async {
+      try {
+        final position =
+            await (widget.capturePosition ?? _captureDevicePosition)();
+        final saved = await widget.api.logEnquiryLocation(
+          accessToken: widget.session.accessToken,
+          enquiryId: widget.initialJob.sourceId,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracyMeters: position.accuracy.isFinite ? position.accuracy : null,
+          capturedAt: position.timestamp,
+        );
+        if (mounted) {
+          setState(() => _locations = [saved, ..._locations]);
+        }
+      } catch (_) {
+        // Non-blocking background location capture for CRM action
+      }
+    }();
   }
 
   Future<Position> _captureDevicePosition() async {
@@ -345,12 +367,31 @@ class _JobDetailPageState extends State<JobDetailPage> {
         'Allow location access to log this enquiry location.',
       );
     }
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 25),
-      ),
-    );
+
+    try {
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        final age = DateTime.now().difference(lastKnown.timestamp);
+        if (age < const Duration(minutes: 5)) {
+          return lastKnown;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 4),
+        ),
+      );
+    } catch (_) {
+      final fallback = await Geolocator.getLastKnownPosition();
+      if (fallback != null) {
+        return fallback;
+      }
+      rethrow;
+    }
   }
 
   Future<void> _runJobAction(Future<CrmJob> Function() action) async {
@@ -380,6 +421,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
         setState(() => _job = updated);
         _syncRunningTimer();
         widget.onJobChanged?.call();
+        _logActionLocation();
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
@@ -484,6 +526,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
           setState(() => _job = updated);
           _syncRunningTimer();
           widget.onJobChanged?.call();
+          _logActionLocation();
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(

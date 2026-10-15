@@ -7,9 +7,10 @@ import { env } from "../../apps/platform/api/src/env.js";
 import { seedHrmsOverviewPermissions, type HrmsPermissionDatabase } from "@cxsun/hrms-api";
 import { seedDocsOverviewPermissions, type DocsPermissionDatabase } from "@cxsun/docs-api";
 import { seedHimsxOverviewPermissions, type HimsxPermissionDatabase } from "@cxsun/himsx-api";
+import { seedSitesOverviewPermissions, type SitesPermissionDatabase } from "@cxsun/sites-api";
 assert.equal(env.NODE_ENV, "development");
-assert.ok(env.DB_MASTER_NAME.startsWith("cxsun_dev_"));
-assert.ok(env.DEFAULT_TENANT_DB_NAME.startsWith("cxsun_dev_"));
+assert.ok(env.DB_MASTER_NAME.startsWith("cxsun_dev_") || env.DB_MASTER_NAME.startsWith("cxsun_local_"));
+assert.ok(env.DEFAULT_TENANT_DB_NAME.startsWith("cxsun_dev_") || env.DEFAULT_TENANT_DB_NAME.startsWith("cxsun_local_"));
 assert.equal(env.CXSUN_DB_FRESH_ON_START, "0");
 const app = await createApp();
 const db = await createConnection({
@@ -20,7 +21,7 @@ const db = await createConnection({
   database: env.DEFAULT_TENANT_DB_NAME
 });
 const database = new Kysely<
-  HrmsPermissionDatabase & DocsPermissionDatabase & HimsxPermissionDatabase
+  HrmsPermissionDatabase & DocsPermissionDatabase & HimsxPermissionDatabase & SitesPermissionDatabase
 >({
   dialect: new MysqlDialect({
     pool: createPool({
@@ -59,7 +60,8 @@ try {
   for (const [key, seed] of [
     ["hrms", seedHrmsOverviewPermissions],
     ["docs", seedDocsOverviewPermissions],
-    ["himsx", seedHimsxOverviewPermissions]
+    ["himsx", seedHimsxOverviewPermissions],
+    ["sites", seedSitesOverviewPermissions]
   ] as const) {
     const permission = `${key}.overview.view`;
     assert.equal(
@@ -123,7 +125,7 @@ try {
     }
   }
   const health = (await app.inject({ method: "GET", url: "/health", headers: { host } })).json();
-  for (const key of ["hrms", "docs", "himsx"])
+  for (const key of ["hrms", "docs", "himsx", "sites"])
     assert.ok(health.data.checks["platform-api"].details.modules.includes(`${key}.overview`));
   console.log(
     "Tenant app foundations E2E passed: composed routes, login, host/session tenant isolation, disabled apps/permissions rejected and repeatable safe permission seeding."

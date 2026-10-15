@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api/crm_mobile_api.dart';
+import '../../core/platform/mobile_actions.dart';
 import 'job_duration.dart';
 
 class JobWorkFeed extends StatelessWidget {
@@ -39,6 +40,7 @@ class _WorkFeedEntry {
     required this.author,
     required this.createdAt,
     this.durationLabel,
+    this.onTap,
   });
 
   final IconData icon;
@@ -47,6 +49,7 @@ class _WorkFeedEntry {
   final String author;
   final DateTime createdAt;
   final String? durationLabel;
+  final VoidCallback? onTap;
 
   static List<_WorkFeedEntry> fromJob(
     CrmJob job,
@@ -85,6 +88,9 @@ class _WorkFeedEntry {
               '${location.accuracyMeters == null ? '' : ' · ±${location.accuracyMeters!.round()} m'}',
           author: _author(location.createdBy, session),
           createdAt: location.capturedAt,
+          onTap: () => MobileActions.location(
+            '${location.latitude},${location.longitude}',
+          ),
         ),
       ),
     ]..sort((left, right) => right.createdAt.compareTo(left.createdAt));
@@ -99,8 +105,8 @@ class _WorkFeedTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 11),
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -124,6 +130,14 @@ class _WorkFeedTile extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
+                      if (entry.onTap != null) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.open_in_new,
+                          size: 14,
+                          color: Color(0xFF662C90),
+                        ),
+                      ],
                       if (entry.durationLabel case final duration?) ...[
                         const SizedBox(width: 8),
                         _DurationBadge(label: duration),
@@ -146,6 +160,15 @@ class _WorkFeedTile extends StatelessWidget {
         ],
       ),
     );
+
+    if (entry.onTap != null) {
+      return InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: entry.onTap,
+        child: content,
+      );
+    }
+    return content;
   }
 }
 

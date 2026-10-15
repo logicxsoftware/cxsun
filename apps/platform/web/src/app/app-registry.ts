@@ -76,6 +76,8 @@ export type PlatformAppRootPage =
   | "auditor.overview"
   | "auditor.clients"
   | "crm.overview"
+  | "crm.sops"
+  | "crm.tasks"
   | "frappe.overview"
   | "zetro.chat"
   | "logicx-erp.overview"
@@ -677,9 +679,29 @@ export function appMenuFor(
           onSelect: () => onSelect("crm.enquiries")
         },
         {
+          title: "Tasks",
+          isActive: activePage === "crm.tasks",
+          onSelect: () => onSelect("crm.tasks")
+        },
+        {
           title: "Activities",
           isActive: activePage === "crm.activities",
           onSelect: () => onSelect("crm.activities")
+        },
+        {
+          title: "SOPs",
+          isActive: activePage === "crm.sops",
+          onSelect: () => onSelect("crm.sops")
+        },
+        {
+          title: "My Duties",
+          isActive: activePage === "crm.duties",
+          onSelect: () => onSelect("crm.duties")
+        },
+        {
+          title: "Duty Reporting",
+          isActive: activePage === "crm.duty-reporting",
+          onSelect: () => onSelect("crm.duty-reporting")
         },
         {
           title: "Closure Approvals",
@@ -1048,7 +1070,8 @@ export function appMenuItemsFor(
   billingFeatures?: BillingNavigationFeatures,
   crmCounts?: CrmNavigationCounts,
   billingEnabled = false,
-  chatCounts?: ChatNavigationCounts
+  chatCounts?: ChatNavigationCounts,
+  crmTaskCount = 0
 ): SidemenuItem[] {
   if (appId === "codexsun") return codexsunMenuItems(activePage, onSelect);
   if (appId === "hrms")
@@ -1326,10 +1349,35 @@ export function appMenuItemsFor(
         count: crmCounts?.all
       },
       {
+        icon: ClipboardListIcon,
+        isActive: activePage === "crm.tasks",
+        onSelect: () => onSelect("crm.tasks"),
+        title: "Tasks",
+        count: crmTaskCount
+      },
+      {
         icon: LogsIcon,
         isActive: activePage === "crm.activities",
         onSelect: () => onSelect("crm.activities"),
         title: "Activities"
+      },
+      {
+        icon: ClipboardListIcon,
+        isActive: activePage === "crm.sops",
+        onSelect: () => onSelect("crm.sops"),
+        title: "SOPs"
+      },
+      {
+        icon: ClipboardListIcon,
+        isActive: activePage === "crm.duties",
+        onSelect: () => onSelect("crm.duties"),
+        title: "My Duties"
+      },
+      {
+        icon: BarChart3Icon,
+        isActive: activePage === "crm.duty-reporting",
+        onSelect: () => onSelect("crm.duty-reporting"),
+        title: "Duty Reporting"
       },
       {
         icon: NotebookPenIcon,

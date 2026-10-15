@@ -6,3 +6,6 @@ export * from "./chat.services";
 export * from "./chat.types";
 export * from "./chat.user-picker";
 export * from "./chat.workspace";
+export { chatTelegramLauncherItem, chatTelegramMenuItems } from "./chat.telegram.launcher";
+export { ChatTelegramWorkspace } from "./chat.telegram.workspace";
+export { ChatTelegramSettingsWorkspace } from "./chat.telegram.settings-workspace";

@@ -1,4 +1,4 @@
-import { MapPin, RefreshCw } from "lucide-react";
+import { ExternalLink, MapPin, RefreshCw } from "lucide-react";
 import { Button } from "@cxsun/ui/components/button";
 import { WorkspaceTableEmptyState } from "@cxsun/ui/workspace/table";
 import { formatDateTime } from "./enquiry.view-utils";
@@ -18,7 +18,7 @@ export function EnquiryLocations({
   return (
     <section className="min-h-[24rem] bg-card p-4">
       <p className="mb-4 text-sm text-muted-foreground">
-        GPS locations logged from the mobile app for this enquiry.
+        GPS locations logged from mobile actions and manual check-ins for this enquiry.
       </p>
       {loading ? <p className="text-sm text-muted-foreground">Loading locations…</p> : null}
       {error ? (
@@ -51,8 +51,17 @@ export function EnquiryLocations({
                     {formatDateTime(location.capturedAt)}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs">
-                    <MapPin className="mr-1 inline size-3.5" />
-                    {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                    <a
+                      href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                      title="Open in Google Maps"
+                    >
+                      <MapPin className="size-3.5 text-primary" />
+                      {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                      <ExternalLink className="size-3 opacity-60" />
+                    </a>
                   </td>
                   <td className="px-3 py-2">
                     {location.accuracyMeters == null

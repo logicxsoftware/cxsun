@@ -22,12 +22,21 @@ export const CHAT_REACTION_EMOJIS: readonly string[] = ["👍", "❤️", "😂"
 
 export class ChatRepository {
   async listUsers(context: ChatRuntimeContext, search?: string): Promise<ChatUserOption[]> {
-    let query = sql<{ email: string; name: string | null }>`SELECT email, name FROM app_users WHERE status = 'active'`;
+    let query = sql<{
+      email: string;
+      name: string | null;
+    }>`SELECT email, name FROM app_users WHERE status = 'active'`;
     if (search && search.trim()) {
       const term = `%${search.trim().toLowerCase()}%`;
-      query = sql<{ email: string; name: string | null }>`SELECT email, name FROM app_users WHERE status = 'active' AND (LOWER(email) LIKE ${term} OR LOWER(name) LIKE ${term}) ORDER BY name ASC LIMIT 100`;
+      query = sql<{
+        email: string;
+        name: string | null;
+      }>`SELECT email, name FROM app_users WHERE status = 'active' AND (LOWER(email) LIKE ${term} OR LOWER(name) LIKE ${term}) ORDER BY name ASC LIMIT 100`;
     } else {
-      query = sql<{ email: string; name: string | null }>`SELECT email, name FROM app_users WHERE status = 'active' ORDER BY name ASC LIMIT 100`;
+      query = sql<{
+        email: string;
+        name: string | null;
+      }>`SELECT email, name FROM app_users WHERE status = 'active' ORDER BY name ASC LIMIT 100`;
     }
     const rows = await query.execute(context.database);
     return rows.rows.map((row) => ({
@@ -133,6 +142,22 @@ export class ChatRepository {
 
   async forceDeleteChannel(context: ChatRuntimeContext, idOrUuid: string) {
     const channel = await this.requireChannel(context, idOrUuid);
+    const linkedTelegram = await context.database
+      .selectFrom("chat_telegram_dialogs")
+      .select("id")
+      .where("channel_uuid", "=", channel.uuid)
+      .executeTakeFirst();
+    if (linkedTelegram)
+      throw AppError.conflict("Unlink this conversation in Telegram Settings before deleting it.");
+    const telegram = await context.database
+      .selectFrom("chat_telegram_connections")
+      .select("id")
+      .where("channel_uuid", "=", channel.uuid)
+      .executeTakeFirst();
+    if (telegram)
+      throw AppError.conflict(
+        "This conversation retains Telegram connection history. Suspend it instead of deleting it."
+      );
     const messageCount = await this.channelMessageCount(context, channel.id);
     if (messageCount > 0)
       throw AppError.conflict(
@@ -276,12 +301,13 @@ export class ChatRepository {
     const row = await context.database
       .selectFrom("chat_messages as message")
       .innerJoin("chat_channels as channel", "channel.id", "message.channel_id")
-      .select(["message.*", "channel.uuid as channel_uuid"])
+      .selectAll("message")
+      .select("channel.uuid as channel_uuid")
       .where("message.company_id", "=", context.companyId)
       .where((where) =>
         where.or([
           where("message.uuid", "=", idOrUuid),
-          where("message.id", "=", Number(idOrUuid) || 0)
+          where("message.id", "=", internalChatId(idOrUuid))
         ])
       )
       .executeTakeFirst();
@@ -296,7 +322,8 @@ export class ChatRepository {
       body: string;
       channelUuid: string;
       replyToUuid?: string | undefined;
-    }
+    },
+    senderEmail = context.actorEmail
   ): Promise<ChatMessage> {
     const channel = await this.requireChannel(context, input.channelUuid);
     if (channel.kind === "broadcast") {
@@ -314,7 +341,7 @@ export class ChatRepository {
         company_id: context.companyId,
         created_by: context.actorEmail,
         reply_to_message_id: replyToId,
-        sender_email: context.actorEmail,
+        sender_email: senderEmail,
         status: "active",
         updated_by: context.actorEmail,
         uuid: publicUuid()
@@ -440,6 +467,24 @@ export class ChatRepository {
 
   async forceDeleteMessage(context: ChatRuntimeContext, idOrUuid: string) {
     const message = await this.requireMessage(context, idOrUuid);
+    const accountMessage = await context.database
+      .selectFrom("chat_telegram_account_messages")
+      .select("id")
+      .where("local_message_id", "=", message.id)
+      .executeTakeFirst();
+    if (accountMessage)
+      throw AppError.conflict(
+        "This message retains Telegram delivery history. Suspend it instead of deleting it."
+      );
+    const telegram = await context.database
+      .selectFrom("chat_telegram_deliveries")
+      .select("id")
+      .where("message_id", "=", message.id)
+      .executeTakeFirst();
+    if (telegram)
+      throw AppError.conflict(
+        "This message retains Telegram delivery history. Suspend it instead of deleting it."
+      );
     await context.database
       .deleteFrom("chat_message_reactions")
       .where("message_id", "=", message.id)
@@ -519,7 +564,7 @@ export class ChatRepository {
       .selectAll()
       .where("company_id", "=", context.companyId)
       .where((where) =>
-        where.or([where("uuid", "=", idOrUuid), where("id", "=", Number(idOrUuid) || 0)])
+        where.or([where("uuid", "=", idOrUuid), where("id", "=", internalChatId(idOrUuid))])
       )
       .executeTakeFirst();
   }
@@ -731,4 +776,9 @@ function iso(value: unknown): string {
 
 function publicUuid(): string {
   return randomBytes(4).toString("hex");
+}
+
+function internalChatId(value: string): number {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 && id <= 2147483647 ? id : 0;
 }

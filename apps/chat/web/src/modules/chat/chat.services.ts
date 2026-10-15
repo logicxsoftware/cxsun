@@ -126,7 +126,7 @@ export function toggleReaction(id: string, emoji: string) {
   });
 }
 
-async function chatRequest<T>(path: string, init: RequestInit = {}) {
+export async function chatRequest<T>(path: string, init: RequestInit = {}) {
   const tenantId = sessionStorage.getItem("cxsun_tenant_id");
   const tenantDatabase = sessionStorage.getItem("cxsun_tenant_db_name");
   const companyId = sessionStorage.getItem("cxsun.tenant.company-id");

@@ -2,11 +2,11 @@
 
 ## Version State
 
-Current version: 1.0.97
+Current version: 1.0.98
 
-Release tag: v-1.0.97
+Release tag: v-1.0.98
 
-Changelog label: v 1.0.97
+Changelog label: v 1.0.98
 
 This changelog starts fresh from the cleaned CODEXSUN foundation. Earlier copied application history was intentionally removed because it did not represent the current workspace.
 
@@ -20,7 +20,50 @@ Records schema, migration, seed, tenant provisioning, and data compatibility cha
 
 Records UI, API, service logic, tooling, packaging, and documentation changes.
 
+## v-1.0.98
+
+### [v 1.0.98] 2026-10-15 12:20 pm - working on task and sop
+
+#### Database Changes
+
+- Database update: Yes (auto-check).
+
+#### App Codebase Changes
+
+- Bumped workspace version to 1.0.98.
+
 ## v-1.0.97
+
+### [v 1.0.97] 2026-10-14 - CRM SOP and Duties modules
+
+#### Database Changes
+
+- Added tenant migrations for SOPs, SOP Items and revisions, Duty Assignments,
+  Duty Reports, and the outbound Frappe sync queue.
+- Added CRM permissions for SOP authoring, duty assignment, and duty reporting.
+
+#### App Codebase Changes
+
+- Added local CRM SOP authoring, revision publishing, user Duty assignment,
+  Duty Reporting, and mobile My Duties/report submission.
+- Added a durable CRM-to-Frappe queue, relay, and worker for published SOP Items,
+  assignments, and reports. CRM remains the source of truth.
+- Added local database E2E coverage for publish, assign, report, duplicate retry,
+  queue creation, mocked Frappe field mapping and dependency order, and report
+  persistence after reconnecting to the database.
+- Fixed Duty Report own-scope access to fail closed when no active user is
+  available; added report filters, totals, and pagination to the API and web UI.
+- Unified immediate and relay queue idempotency keys, added an atomic sync-event
+  claim, and queued published child-item updates after SOP title changes.
+- Added web SOP editing, lifecycle controls, item revision authoring/history,
+  and local assignment deactivation. Remote assignment deactivation remains
+  pending because Frappe's current DocType contract has no inactive state.
+- Updated mobile My Duties to read the paginated own-report response.
+- Expanded local CRM E2E coverage for permission denial and concurrent worker
+  claims.
+- Passed CRM API, CRM web, Platform API, and Frappe API typechecks, CRM module
+  boundary checks, mobile analysis, and all 22 mobile widget tests. Live delivery
+  to a Frappe site remains unverified.
 
 ### [v 1.0.97] 2026-10-14 7:46 pm - CRM mobile job comment flow
 

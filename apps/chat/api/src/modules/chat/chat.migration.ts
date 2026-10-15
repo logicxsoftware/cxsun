@@ -1,5 +1,7 @@
 import { runMigrationBatch, type MigrationBatch } from "@cxsun/framework/db";
 import { sql, type Kysely } from "kysely";
+import { applyChatTelegramSchema } from "./chat.telegram.migration.js";
+import { applyChatTelegramAccountSchema } from "./chat.telegram.account-migration.js";
 
 type ChatDatabase = Record<string, Record<string, unknown>>;
 
@@ -47,6 +49,20 @@ export const chatMigrationBatch: MigrationBatch<ChatDatabase> = {
       name: "chat.005_replies_reactions_edits",
       up: applyChatMessageExtrasSchema,
       version: 5
+    },
+    {
+      checksum: "chat.006_telegram:v1",
+      description: "Telegram connections, polling offsets, and durable delivery tracking.",
+      name: "chat.006_telegram",
+      up: applyChatTelegramSchema,
+      version: 6
+    },
+    {
+      checksum: "chat.007_telegram_account:v1",
+      description: "User-owned MTProto sessions, dialog links and idempotent message mappings.",
+      name: "chat.007_telegram_account",
+      up: applyChatTelegramAccountSchema,
+      version: 7
     }
   ],
   version: "1.0.91"

@@ -16,7 +16,7 @@ import {
 } from "./enquiry.hooks";
 import { useEnquiryMasterCreate } from "./enquiry.master-create";
 import { updateEnquiryProperties } from "./enquiry.services";
-import { formatDate, formatDateTime, formatScheduleDate } from "./enquiry.view-utils";
+import { formatDateTime, formatScheduleDate } from "./enquiry.view-utils";
 import type {
   EnquiryLookup,
   EnquiryMasterLookup,
@@ -94,7 +94,6 @@ export function EnquiryProperties({
   }
 
   return (
-    <aside className="space-y-4 xl:sticky xl:top-4">
       <WorkspaceShowCard title="Properties">
         <EditableRow
           label="List in"
@@ -238,17 +237,6 @@ export function EnquiryProperties({
         ) : null}
         <WorkspaceDetailTable rows={[["Updated", formatDateTime(record.updatedAt)]]} />
       </WorkspaceShowCard>
-      <WorkspaceShowCard title="Customer">
-        <WorkspaceDetailTable
-          rows={[
-            ["Customer", record.contactName ?? record.capturedName ?? "—"],
-            ["Mobile", mobile || "—"],
-            ["Enquiry date", formatDate(record.enquiredAt)],
-            ["Schedule date", formatScheduleDate(record.dueDate)]
-          ]}
-        />
-      </WorkspaceShowCard>
-    </aside>
   );
 }
 

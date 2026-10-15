@@ -504,25 +504,39 @@ class CrmMobileApi {
     return job(accessToken, id);
   }
 
-  Future<List<HrDuty>> duties(String accessToken) async {
-    final data = await _request('/mobile/hr/duties', accessToken: accessToken);
-    if (data is! List)
+  Future<List<CrmDuty>> duties(String accessToken) async {
+    final data = await _request('/crm/duties', accessToken: accessToken);
+    final reportData = await _request('/crm/duty-reports?scope=own&page=1&pageSize=100', accessToken: accessToken);
+    final reportsPage = reportData is Map<String, dynamic> ? reportData['items'] : reportData;
+    if (data is! List || reportsPage is! List)
       throw const CrmMobileApiException('Unexpected duties response.');
-    return data.whereType<Map<String, dynamic>>().map(HrDuty.fromJson).toList();
+    final reports = reportsPage.whereType<Map<String, dynamic>>().map(CrmDutyReport.fromJson).toList();
+    return data.whereType<Map<String, dynamic>>().map((item) {
+      final id = item['id'] is int ? item['id'] as int : int.tryParse('${item['id']}') ?? -1;
+      return CrmDuty.fromJson({...item, 'reports': reports.where((report) => report.assignmentId == id).map((report) => report.toJson()).toList()});
+    }).toList();
   }
 
-  Future<HrDuty> reportDuty({
+  Future<CrmDutyReport> reportDuty({
     required String accessToken,
-    required String sopItem,
+    required int assignmentId,
     required String actions,
+    required String result,
+    required String issueDetails,
   }) async {
     final data = await _request(
-      '/mobile/hr/duties/${Uri.encodeComponent(sopItem)}/reports',
+      '/crm/duty-reports',
       accessToken: accessToken,
       method: 'POST',
-      body: {'actions': actions},
+      body: {
+        'assignmentId': assignmentId,
+        'performedDate': DateTime.now().toUtc().toIso8601String().substring(0, 10),
+        'actions': actions,
+        'result': result,
+        'issueDetails': issueDetails,
+      },
     );
-    return HrDuty.fromJson(data as Map<String, dynamic>);
+    return CrmDutyReport.fromJson(data as Map<String, dynamic>);
   }
 
   Future<CrmJob> stopJob({
@@ -1179,8 +1193,9 @@ class CrmJob {
   }
 }
 
-class HrDuty {
-  const HrDuty({
+class CrmDuty {
+  const CrmDuty({
+    required this.assignmentId,
     required this.department,
     required this.frequency,
     required this.index,
@@ -1191,46 +1206,65 @@ class HrDuty {
   });
 
   final String department;
+  final int assignmentId;
   final String frequency;
   final int index;
-  final List<HrDutyReport> reports;
+  final List<CrmDutyReport> reports;
   final String sopItem;
   final String sopName;
   final String steps;
 
-  factory HrDuty.fromJson(Map<String, dynamic> json) => HrDuty(
+  factory CrmDuty.fromJson(Map<String, dynamic> json) => CrmDuty(
+        assignmentId: json['id'] is int
+            ? json['id'] as int
+            : int.tryParse(json['sopItem'] as String? ?? '') ?? 0,
     department: json['department'] as String? ?? '',
     frequency: json['frequency'] as String? ?? 'Daily',
     index: json['index'] as int? ?? 0,
     reports: (json['reports'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
-        .map(HrDutyReport.fromJson)
+        .map(CrmDutyReport.fromJson)
         .toList(),
-    sopItem: json['sopItem'] as String? ?? '',
-    sopName: json['sopName'] as String? ?? '',
-    steps: _plainTextComment(json['steps'] as String? ?? ''),
+        sopItem: (json['sopItemId'] ?? json['sopItem'] ?? '').toString(),
+        sopName: json['itemTitle'] is String
+            ? '${json['sopTitle'] ?? 'SOP'} · ${json['itemTitle']}'
+            : json['sopName'] as String? ?? '',
+        steps: _plainTextComment(
+          json['instructions'] as String? ?? json['steps'] as String? ?? '',
+        ),
   );
 }
 
-class HrDutyReport {
-  const HrDutyReport({
+class CrmDutyReport {
+  const CrmDutyReport({
     required this.actions,
     required this.createdAt,
     required this.date,
     required this.name,
+    required this.assignmentId,
   });
 
   final String actions;
   final DateTime createdAt;
   final String date;
   final String name;
+  final int assignmentId;
 
-  factory HrDutyReport.fromJson(Map<String, dynamic> json) => HrDutyReport(
+  Map<String, dynamic> toJson() => {
+    'actions': actions,
+    'createdAt': createdAt.toIso8601String(),
+    'date': date,
+    'name': name,
+    'assignmentId': assignmentId,
+  };
+
+  factory CrmDutyReport.fromJson(Map<String, dynamic> json) => CrmDutyReport(
     actions: _plainTextComment(json['actions'] as String? ?? ''),
     createdAt:
         DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
-    date: json['date'] as String? ?? '',
-    name: json['name'] as String? ?? '',
+    date: json['performedDate'] as String? ?? json['date'] as String? ?? '',
+    name: (json['name'] ?? json['id'] ?? '').toString(),
+    assignmentId: json['assignmentId'] is int ? json['assignmentId'] as int : int.tryParse('${json['assignmentId']}') ?? -1,
   );
 }
 

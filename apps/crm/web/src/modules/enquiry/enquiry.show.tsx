@@ -1,12 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Activity, MapPin, MessageSquare, ReceiptText, Timer } from "lucide-react";
+import { Activity, BellRing, MapPin, MessageSquare, ReceiptText, Settings2, Timer, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@cxsun/ui/components/button";
 import { GlobalLoader } from "@cxsun/ui/components/global-loader";
 import { WorkspaceAnimatedTabs } from "@cxsun/ui/workspace/animated-tabs";
 import { WorkspacePage } from "@cxsun/ui/workspace/page";
-import { WorkspaceShowLayout } from "@cxsun/ui/workspace/show";
 import { WorkspaceStatusBadge } from "@cxsun/ui/workspace/status";
 import { formatDateTime as formatWorkspaceDateTime } from "@cxsun/ui/workspace";
 import { CrmColorLabel, CrmStatusBadge } from "../../crm-colors";
@@ -29,12 +28,13 @@ import {
 import { EnquiryJobs } from "./enquiry.jobs";
 import { EnquiryLocations } from "./enquiry.locations";
 import { EnquiryProperties } from "./enquiry.properties";
+import { EnquiryCustomer } from "./enquiry.customer";
 import { startEnquiryJob, stopEnquiryJob } from "./enquiry.services";
 import { enquiryTableText } from "./enquiry.table-text";
 import { whatsappUrl } from "./enquiry.view-utils";
 import type { EnquiryLookup, EnquiryMasterLookup, EnquiryRecord } from "./enquiry.types";
 
-type EnquiryTab = "comments" | "jobs" | "estimate" | "activity" | "locations";
+type EnquiryTab = "comments" | "jobs" | "estimate" | "activity" | "locations" | "properties" | "closure" | "customer";
 
 export function EnquiryShow({
   id,
@@ -146,6 +146,21 @@ export function EnquiryShow({
           onRetry={() => void locations.refetch()}
         />
       )
+    },
+    {
+      value: "properties",
+      label: <TabLabel icon={<Settings2 className="size-4" />} label="Properties" />,
+      content: record ? <EnquiryProperties record={record} mobile={mobile} users={users} listOptions={listOptions} statuses={statuses} priorities={priorities} /> : null
+    },
+    {
+      value: "closure",
+      label: <TabLabel icon={<BellRing className="size-4" />} label="Closure" />,
+      content: record ? <EnquiryClosureCard enquiryId={id} enquiryStatus={record.status} onChanged={() => Promise.all([client.invalidateQueries({ queryKey: enquiryDetailQueryKey(id) }), client.invalidateQueries({ queryKey: enquiryActivityQueryKey(id) }), client.invalidateQueries({ queryKey: enquiriesQueryKey })])} /> : null
+    },
+    {
+      value: "customer",
+      label: <TabLabel icon={<UserRound className="size-4" />} label="Customer" />,
+      content: record ? <EnquiryCustomer record={record} mobile={mobile} /> : null
     }
   ];
   if (!record && !error) {
@@ -207,8 +222,7 @@ export function EnquiryShow({
       {record ? (
         <>
           <EnquirySummary record={record} users={users} />
-          <WorkspaceShowLayout className="xl:grid-cols-[minmax(0,1fr)_24rem]">
-            <div className="min-w-0 overflow-hidden rounded-md border border-border/70 bg-card/95 shadow-sm">
+          <div className="min-w-0 overflow-hidden rounded-md border border-border/70 bg-card/95 shadow-sm">
               <WorkspaceAnimatedTabs
                 tabs={tabs}
                 value={activeTab}
@@ -216,29 +230,7 @@ export function EnquiryShow({
                 listClassName="px-3"
                 contentClassName="mt-0 pb-0"
               />
-            </div>
-            <EnquiryProperties
-              record={record}
-              mobile={mobile}
-              users={users}
-              listOptions={listOptions}
-              statuses={statuses}
-              priorities={priorities}
-            />
-            <div className="xl:col-start-2 xl:row-start-2">
-              <EnquiryClosureCard
-                enquiryId={record.id}
-                enquiryStatus={record.status}
-                onChanged={() =>
-                  Promise.all([
-                    client.invalidateQueries({ queryKey: enquiryDetailQueryKey(id) }),
-                    client.invalidateQueries({ queryKey: enquiryActivityQueryKey(id) }),
-                    client.invalidateQueries({ queryKey: enquiriesQueryKey })
-                  ])
-                }
-              />
-            </div>
-          </WorkspaceShowLayout>
+          </div>
         </>
       ) : null}
     </WorkspacePage>

@@ -49,6 +49,12 @@ export async function getActiveListInForDatabase(database: Kysely<ListInDatabase
   return record?.status === "active" ? record : null;
 }
 
+export async function listActiveListInsForDatabase(database: Kysely<ListInDatabase>) {
+  return (await new ListInRepository(database).list()).filter(
+    (record) => record.status === "active"
+  );
+}
+
 export async function resolveListInForImport(database: Kysely<ListInDatabase>, name: string) {
   const normalized = name.trim();
   if (!normalized) return null;

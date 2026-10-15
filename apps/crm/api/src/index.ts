@@ -40,3 +40,47 @@ export { statusModule, getActiveStatusForDatabase } from "./modules/status/index
 export type { StatusDatabase } from "./modules/status/index.js";
 export { priorityModule, getActivePriorityForDatabase } from "./modules/priority/index.js";
 export type { PriorityDatabase } from "./modules/priority/index.js";
+export { sopModule, sopMigrationBatch, migrateSopModule } from "./modules/sop/index.js";
+export {
+  sopItemModule,
+  sopItemMigrationBatch,
+  migrateSopItemModule
+} from "./modules/sop-item/index.js";
+export {
+  dutyAssignmentModule,
+  dutyAssignmentMigrationBatch,
+  migrateDutyAssignmentModule
+} from "./modules/duty-assignment/index.js";
+export {
+  dutyReportModule,
+  dutyReportMigrationBatch,
+  migrateDutyReportModule,
+  recurrenceKey
+} from "./modules/duty-report/index.js";
+export type { SopDatabase, SopRequestContext } from "./modules/sop/index.js";
+export type { SopItemDatabase, SopItemRequestContext } from "./modules/sop-item/index.js";
+export type {
+  DutyAssignmentDatabase,
+  DutyAssignmentContext,
+  DutyAssignment
+} from "./modules/duty-assignment/index.js";
+export type {
+  DutyReportDatabase,
+  DutyReportContext,
+  DutyReport
+} from "./modules/duty-report/index.js";
+export {
+  frappeSyncMigrationBatch,
+  migrateFrappeSyncModule,
+  CrmFrappeSyncRepository,
+  enqueueCrmFrappeSync,
+  crmDutySyncIdempotencyKey
+} from "./modules/frappe-sync/index.js";
+export type { CrmFrappeSyncDatabase, CrmFrappeSyncType } from "./modules/frappe-sync/index.js";
+export {
+  taskModule,
+  taskMigrationBatch,
+  migrateTaskModule,
+  seedTaskPermissions
+} from "./modules/task/index.js";
+export type { TaskDatabase, TaskContext, TaskRecord, TaskInput } from "./modules/task/index.js";

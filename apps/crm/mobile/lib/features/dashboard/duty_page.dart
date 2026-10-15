@@ -14,7 +14,7 @@ class DutyPage extends StatefulWidget {
 }
 
 class _DutyPageState extends State<DutyPage> {
-  late Future<List<HrDuty>> _duties;
+  late Future<List<CrmDuty>> _duties;
 
   @override
   void initState() {
@@ -22,13 +22,13 @@ class _DutyPageState extends State<DutyPage> {
     _duties = _load();
   }
 
-  Future<List<HrDuty>> _load() => widget.api.duties(widget.session.accessToken);
+  Future<List<CrmDuty>> _load() => widget.api.duties(widget.session.accessToken);
 
   void _refresh() => setState(() => _duties = _load());
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<HrDuty>>(
+    return FutureBuilder<List<CrmDuty>>(
       future: _duties,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -45,7 +45,7 @@ class _DutyPageState extends State<DutyPage> {
             ),
           );
         }
-        final duties = snapshot.data ?? const <HrDuty>[];
+        final duties = snapshot.data ?? const <CrmDuty>[];
         if (duties.isEmpty) {
           return const _DutyState(
             icon: Icons.assignment_turned_in_outlined,
@@ -68,19 +68,21 @@ class _DutyPageState extends State<DutyPage> {
     );
   }
 
-  Future<void> _report(HrDuty duty) async {
-    final action = await showModalBottomSheet<String>(
+  Future<void> _report(CrmDuty duty) async {
+    final submission = await showModalBottomSheet<_DutyReportInput>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => _DutyReportSheet(duty: duty),
     );
-    if (action == null || !mounted) return;
+    if (submission == null || !mounted) return;
     try {
       await widget.api.reportDuty(
         accessToken: widget.session.accessToken,
-        sopItem: duty.sopItem,
-        actions: action,
+        assignmentId: duty.assignmentId,
+        actions: submission.actions,
+        result: submission.result,
+        issueDetails: submission.issueDetails,
       );
       _refresh();
       if (mounted) {
@@ -99,7 +101,7 @@ class _DutyPageState extends State<DutyPage> {
 class _DutyCard extends StatelessWidget {
   const _DutyCard({required this.duty, required this.onReport});
 
-  final HrDuty duty;
+  final CrmDuty duty;
   final VoidCallback onReport;
 
   @override
@@ -189,7 +191,7 @@ class _FrequencyBadge extends StatelessWidget {
 class _DutyReportSheet extends StatefulWidget {
   const _DutyReportSheet({required this.duty});
 
-  final HrDuty duty;
+  final CrmDuty duty;
 
   @override
   State<_DutyReportSheet> createState() => _DutyReportSheetState();
@@ -197,10 +199,13 @@ class _DutyReportSheet extends StatefulWidget {
 
 class _DutyReportSheetState extends State<_DutyReportSheet> {
   final _controller = TextEditingController();
+  final _issueController = TextEditingController();
+  String _result = 'completed';
 
   @override
   void dispose() {
     _controller.dispose();
+    _issueController.dispose();
     super.dispose();
   }
 
@@ -238,16 +243,49 @@ class _DutyReportSheetState extends State<_DutyReportSheet> {
           ),
         ),
         const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _result,
+          decoration: const InputDecoration(labelText: 'Result', border: OutlineInputBorder()),
+          items: const [
+            DropdownMenuItem(value: 'completed', child: Text('Completed')),
+            DropdownMenuItem(value: 'blocked', child: Text('Blocked')),
+          ],
+          onChanged: (value) => setState(() => _result = value ?? 'completed'),
+        ),
+        if (_result == 'blocked') ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _issueController,
+            minLines: 2,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(),
+              labelText: 'Issue details',
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
         FilledButton(
           onPressed: () {
             final action = _controller.text.trim();
-            if (action.isNotEmpty) Navigator.pop(context, action);
+            final issue = _issueController.text.trim();
+            if (action.isNotEmpty && (_result != 'blocked' || issue.isNotEmpty)) {
+              Navigator.pop(context, _DutyReportInput(actions: action, result: _result, issueDetails: issue));
+            }
           },
           child: const Text('Post report'),
         ),
       ],
     ),
   );
+}
+
+class _DutyReportInput {
+  const _DutyReportInput({required this.actions, required this.result, required this.issueDetails});
+  final String actions;
+  final String result;
+  final String issueDetails;
 }
 
 class _DutyState extends StatelessWidget {

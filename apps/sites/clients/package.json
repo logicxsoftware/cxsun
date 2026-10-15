@@ -1,6 +1,6 @@
 {
   "name": "@cxsun/sites-clients",
-  "version": "1.0.97",
+  "version": "1.0.98",
   "private": true,
   "type": "module",
   "exports": {
@@ -21,7 +21,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@cxsun/ui": "^1.0.97",
+    "@cxsun/ui": "^1.0.98",
     "framer-motion": "^14.0.0",
     "lucide-react": "^1.52.0",
     "react": "^19.3.0",

@@ -50,6 +50,12 @@ export async function getActiveStatusForDatabase(database: Kysely<StatusDatabase
   return record?.status === "active" ? record : null;
 }
 
+export async function listActiveStatusesForDatabase(database: Kysely<StatusDatabase>) {
+  return (await new StatusRepository(database).list()).filter(
+    (record) => record.status === "active"
+  );
+}
+
 function validate(input: StatusInput): StatusInput {
   const name = input.name.trim();
   if (!name) throw AppError.validation("Status name is required.");

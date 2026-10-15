@@ -21,6 +21,7 @@ import { registerModules } from "@cxsun/framework/modules";
 import { createMailModule } from "@cxsun/mail-api";
 import { createNotesModule } from "@cxsun/notes-api";
 import { createChatModule } from "@cxsun/chat-api";
+import { telegramChatDependencies } from "./chat-host.js";
 import { accountsApiModuleKeys, registerAccountsApi } from "@cxsun/accounts-api";
 import {
   billingApiModuleKeys,
@@ -48,6 +49,13 @@ import {
   listInModule,
   statusModule,
   priorityModule,
+  sopModule,
+  sopItemModule,
+  dutyAssignmentModule,
+  dutyReportModule,
+  taskModule,
+  CrmFrappeSyncRepository,
+  crmDutySyncIdempotencyKey,
   getActiveListInForDatabase,
   resolveListInForImport,
   getActiveStatusForDatabase,
@@ -57,7 +65,8 @@ import {
   type ActivitiesDatabase,
   type ListInDatabase,
   type StatusDatabase,
-  type PriorityDatabase
+  type PriorityDatabase,
+  type CrmFrappeSyncDatabase
 } from "@cxsun/crm-api";
 import {
   ecommerceOverviewModule,
@@ -91,6 +100,7 @@ import {
   frappeCallLogSyncModule,
   frappeEnquiryImportJobName,
   processFrappeEnquiryImportJob,
+  processCrmDutySync,
   frappeUserMappingModule,
   mappedEmployeeCodeForLocalUser,
   mappedLocalUserForEmployeeCode,
@@ -137,6 +147,7 @@ import { taskManagerModule } from "./modules/task-manager/index.js";
 import { credentialRecoveryModule } from "./modules/credential-recovery/index.js";
 import { appOrchestrationModule } from "./modules/app-orchestration/index.js";
 import { startQueueManagerWorker } from "./modules/queue-manager/queue-manager.runtime.js";
+import { startCrmDutySyncRelay } from "./modules/queue-manager/crm-duty-sync.relay.js";
 import { QueueManagerService } from "./modules/queue-manager/queue-manager.service.js";
 import { registerQueueJobProcessor } from "./modules/queue-manager/queue-manager.worker.js";
 import { startFrappeLiveSyncScheduler } from "./modules/queue-manager/frappe-live-sync.scheduler.js";
@@ -219,7 +230,20 @@ export async function createApp() {
     secretKey: env.JWT_SECRET
   });
   const notesModule = createNotesModule({ resolveContext: notesContext });
-  const chatModule = createChatModule({ resolveContext: chatContext });
+  const chatModule = createChatModule({
+    resolveContext: chatContext,
+    telegram: telegramChatDependencies(queueService),
+    audit: (context, action, uuid) =>
+      recordTenantAccessAudit({
+        action,
+        actorEmail: context.actorEmail,
+        moduleKey: "chat.telegram",
+        recordId: 0,
+        recordLabel: "Telegram connection",
+        recordUuid: uuid,
+        tenantId: context.tenantId
+      })
+  });
 
   const healthChecks: HealthCheck[] = [
     {
@@ -527,8 +551,23 @@ export async function createApp() {
       resource === "call-log" &&
       request.method === "POST" &&
       /^\/crm\/(?:mobile\/)?call-logs(?:\/CL-\d+\/comments)?$/u.test(path);
+    const taskAction =
+      resource === "task" &&
+      request.method === "PATCH" &&
+      /^\/crm\/tasks\/\d+\/properties$/u.test(path)
+        ? "respond"
+        : resource === "task" && request.method === "POST"
+          ? /^\/crm\/tasks\/closure-requests\/\d+\/review$/u.test(path)
+            ? "closure.review"
+            : /^\/crm\/tasks\/\d+\/comments$/u.test(path)
+              ? "respond"
+              : /^\/crm\/tasks\/\d+\/jobs\/(?:start|stop)$/u.test(path)
+                ? "work"
+                : null
+          : null;
     const action =
-      request.method === "GET" || /^\/crm\/enquiries\/alerts\/\d+\/read$/u.test(path)
+      taskAction ??
+      (request.method === "GET" || /^\/crm\/enquiries\/alerts\/\d+\/read$/u.test(path)
         ? "view"
         : request.method === "DELETE" && !/^\/crm\/enquiries\/live\//u.test(path)
           ? "delete"
@@ -541,7 +580,7 @@ export async function createApp() {
               ? "create"
               : isCallLogWrite
                 ? "create"
-                : "update";
+                : "update");
     if (action === "view" && ["list-in", "status", "priority"].includes(resource)) {
       try {
         await context.authorize(`crm.${resource}.view`);
@@ -1095,6 +1134,111 @@ export async function createApp() {
       database: context.database as unknown as import("kysely").Kysely<unknown>,
       actorEmail: context.actorEmail
     };
+  });
+  const crmDutyContext = async (request: FastifyRequest) => {
+    const context = tenantAccessContext(request);
+    const enabled = await context.database
+      .selectFrom("app_module_settings")
+      .select("id")
+      .where("module_key", "=", "crm")
+      .where("enabled", "=", true)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    if (!enabled) throw AppError.forbidden("CRM is not enabled for this tenant.");
+    const user = await context.database
+      .selectFrom("app_users")
+      .select("id")
+      .where("email", "=", context.actorEmail)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    return {
+      database: context.database as never,
+      actorEmail: context.actorEmail,
+      actorUserId: user?.id ?? null,
+      authorize: context.authorize,
+      queueSync: async (entity: "sop-item" | "duty-assignment" | "duty-report", id: number) => {
+        const sync = await new CrmFrappeSyncRepository(
+          context.database as unknown as import("kysely").Kysely<CrmFrappeSyncDatabase>
+        ).find(entity, id);
+        if (!sync || sync.status === "synced") return;
+        try {
+          await queueService.enqueue({
+            actorEmail: context.actorEmail,
+            correlationId: request.id,
+            idempotencyKey: crmDutySyncIdempotencyKey(context.tenantId, sync.uuid, sync.attempts + (sync.status === "processing" ? 1 : 0)),
+            jobName: "crm.sop.frappe-sync",
+            maxAttempts: 5,
+            payload: { tenantDatabase: context.tenantDatabase, queueId: sync.id },
+            queueName: "crm",
+            sourceModule: "frappe.crm-duty-sync",
+            tenantId: context.tenantId
+          });
+        } catch (error) {
+          request.log.warn({ error, syncId: sync.id }, "CRM duty sync dispatch deferred to relay");
+        }
+      }
+    };
+  };
+  await sopModule.register(app, crmDutyContext);
+  await sopItemModule.register(app, crmDutyContext);
+  await dutyAssignmentModule.register(app, crmDutyContext);
+  await dutyReportModule.register(app, crmDutyContext);
+  await taskModule.register(app, async (request) => {
+    const context = await crmAccess(request, "task", "/crm/tasks");
+    const actor = await context.database
+      .selectFrom("app_users")
+      .select("id")
+      .where("email", "=", context.actorEmail)
+      .where("status", "=", "active")
+      .executeTakeFirst();
+    let canViewAll = false;
+    try {
+      await context.authorize("crm.task.view-all");
+      canViewAll = true;
+    } catch (error) {
+      if (!(error instanceof AppError) || error.code !== "FORBIDDEN") throw error;
+    }
+    return {
+      database: context.database as unknown as import("kysely").Kysely<
+        import("@cxsun/crm-api").TaskDatabase
+      >,
+      actorEmail: context.actorEmail,
+      actorUserId: actor?.id ?? null,
+      canViewAll,
+      authorize: context.authorize
+    };
+  });
+  registerQueueJobProcessor("crm.sop.frappe-sync", async (job) => {
+    const tenant = await new TenantRepository().findByIdOrCode(job.tenantId ?? "");
+    if (
+      !tenant ||
+      tenant.dbName !== job.payload.tenantDatabase ||
+      typeof job.payload.queueId !== "number"
+    )
+      throw new Error("CRM duty sync tenant or queue event is invalid.");
+    const database = getTenantDatabase(
+      tenant
+    ) as unknown as import("kysely").Kysely<FrappeDatabase>;
+    const connection = await new FrappeConnectionAccess(
+      database,
+      env.JWT_SECRET,
+      frappeSettings
+    ).credentials();
+    if (!connection)
+      throw AppError.conflict("Verify the Frappe connection before processing CRM duty sync.");
+    return processCrmDutySync(
+      database as unknown as import("kysely").Kysely<
+        import("@cxsun/crm-api").DutyReportDatabase & CrmFrappeSyncDatabase & FrappeDatabase
+      >,
+      job.payload.queueId,
+      connection,
+      (email, baseUrl) =>
+        mappedEmployeeCodeForLocalUser(
+          database as unknown as import("kysely").Kysely<FrappeUserMappingDatabase>,
+          email,
+          baseUrl
+        )
+    );
   });
   registerQueueJobProcessor("crm.enquiry.frappe-sync", async (job) => ({
     eventId: Number(job.payload.eventId),
@@ -1857,6 +2001,7 @@ export async function createApp() {
     }
   );
   startQueueManagerWorker(app, queueService);
+  startCrmDutySyncRelay(queueService);
   startFrappeLiveSyncScheduler(queueService);
   console.info("[platform.worker] queue manager ready");
   console.info("[platform.boot] bootstrap completed");

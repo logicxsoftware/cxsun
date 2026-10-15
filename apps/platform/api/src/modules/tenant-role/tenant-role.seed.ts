@@ -22,6 +22,12 @@ export async function seedTenantRoleModule(database: Kysely<TenantDatabase>) {
       protected: false
     },
     {
+      key: "manager",
+      label: "Manager",
+      description: "Manages assigned teams and operational workflows.",
+      protected: false
+    },
+    {
       key: "auditor",
       label: "Auditor",
       description: "Read-only tenant audit access.",

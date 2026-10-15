@@ -18,6 +18,15 @@ import {
   enquiryLocationMigrationBatch,
   migrateEnquiryLocationModule
 } from "./modules/enquiry-location/index.js";
+import { sopMigrationBatch, migrateSopModule } from "./modules/sop/index.js";
+import { sopItemMigrationBatch, migrateSopItemModule } from "./modules/sop-item/index.js";
+import {
+  dutyAssignmentMigrationBatch,
+  migrateDutyAssignmentModule
+} from "./modules/duty-assignment/index.js";
+import { dutyReportMigrationBatch, migrateDutyReportModule } from "./modules/duty-report/index.js";
+import { frappeSyncMigrationBatch, migrateFrappeSyncModule } from "./modules/frappe-sync/index.js";
+import { taskMigrationBatch, migrateTaskModule } from "./modules/task/index.js";
 
 const batches = [
   listinMigrationBatch,
@@ -27,7 +36,13 @@ const batches = [
   closureMigrationBatch,
   enquiryLocationMigrationBatch,
   callLogMigrationBatch,
-  ...contact360MigrationBatches
+  ...contact360MigrationBatches,
+  sopMigrationBatch,
+  sopItemMigrationBatch,
+  dutyAssignmentMigrationBatch,
+  dutyReportMigrationBatch,
+  frappeSyncMigrationBatch,
+  taskMigrationBatch
 ];
 
 export const crmTenantMigrations = batches.flatMap((batch) =>
@@ -48,7 +63,27 @@ export async function migrateCrmTenantDatabase(database: Kysely<EnquiryDatabase>
     >
   );
   await migrateCallLogModule(database as unknown as Kysely<unknown>);
-  return migrateContact360Database(database);
+  await migrateContact360Database(database);
+  await migrateSopModule(
+    database as unknown as Kysely<import("./modules/sop/index.js").SopDatabase>
+  );
+  await migrateSopItemModule(
+    database as unknown as Kysely<import("./modules/sop-item/index.js").SopItemDatabase>
+  );
+  await migrateDutyAssignmentModule(
+    database as unknown as Kysely<
+      import("./modules/duty-assignment/index.js").DutyAssignmentDatabase
+    >
+  );
+  await migrateDutyReportModule(
+    database as unknown as Kysely<import("./modules/duty-report/index.js").DutyReportDatabase>
+  );
+  await migrateFrappeSyncModule(
+    database as unknown as Kysely<import("./modules/frappe-sync/index.js").CrmFrappeSyncDatabase>
+  );
+  return migrateTaskModule(
+    database as unknown as Kysely<import("./modules/task/index.js").TaskDatabase>
+  );
 }
 
 export const rollbackCrmTenantDatabase = rollbackEnquiryDatabase;
