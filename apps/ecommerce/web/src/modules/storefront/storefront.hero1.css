@@ -1,0 +1,282 @@
+/* ==========================================================================
+   Hero Banner Showcase Slider (storefront.hero1.css)
+   Full-cover banner images with navigation arrows & pagination dots.
+   No text overlay — pure visual banner showcase driven by backend API.
+   ========================================================================== */
+
+/* ---------- Section Wrapper ---------- */
+.cx-hero-section {
+  box-sizing: border-box;
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+/* ---------- Slide Track (crossfade stack) ---------- */
+.cx-hero-track {
+  display: grid;
+  grid-template-areas: "slide";
+  min-height: 420px;
+  width: 100%;
+}
+
+.cx-hero-slide {
+  grid-area: slide;
+  opacity: 0;
+  pointer-events: none;
+  position: relative;
+  transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  will-change: opacity;
+}
+
+.cx-hero-slide--active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* ---------- Banner Link (full-cover clickable) ---------- */
+.cx-hero-link {
+  display: block;
+  text-decoration: none;
+  width: 100%;
+}
+
+/* ---------- Banner Image ---------- */
+.cx-hero-banner {
+  display: block;
+  height: auto;
+  max-height: 560px;
+  object-fit: cover;
+  transition: transform 6s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+}
+
+/* Subtle Ken Burns zoom on active slide */
+.cx-hero-slide--active .cx-hero-banner {
+  transform: scale(1.025);
+}
+
+/* ---------- Navigation Arrow Buttons ---------- */
+.cx-hero-arrow {
+  align-items: center;
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+  cursor: pointer;
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  opacity: 0;
+  outline: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition:
+    opacity 280ms ease,
+    background 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease;
+  width: 48px;
+  z-index: 10;
+}
+
+.cx-hero-section:hover .cx-hero-arrow,
+.cx-hero-section:focus-within .cx-hero-arrow {
+  opacity: 1;
+}
+
+.cx-hero-arrow:hover {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.cx-hero-arrow:active {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.cx-hero-arrow--prev {
+  left: 24px;
+}
+
+.cx-hero-arrow--next {
+  right: 24px;
+}
+
+.cx-hero-arrow svg {
+  height: 22px;
+  stroke-width: 2.2;
+  width: 22px;
+}
+
+/* ---------- Pagination Dots ---------- */
+.cx-hero-pagination {
+  align-items: center;
+  bottom: 24px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.cx-hero-dot {
+  background: rgba(255, 255, 255, 0.55);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  height: 10px;
+  outline: none;
+  padding: 0;
+  position: relative;
+  transition:
+    width 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 280ms ease,
+    border-radius 320ms ease,
+    box-shadow 280ms ease;
+  width: 10px;
+}
+
+.cx-hero-dot--active {
+  background: #ffffff;
+  border-radius: 9999px;
+  box-shadow:
+    0 0 0 2px rgba(15, 23, 42, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  width: 32px;
+}
+
+.cx-hero-dot:hover:not(.cx-hero-dot--active) {
+  background: rgba(255, 255, 255, 0.85);
+  transform: scale(1.15);
+}
+
+/* ---------- Progress Bar (inside active dot) ---------- */
+.cx-hero-dot--active::after {
+  animation: cx-hero-progress 6.5s linear forwards;
+  background: #0f172a;
+  border-radius: 9999px;
+  content: "";
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 0%;
+}
+
+@keyframes cx-hero-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Paused state (on hover) */
+.cx-hero-section:hover .cx-hero-dot--active::after,
+.cx-hero-section.cx-hero--paused .cx-hero-dot--active::after {
+  animation-play-state: paused;
+}
+
+
+/* ==========================================================================
+   TABLET (768px – 1024px)
+   ========================================================================== */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .cx-hero-track {
+    min-height: 320px;
+  }
+
+  .cx-hero-banner {
+    max-height: 420px;
+  }
+
+  .cx-hero-arrow {
+    height: 42px;
+    width: 42px;
+  }
+
+  .cx-hero-arrow--prev {
+    left: 16px;
+  }
+
+  .cx-hero-arrow--next {
+    right: 16px;
+  }
+
+  .cx-hero-pagination {
+    bottom: 18px;
+    gap: 8px;
+  }
+
+  .cx-hero-dot {
+    height: 8px;
+    width: 8px;
+  }
+
+  .cx-hero-dot--active {
+    width: 26px;
+  }
+}
+
+
+/* ==========================================================================
+   MOBILE (≤ 767px)
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .cx-hero-track {
+    min-height: 200px;
+  }
+
+  .cx-hero-banner {
+    max-height: 280px;
+  }
+
+  .cx-hero-arrow {
+    height: 36px;
+    opacity: 1;
+    width: 36px;
+  }
+
+  .cx-hero-arrow--prev {
+    left: 10px;
+  }
+
+  .cx-hero-arrow--next {
+    right: 10px;
+  }
+
+  .cx-hero-arrow svg {
+    height: 18px;
+    width: 18px;
+  }
+
+  .cx-hero-pagination {
+    bottom: 12px;
+    gap: 7px;
+  }
+
+  .cx-hero-dot {
+    height: 7px;
+    width: 7px;
+  }
+
+  .cx-hero-dot--active {
+    width: 22px;
+  }
+}

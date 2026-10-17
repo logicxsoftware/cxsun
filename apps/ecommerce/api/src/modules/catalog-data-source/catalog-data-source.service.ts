@@ -187,7 +187,7 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
   async product(slug: string) {
     if (await this.modulesUseSameProvider(["product-details", "variants", "product-images"])) {
       const product = await this.read("product-details", (source) => source.product(slug), null);
-      return product ? this.withResolvedImage(product) : null;
+      return product ? this.withResolvedProduct(product) : null;
     }
     const [details, variants, images] = await Promise.all([
       this.read("product-details", (source) => source.product(slug), null),
@@ -195,10 +195,11 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
       this.read("product-images", (source) => source.product(slug), null)
     ]);
     if (!details) return null;
-    return this.withResolvedImage({
+    return this.withResolvedProduct({
       ...details,
       imageAlt: images?.imageAlt ?? details.imageAlt,
       imageUrl: images?.imageUrl ?? details.imageUrl,
+      images: images?.images ?? details.images,
       variantCount: variants?.variantCount ?? details.variantCount,
       variants: variants?.variants ?? details.variants
     });
@@ -235,6 +236,21 @@ export class CatalogDataSourceService implements StorefrontCatalogSource {
     if (!isFrappeFile(item.imageUrl)) return item;
     const { frappeUrl } = await this.control.settings();
     return { ...item, imageUrl: absoluteFrappeFile(item.imageUrl, frappeUrl) };
+  }
+
+  private async withResolvedProduct<T extends { imageUrl: string; images: Array<{ url: string }> }>(
+    product: T
+  ): Promise<T> {
+    const resolved = await this.withResolvedImage(product);
+    if (!resolved.images.some((image) => isFrappeFile(image.url))) return resolved;
+    const { frappeUrl } = await this.control.settings();
+    return {
+      ...resolved,
+      images: resolved.images.map((image) => ({
+        ...image,
+        url: isFrappeFile(image.url) ? absoluteFrappeFile(image.url, frappeUrl) : image.url
+      }))
+    };
   }
 
   private async withResolvedImages<T extends { imageUrl: string }>(items: T[]): Promise<T[]> {
@@ -382,7 +398,7 @@ function moduleDefinition(module: CatalogDataSourceModule) {
       label: "Variants"
     },
     "product-images": {
-      description: "Primary storefront product images and alternative text.",
+      description: "Ordered storefront product gallery images and variant-specific media.",
       label: "Product images"
     },
     sliders: {

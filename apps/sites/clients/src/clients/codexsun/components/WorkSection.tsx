@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { platformUrl } from "../public.constants";
+import { PLATFORM_PRODUCTS, WORK_ITEMS, platformUrl } from "../public.constants";
 
 type SelectedWorkPreviewKind =
   "billing" | "sites" | "mail" | "ui" | "ecommerce" | "b2b" | "orbit" | "devkit" | "framework";
@@ -52,10 +52,10 @@ const SELECTED_WORK_CARDS: readonly SelectedWorkCard[] = [
     symbol: "₹"
   },
   {
-    title: "Web Sites",
+    title: "Site Studio",
     category: "Digital presence",
     description: "Design. Launch. Grow.",
-    href: "/",
+    href: platformUrl("/app/sites/overview"),
     preview: "sites",
     previewLabel: "Brands online",
     previewStatus: "Live",
@@ -66,7 +66,7 @@ const SELECTED_WORK_CARDS: readonly SelectedWorkCard[] = [
     title: "Mail Desk",
     category: "Communication",
     description: "Every message. One desk.",
-    href: platformUrl("/login"),
+    href: platformUrl("/app/mail/inbox"),
     preview: "mail",
     previewLabel: "Conversation flow",
     previewStatus: "Synced",
@@ -74,10 +74,10 @@ const SELECTED_WORK_CARDS: readonly SelectedWorkCard[] = [
     symbol: "@"
   },
   {
-    title: "UI System",
-    category: "Product design",
-    description: "One language. Every product.",
-    href: "#contact",
+    title: "Application",
+    category: "Platform",
+    description: "Workspace, users, tenant settings and access.",
+    href: platformUrl("/app/application/overview"),
     preview: "ui",
     previewLabel: "Shared experience",
     previewStatus: "System",
@@ -96,10 +96,10 @@ const SELECTED_WORK_CARDS: readonly SelectedWorkCard[] = [
     symbol: "BAG"
   },
   {
-    title: "B2B Connect",
-    category: "Business network",
-    description: "Partners move together.",
-    href: "#contact",
+    title: "CRM",
+    category: "Customer operations",
+    description: "Customer relationships and sales opportunities.",
+    href: platformUrl("/app/crm/overview"),
     preview: "b2b",
     previewLabel: "Connected trade",
     previewStatus: "Planned",
@@ -107,10 +107,10 @@ const SELECTED_WORK_CARDS: readonly SelectedWorkCard[] = [
     symbol: "B2B"
   },
   {
-    title: "Orbit",
-    category: "Engineering operations",
-    description: "Ship with control.",
-    href: "#contact",
+    title: "LogicX ERP",
+    category: "Operations",
+    description: "ERP operations for tenant teams.",
+    href: platformUrl("/app/logicx-erp/overview"),
     preview: "orbit",
     previewLabel: "Delivery control",
     previewStatus: "Active",
@@ -118,10 +118,10 @@ const SELECTED_WORK_CARDS: readonly SelectedWorkCard[] = [
     symbol: "OPS"
   },
   {
-    title: "Devkit",
-    category: "Product delivery",
-    description: "Plan. Build. Deliver.",
-    href: "#contact",
+    title: "Task Manager",
+    category: "Work management",
+    description: "Plan and track tenant-owned work.",
+    href: platformUrl("/app/task-manager/overview"),
     preview: "devkit",
     previewLabel: "Work in motion",
     previewStatus: "Active",
@@ -129,10 +129,10 @@ const SELECTED_WORK_CARDS: readonly SelectedWorkCard[] = [
     symbol: "DEV"
   },
   {
-    title: "Framework",
-    category: "Backend foundation",
-    description: "Strong foundations. Faster products.",
-    href: "#contact",
+    title: "Docs",
+    category: "Knowledge",
+    description: "Documentation and knowledge management.",
+    href: platformUrl("/app/docs/overview"),
     preview: "framework",
     previewLabel: "Core contracts",
     previewStatus: "Stable",
@@ -327,6 +327,39 @@ export default function WorkSection() {
             Build your workspace <span aria-hidden="true">&rarr;</span>
           </a>
         </motion.div>
+      </div>
+
+      <div id="product-directory" className="section-band work-product-directory">
+        <div className="work-directory-heading">
+          <span>Platform App Registry</span>
+          <h2 className="font-display uppercase">Every app, mapped.</h2>
+          <p>Explore the complete app catalog. Sign-in and tenant access determine availability.</p>
+        </div>
+        <div className="work-directory-grid">
+          {PLATFORM_PRODUCTS.map((product, index) => (
+            <a
+              key={product.id}
+              className="work-directory-card"
+              href={platformUrl(product.path)}
+            >
+              <span className="work-directory-index">{String(index + 1).padStart(2, "0")}</span>
+              <span className="work-directory-category">{product.category}</span>
+              <strong>{product.title}</strong>
+              <span className="work-directory-description">{product.description}</span>
+              <span className="work-directory-arrow" aria-hidden="true">&rarr;</span>
+            </a>
+          ))}
+        </div>
+        <div className="work-directory-case-studies">
+          <span>Case studies</span>
+          <div>
+            {WORK_ITEMS.map((item) => (
+              <a key={item.slug} href={item.caseStudyUrl}>
+                {item.title} <span aria-hidden="true">&rarr;</span>
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

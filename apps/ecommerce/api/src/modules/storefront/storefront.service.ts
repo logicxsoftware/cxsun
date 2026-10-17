@@ -85,6 +85,13 @@ export class StorefrontService {
     return {
       about: profile.aboutUs,
       copyrightText: profile.copyrightText,
+      closingCta: {
+        actionLabel: profile.homeCtaActionLabel,
+        actionUrl: profile.homeCtaActionUrl,
+        description: profile.homeCtaDescription,
+        eyebrow: profile.homeCtaEyebrow,
+        title: profile.homeCtaTitle
+      },
       groups: [
         {
           title: "Shop",
@@ -136,6 +143,7 @@ export class StorefrontService {
       trustedStrip: {
         description: profile.trustedDescription,
         eyebrow: profile.trustedEyebrow,
+        panels: profile.trustedPanels,
         proofPoints: profile.trustedProofPoints
           .split(/\r?\n/u)
           .map((value) => value.trim())

@@ -1,7 +1,14 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
-import { CORE_LINE, NAV_ITEMS, PRODUCT_NAV_ITEMS, SITE_TITLE } from "../public.constants";
+import {
+  CORE_LINE,
+  NAV_ITEMS,
+  PLATFORM_PRODUCTS,
+  PRODUCT_NAV_ITEMS,
+  SITE_TITLE,
+  platformUrl
+} from "../public.constants";
 
 function CodexsunMark({ className }: { className?: string }) {
   return (
@@ -21,6 +28,7 @@ export default function NavigationRail({
 }) {
   const [activeId, setActiveId] = useState<string>(NAV_ITEMS[0].id);
   const [activeProductId, setActiveProductId] = useState<string>(PRODUCT_NAV_ITEMS[0].id);
+  const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const activeIndex = useMemo(
     () =>
       Math.max(
@@ -105,6 +113,14 @@ export default function NavigationRail({
     };
   }, []);
 
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMegaMenuOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
+
   const handleClick = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -132,11 +148,15 @@ export default function NavigationRail({
               <li key={item.id} className={isProducts ? "site-rail-products" : undefined}>
                 <button
                   type="button"
-                  onClick={() => handleClick(item.id)}
+                  onClick={() => {
+                    handleClick(item.id);
+                    if (isProducts) setMegaMenuOpen((open) => !open);
+                  }}
                   className="site-rail-link"
                   data-active={isActive}
                   aria-current={isActive ? "page" : undefined}
-                  aria-expanded={isProducts ? isActive : undefined}
+                  aria-expanded={isProducts ? megaMenuOpen : undefined}
+                  aria-controls={isProducts ? "site-products-mega-menu" : undefined}
                 >
                   <span className="site-rail-link-label">{item.label}</span>
                 </button>
@@ -167,6 +187,43 @@ export default function NavigationRail({
             );
           })}
         </ul>
+
+        <div
+          id="site-products-mega-menu"
+          className="site-mega-menu"
+          data-open={megaMenuOpen}
+          role="region"
+          aria-label="All platform apps"
+          aria-hidden={!megaMenuOpen}
+        >
+          <div className="site-mega-menu-heading">
+            <span>Platform apps</span>
+            <button type="button" tabIndex={megaMenuOpen ? 0 : -1} onClick={() => setMegaMenuOpen(false)} aria-label="Close products menu">
+              Close <span aria-hidden="true">×</span>
+            </button>
+          </div>
+          <div className="site-mega-menu-grid">
+            {PLATFORM_PRODUCTS.map((product) => (
+              <a
+                key={product.id}
+                href={platformUrl(product.path)}
+                tabIndex={megaMenuOpen ? 0 : -1}
+                onClick={() => setMegaMenuOpen(false)}
+              >
+                <span>{product.category}</span>
+                <strong>{product.title}</strong>
+              </a>
+            ))}
+          </div>
+          <a
+            className="site-mega-menu-directory"
+            href="#product-directory"
+            tabIndex={megaMenuOpen ? 0 : -1}
+            onClick={() => setMegaMenuOpen(false)}
+          >
+            View product directory <span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
 
         <div className="site-rail-footer" aria-hidden="true">
           <span>{coreLine}</span>

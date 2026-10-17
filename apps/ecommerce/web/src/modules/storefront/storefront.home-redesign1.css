@@ -1,0 +1,2847 @@
+/* ==========================================================================
+   Home Page Sections Redesign (storefront.home-redesign1.css)
+   Service Banner, Ready When You Are CTA, and Benefits Bar
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. SERVICE BANNER ("Tech Media Care")
+   -------------------------------------------------------------------------- */
+.cx-store__service-banner {
+  align-items: center;
+  background: linear-gradient(135deg, #fdf8ee 0%, #fbf3e4 100%) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  box-shadow: none;
+  box-sizing: border-box !important;
+  color: #0f172a;
+  display: flex !important;
+  gap: 28px !important;
+  justify-content: space-between;
+  margin: 24px 0 !important;
+  max-width: 100% !important;
+  overflow: hidden;
+  padding: 32px clamp(24px, 4vw, 48px) !important;
+  position: relative;
+  text-decoration: none;
+  transition: box-shadow 220ms ease;
+  width: 100% !important;
+}
+
+.cx-store__service-banner:hover {
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.08);
+}
+
+.cx-store__service-banner-bg {
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.cx-store__service-banner-glow-right {
+  background: radial-gradient(circle, rgba(253, 230, 138, 0.5) 0%, rgba(254, 243, 199, 0.2) 55%, transparent 75%);
+  border-radius: 50%;
+  height: 280px;
+  position: absolute;
+  right: -20px;
+  top: -40px;
+  width: 380px;
+}
+
+.cx-store__service-banner-glow-left {
+  background: radial-gradient(circle, rgba(254, 243, 199, 0.45) 0%, transparent 65%);
+  border-radius: 50%;
+  height: 200px;
+  left: -20px;
+  position: absolute;
+  top: -20px;
+  width: 240px;
+}
+
+.cx-store__service-banner-contour {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.cx-store__service-banner-left {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 24px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.cx-store__service-banner-mark {
+  align-items: center;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 20px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
+  color: #0f172a;
+  display: flex !important;
+  flex-shrink: 0;
+  height: 76px !important;
+  justify-content: center;
+  width: 76px !important;
+}
+
+.cx-store__service-banner-mark svg {
+  color: #0f172a !important;
+  height: 34px !important;
+  stroke-width: 1.8 !important;
+  width: 34px !important;
+}
+
+.cx-store__service-banner-copy {
+  display: flex !important;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px !important;
+  min-width: 0;
+}
+
+.cx-store__service-banner-copy small {
+  color: #64748b !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+
+.cx-store__service-banner-copy strong {
+  color: #0f172a !important;
+  font-size: clamp(21px, 2.5vw, 30px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.2 !important;
+}
+
+.cx-store__service-banner-copy span {
+  color: #475467 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  margin-top: 2px;
+  max-width: 680px;
+}
+
+.cx-store__service-banner-right {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.cx-store__service-banner-action {
+  align-items: center;
+  background: #0f172a !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  gap: 8px !important;
+  margin-right: 0 !important;
+  padding: 12px 22px !important;
+  position: relative;
+  text-decoration: none;
+  transition: background 150ms ease, transform 150ms ease;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.cx-store__service-banner-action:hover {
+  background: #1e293b !important;
+  transform: translateY(-1px);
+}
+
+.cx-store__service-banner-action svg {
+  height: 15px !important;
+  stroke-width: 2.2 !important;
+  width: 15px !important;
+}
+
+.cx-store__service-banner-graphic {
+  display: block;
+  flex-shrink: 0;
+  height: 130px;
+  position: relative;
+  width: 250px;
+  z-index: 1;
+}
+
+.cx-store__service-banner-graphic svg,
+.cx-illustration-desk {
+  display: block !important;
+  height: 130px !important;
+  width: 250px !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. READY WHEN YOU ARE CLOSING CTA
+   -------------------------------------------------------------------------- */
+.cx-store__closing-cta {
+  align-items: center;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f2fe 100%) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  box-shadow: none;
+  box-sizing: border-box !important;
+  display: flex !important;
+  gap: 28px !important;
+  justify-content: space-between;
+  margin: 24px 0 !important;
+  max-width: 100% !important;
+  overflow: hidden;
+  padding: 40px clamp(24px, 4vw, 52px) !important;
+  position: relative;
+  width: 100% !important;
+}
+
+.cx-store__closing-cta-bg {
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.cx-store__closing-cta-edge-left {
+  background: radial-gradient(circle, rgba(186, 230, 253, 0.5) 0%, transparent 70%);
+  border-radius: 50%;
+  height: 240px;
+  left: -80px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 160px;
+}
+
+.cx-store__closing-cta-edge-right {
+  background: radial-gradient(circle, rgba(186, 230, 253, 0.5) 0%, transparent 70%);
+  border-radius: 50%;
+  height: 240px;
+  position: absolute;
+  right: -80px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 160px;
+}
+
+.cx-store__closing-cta-center-glow {
+  background: radial-gradient(circle, rgba(186, 230, 253, 0.45) 0%, transparent 65%);
+  border-radius: 50%;
+  height: 260px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 480px;
+}
+
+.cx-store__closing-cta-rings {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.cx-store__closing-cta-dots {
+  opacity: 0.45;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.cx-store__closing-cta-dots-left {
+  left: 32px;
+  top: 20px;
+}
+
+.cx-store__closing-cta-dots-right {
+  right: 32px;
+  top: 20px;
+}
+
+.cx-store__closing-cta-dots svg,
+.cx-dot-grid {
+  display: block !important;
+  height: 48px !important;
+  width: 48px !important;
+}
+
+.cx-store__closing-cta-copy {
+  display: flex;
+  flex: 1 1 360px;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 460px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.cx-store__closing-cta span {
+  color: #0284c7 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+}
+
+.cx-store__closing-cta h2 {
+  color: #0f172a !important;
+  font-size: clamp(24px, 3vw, 36px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.16 !important;
+  margin: 0 !important;
+}
+
+.cx-store__closing-cta p {
+  color: #475467 !important;
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+  margin: 4px 0 0 !important;
+}
+
+.cx-store__closing-cta-underline {
+  background: #38bdf8;
+  border-radius: 2px;
+  height: 3px;
+  margin-top: 14px;
+  width: 44px;
+}
+
+.cx-store__closing-cta-graphic {
+  align-items: center;
+  display: flex;
+  flex: 1 1 380px;
+  flex-shrink: 0;
+  height: 150px;
+  justify-content: center;
+  max-width: 420px;
+  min-width: 280px;
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+/* CRITICAL OVERRIDE: Prevent storefront.css from collapsing illustration SVG to 17px */
+.cx-store__closing-cta svg.cx-illustration-workspace,
+.cx-store__closing-cta-graphic svg {
+  display: block !important;
+  height: 150px !important;
+  max-height: 150px !important;
+  max-width: 420px !important;
+  min-height: 130px !important;
+  min-width: 280px !important;
+  transition: none !important;
+  width: 100% !important;
+}
+
+.cx-store__closing-cta-action {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.cx-store__closing-cta-btn {
+  align-items: center;
+  background: #0f172a !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  gap: 8px !important;
+  padding: 13px 22px !important;
+  text-decoration: none;
+  transition: background 150ms ease, transform 150ms ease;
+  white-space: nowrap;
+}
+
+.cx-store__closing-cta-btn:hover {
+  background: #1e293b !important;
+  transform: translateY(-1px);
+}
+
+.cx-store__closing-cta-btn svg {
+  height: 16px !important;
+  stroke-width: 2.2 !important;
+  width: 16px !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. STORE BENEFITS BAR (Trust Strip)
+   -------------------------------------------------------------------------- */
+.cx-store__benefits-bar {
+  background: #f9fafb !important;
+  border-bottom: 0 !important;
+  border-top: 0 !important;
+  border-radius: 16px;
+  box-sizing: border-box !important;
+  display: grid !important;
+  gap: 0 !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  margin: 24px 0 !important;
+  max-width: 100% !important;
+  padding: 24px clamp(16px, 3vw, 40px) !important;
+  width: 100% !important;
+}
+
+.cx-store__benefit-item {
+  align-items: center;
+  border-right: 0 !important;
+  display: flex !important;
+  gap: 16px !important;
+  min-width: 0;
+  padding: 0 20px;
+}
+
+.cx-store__benefit-item:first-child {
+  padding-left: 0;
+}
+
+.cx-store__benefit-item:last-child {
+  border-right: none !important;
+  padding-right: 0;
+}
+
+.cx-store__benefit-icon-badge {
+  align-items: center;
+  border-radius: 50% !important;
+  display: flex !important;
+  flex-shrink: 0;
+  height: 48px !important;
+  justify-content: center;
+  width: 48px !important;
+}
+
+.cx-store__benefit-icon-badge svg {
+  color: #0f172a !important;
+  height: 22px !important;
+  stroke-width: 1.8 !important;
+  width: 22px !important;
+}
+
+.cx-store__benefit-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cx-store__benefit-copy strong {
+  color: #0f172a !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.25;
+}
+
+.cx-store__benefit-copy small {
+  color: #64748b !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+
+/* ==========================================================================
+   BREAKPOINTS: TABLET & MOBILE
+   ========================================================================= */
+
+/* Tablet (768px – 1279px) */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .cx-store__service-banner {
+    padding: 28px 32px !important;
+  }
+
+  .cx-store__service-banner-graphic {
+    height: 115px;
+    width: 220px;
+  }
+
+  .cx-store__service-banner-graphic svg,
+  .cx-illustration-desk {
+    height: 115px !important;
+    width: 220px !important;
+  }
+
+  .cx-store__closing-cta {
+    padding: 34px 32px !important;
+    gap: 24px !important;
+  }
+
+  .cx-store__closing-cta-graphic {
+    flex: 0 1 280px;
+    height: 130px;
+    max-width: 280px;
+    min-width: 220px;
+  }
+
+  .cx-store__closing-cta svg.cx-illustration-workspace,
+  .cx-store__closing-cta-graphic svg {
+    height: 130px !important;
+    max-width: 280px !important;
+    min-width: 220px !important;
+  }
+
+  .cx-store__benefits-bar {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 24px 0 !important;
+    padding: 24px 28px !important;
+  }
+
+  .cx-store__benefit-item {
+    padding: 0 20px;
+  }
+
+  .cx-store__benefit-item:nth-child(2) {
+    border-right: none !important;
+    padding-right: 0;
+  }
+
+  .cx-store__benefit-item:nth-child(3) {
+    padding-left: 0;
+  }
+}
+
+/* Mobile (≤ 767px) */
+@media (max-width: 767px) {
+  .cx-store__service-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 22px !important;
+    padding: 24px 20px !important;
+    border-radius: 16px !important;
+  }
+
+  .cx-store__service-banner-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .cx-store__service-banner-right {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cx-store__service-banner-action {
+    margin-right: 0;
+  }
+
+  .cx-store__service-banner-graphic {
+    height: 85px;
+    max-width: 140px;
+    width: 100%;
+  }
+
+  .cx-store__service-banner-graphic svg,
+  .cx-illustration-desk {
+    height: auto !important;
+    max-height: 85px !important;
+    max-width: 140px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .cx-store__closing-cta {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 24px !important;
+    padding: 28px 20px !important;
+    border-radius: 16px !important;
+  }
+
+  .cx-store__closing-cta-graphic {
+    height: auto;
+    max-height: 130px;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .cx-store__closing-cta svg.cx-illustration-workspace,
+  .cx-store__closing-cta-graphic svg {
+    height: auto !important;
+    max-height: 130px !important;
+    max-width: 320px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .cx-store__closing-cta-action {
+    width: 100%;
+  }
+
+  .cx-store__closing-cta-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cx-store__benefits-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    margin: 14px 0 !important;
+    padding: 8px 10px !important;
+  }
+
+  .cx-store__benefit-item {
+    align-items: flex-start !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    border-right: 1px solid #e5e7eb !important;
+    gap: 8px !important;
+    min-height: 66px;
+    padding: 10px 8px !important;
+  }
+
+  .cx-store__benefit-item:nth-child(even) {
+    border-right: 0 !important;
+  }
+
+  .cx-store__benefit-item:nth-child(n + 3) {
+    border-bottom: 0 !important;
+  }
+
+  .cx-store__benefit-icon-badge {
+    height: 30px !important;
+    width: 30px !important;
+  }
+
+  .cx-store__benefit-icon-badge svg {
+    height: 16px !important;
+    width: 16px !important;
+  }
+
+  .cx-store__benefit-copy strong {
+    font-size: 11px !important;
+  }
+
+  .cx-store__benefit-copy small {
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+  }
+
+  .cx-store__benefit-item:last-child {
+    border-bottom: 0 !important;
+  }
+}
+
+
+/* ==========================================================================
+   4. TECH MEDIA TRUST SECTION (The Slide Concept Design)
+   ========================================================================== */
+
+/* Ensure trust and season section boundaries are ALWAYS displayed across all devices and viewport sizes */
+[data-storefront-section="storefront.home.trust"],
+.cx-store__section-boundary[data-storefront-section="storefront.home.trust"],
+[data-storefront-section="storefront.home.season"],
+.cx-store__section-boundary[data-storefront-section="storefront.home.season"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+}
+
+.cx-trust-tablet-slide-caption {
+  display: none;
+}
+
+.cx-trust-mobile-dot-grid {
+  display: none;
+}
+
+.cx-trust-section {
+  box-sizing: border-box !important;
+  margin: 36px 0 !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.cx-trust-header-row {
+  align-items: stretch;
+  display: flex;
+  gap: 28px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Left Column: Intro + Proof Points + 3D Pedestal */
+.cx-trust-intro-col {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 1 480px;
+  flex-direction: row;
+  height: 420px;
+  justify-content: space-between;
+  max-width: 500px;
+  min-width: 400px;
+  gap: 12px;
+}
+
+.cx-trust-intro-header {
+  display: flex;
+  flex: 1 1 240px;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  max-width: 250px;
+  min-width: 0;
+}
+
+.cx-trust-eyebrow-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.cx-trust-green-dash {
+  background: #059669;
+  border-radius: 2px;
+  display: inline-block;
+  height: 3px;
+  width: 22px;
+}
+
+.cx-trust-eyebrow {
+  color: #475467;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cx-trust-heading {
+  color: #0f172a !important;
+  font-size: clamp(26px, 2.4vw, 32px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.15 !important;
+  margin: 0 0 10px !important;
+}
+
+.cx-trust-desc {
+  color: #475467 !important;
+  font-size: 13.5px !important;
+  line-height: 1.5 !important;
+  margin: 0 0 16px !important;
+  max-width: 240px;
+}
+
+.cx-trust-proof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  margin-bottom: 4px;
+}
+
+.cx-trust-proof-item {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.cx-trust-proof-check {
+  align-items: center;
+  background: #dcfce7;
+  border-radius: 50%;
+  color: #059669;
+  display: flex;
+  flex-shrink: 0;
+  height: 20px;
+  justify-content: center;
+  width: 20px;
+}
+
+.cx-trust-proof-check svg {
+  height: 12px;
+  stroke-width: 2.4;
+  width: 12px;
+}
+
+.cx-trust-proof-item strong {
+  color: #334155 !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+}
+
+.cx-trust-pedestal-visual-wrap {
+  align-items: flex-end;
+  display: flex;
+  flex: 1 1 240px;
+  height: 100%;
+  justify-content: flex-end;
+  max-width: 250px;
+  min-width: 200px;
+}
+
+.cx-trust-pedestal-svg {
+  height: auto;
+  max-height: 230px;
+  width: 100%;
+}
+
+/* Right Column: Slide / Multi-panel Deck */
+.cx-trust-deck-col {
+  align-items: stretch;
+  display: flex;
+  flex: 1 1 800px;
+  gap: 14px;
+  height: 420px;
+  max-width: 880px;
+  min-width: 0;
+  position: relative;
+}
+
+/* Active Elevated Card - Large Wide Hero Card */
+.cx-trust-active-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+  display: flex;
+  flex: 1 1 580px;
+  flex-direction: row;
+  height: 100%;
+  justify-content: space-between;
+  min-width: 0;
+  overflow: hidden;
+  padding: 30px 24px 24px;
+  position: relative;
+}
+
+.cx-trust-active-card-content {
+  display: flex;
+  flex: 0 0 250px;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  max-width: 260px;
+  min-width: 0;
+  z-index: 2;
+}
+
+.cx-trust-active-card-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.cx-trust-active-number {
+  color: #059669;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cx-trust-active-bar {
+  background: #059669;
+  border-radius: 2px;
+  height: 3px;
+  width: 20px;
+}
+
+.cx-trust-active-title {
+  color: #0f172a !important;
+  font-size: 23px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.18 !important;
+  margin: 0 0 8px !important;
+}
+
+.cx-trust-active-desc {
+  color: #475467 !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  margin: 0 0 14px !important;
+}
+
+.cx-trust-active-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.cx-trust-active-checklist li {
+  align-items: center;
+  color: #334155;
+  display: flex;
+  font-size: 12.5px;
+  font-weight: 500;
+  gap: 8px;
+}
+
+.cx-trust-check-icon {
+  color: #059669;
+  flex-shrink: 0;
+  height: 15px;
+  stroke-width: 2.2;
+  width: 15px;
+}
+
+.cx-trust-active-actions {
+  align-items: center;
+  display: flex;
+  margin-top: auto;
+}
+
+.cx-trust-action-btn {
+  align-items: center;
+  background: #0f172a !important;
+  border-radius: 24px !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  gap: 8px !important;
+  padding: 10px 22px !important;
+  text-decoration: none;
+  transition: background 150ms ease, transform 150ms ease;
+  white-space: nowrap;
+}
+
+.cx-trust-action-btn:hover {
+  background: #1e293b !important;
+  transform: translateY(-1px);
+}
+
+.cx-trust-action-btn svg {
+  height: 14px;
+  stroke-width: 2;
+  width: 14px;
+}
+
+.cx-trust-mobile-circle-btn {
+  display: none;
+}
+
+.cx-trust-active-card-media {
+  align-items: center;
+  display: flex;
+  flex: 1 1 290px;
+  height: 100%;
+  justify-content: center;
+  min-width: 260px;
+  position: relative;
+  z-index: 1;
+}
+
+.cx-trust-laptops-svg {
+  height: auto;
+  max-width: 320px;
+  width: 100%;
+}
+
+/* Pagination indicator dashes */
+.cx-trust-pagination {
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.cx-trust-pagination-dash {
+  background: #e2e8f0;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  height: 4px;
+  padding: 0;
+  transition: background 200ms ease, width 200ms ease;
+  width: 16px;
+}
+
+.cx-trust-pagination-dash.is-active {
+  background: #059669;
+  width: 24px;
+}
+
+/* Inactive Tab Columns (02, 03, 04, 05) on Desktop:
+   Slim, elegant vertical tab strip */
+.cx-trust-inactive-tabs {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 240px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  width: 240px;
+}
+
+.cx-trust-tab-col {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-right: 1px solid #f1f5f9;
+  border-radius: 0;
+  box-shadow: none;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  flex: 1 1 60px;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  padding: 24px 4px 20px;
+  transition: background 150ms ease;
+  width: 60px;
+}
+
+.cx-trust-tab-col:last-child {
+  border-right: none;
+}
+
+.cx-trust-tab-col:hover {
+  background: #f8fafc;
+}
+
+.cx-trust-tab-top {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cx-trust-tab-number {
+  color: #64748b;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cx-trust-tab-dash {
+  background: #cbd5e1;
+  border-radius: 1px;
+  height: 2px;
+  width: 12px;
+}
+
+.cx-trust-tab-icon {
+  color: #0f172a;
+}
+
+.cx-trust-tab-icon svg {
+  height: 20px;
+  stroke-width: 1.8;
+  width: 20px;
+}
+
+.cx-trust-tab-title {
+  color: #475467;
+  display: flex;
+  flex-direction: column;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.cx-trust-tab-arrow {
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  color: #64748b;
+  display: flex;
+  height: 24px;
+  justify-content: center;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+  width: 24px;
+}
+
+.cx-trust-tab-col:hover .cx-trust-tab-arrow {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.cx-trust-tab-arrow svg {
+  height: 11px;
+  stroke-width: 2;
+  width: 11px;
+}
+
+/* Tablet Bottom Tabs Bar */
+.cx-trust-tablet-tabs-bar {
+  display: none;
+}
+
+.cx-trust-mobile-peek-card {
+  display: none;
+}
+
+/* ==========================================================================
+   4.5. SEASON TECH UPGRADE FEST BANNER & ASSURANCE STRIP
+   ========================================================================== */
+
+.cx-season-banner-section {
+  box-sizing: border-box !important;
+  margin: 32px 0 !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.cx-season-banner-card {
+  background: #faf8f5;
+  border: 0;
+  border-radius: 24px;
+  box-shadow: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.cx-season-hero-tier {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  gap: 36px;
+  justify-content: space-between;
+  padding: 48px clamp(24px, 4vw, 56px) 36px;
+  position: relative;
+  width: 100%;
+}
+
+.cx-season-copy-col {
+  display: flex;
+  flex: 1 1 52%;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 580px;
+  min-width: 0;
+  z-index: 2;
+}
+
+.cx-season-eyebrow-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.cx-season-red-dot {
+  background: #9f1239;
+  border-radius: 50%;
+  display: inline-block;
+  height: 6px;
+  width: 6px;
+}
+
+.cx-season-eyebrow {
+  color: #881337;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cx-season-heading {
+  font-size: clamp(32px, 3.2vw, 46px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.08 !important;
+  margin: 0 !important;
+}
+
+.cx-season-heading-light {
+  color: #0f172a;
+}
+
+.cx-season-heading-accent {
+  color: #881337;
+  display: inline-block;
+  position: relative;
+}
+
+.cx-season-sparkles-svg {
+  height: 20px;
+  position: absolute;
+  right: -28px;
+  top: -12px;
+  width: 32px;
+}
+
+.cx-season-curve-line {
+  bottom: -8px;
+  height: 10px;
+  left: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.cx-season-desc {
+  color: #475467 !important;
+  font-size: 14.5px !important;
+  line-height: 1.55 !important;
+  margin: 0 !important;
+  max-width: 480px;
+}
+
+.cx-season-action-row {
+  margin-top: 6px;
+}
+
+.cx-season-cta-btn {
+  align-items: center;
+  background: #0f172a;
+  border-radius: 9999px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  color: #ffffff !important;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
+  padding: 13px 26px;
+  text-decoration: none !important;
+  transition: all 180ms ease;
+}
+
+.cx-season-cta-btn:hover {
+  background: #1e293b;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+  transform: translateY(-2px);
+}
+
+.cx-season-cta-btn svg {
+  height: 16px;
+  transition: transform 180ms ease;
+  width: 16px;
+}
+
+.cx-season-cta-btn:hover svg {
+  transform: translate(2px, -2px);
+}
+
+/* Quick Categories Bar */
+.cx-season-categories-bar {
+  align-items: center;
+  border-top: 0;
+  display: flex;
+  gap: 20px;
+  margin-top: 12px;
+  padding-top: 12px;
+  width: 100%;
+}
+
+.cx-season-category-item {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  text-decoration: none !important;
+  transition: transform 160ms ease;
+}
+
+.cx-season-category-item:hover {
+  transform: translateY(-1px);
+}
+
+.cx-season-category-icon {
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 8px;
+  color: #881337;
+  display: flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.cx-season-category-icon svg {
+  height: 18px;
+  width: 18px;
+}
+
+.cx-season-category-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.cx-season-category-info strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cx-season-category-info span {
+  color: #64748b;
+  font-size: 11.5px;
+}
+
+.cx-season-category-divider {
+  background: #e2e8f0;
+  height: 28px;
+  width: 1px;
+}
+
+/* Right Showcase Column */
+.cx-season-showcase-col {
+  align-items: center;
+  display: flex;
+  flex: 1 1 48%;
+  justify-content: center;
+  max-width: 580px;
+  min-width: 0;
+  position: relative;
+}
+
+.cx-season-showcase-svg {
+  height: auto;
+  max-height: 380px;
+  width: 100%;
+}
+
+/* Assurance Strip (Lower Tier) */
+.cx-season-assurance-tier {
+  align-items: center;
+  background: #fff1f2 !important;
+  border-top: 1px solid #f3d5dd;
+  box-sizing: border-box;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1.2fr auto 1.3fr auto 1.3fr auto 1.3fr;
+  padding: 22px clamp(20px, 4vw, 56px);
+  width: 100%;
+}
+
+.cx-season-assurance-brand strong {
+  color: #881337 !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.cx-season-assurance-divider {
+  background: #f1cbd4;
+  height: 32px;
+  width: 1px;
+}
+
+.cx-season-assurance-item {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.cx-season-assurance-icon {
+  align-items: center;
+  color: #881337;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.cx-season-assurance-icon svg {
+  height: 24px;
+  stroke-width: 1.8;
+  width: 24px;
+}
+
+.cx-season-assurance-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.cx-season-assurance-text strong {
+  color: #1f2937 !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+}
+
+.cx-season-assurance-text span {
+  color: #64748b !important;
+  font-size: 11.5px !important;
+}
+
+/* ==========================================================================
+   5. SLEEK DARK LUXURY FOOTER (StoreFooter Redesign)
+   ========================================================================== */
+
+.cx-store-luxury-footer {
+  background: #081018 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  box-sizing: border-box;
+  color: #f1f5f9;
+  margin-top: 48px;
+  padding: 64px clamp(20px, 4vw, 56px) 36px;
+  width: 100%;
+}
+
+/* Tier 1: Brand Info + Navigation Columns + Visual Area */
+.cx-footer-top-tier {
+  align-items: flex-start;
+  display: flex;
+  gap: 48px;
+  justify-content: space-between;
+  margin: 0 auto 52px;
+  max-width: var(--cx-container);
+  width: 100%;
+}
+
+/* Brand Column */
+.cx-footer-brand-col {
+  display: flex;
+  flex: 1 1 360px;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 380px;
+  min-width: 0;
+}
+
+.cx-footer-logo-link {
+  align-items: center;
+  color: #ffffff;
+  display: inline-flex;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.cx-footer-brand-mark {
+  height: 42px;
+  width: 42px;
+}
+
+.cx-footer-wordmark {
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.cx-footer-tagline {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cx-footer-about {
+  color: #94a3b8;
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin: 4px 0 12px;
+}
+
+/* 3 Dark Feature Badges */
+.cx-footer-feature-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cx-footer-badge-pill {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  color: #cbd5e1;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 7px;
+  padding: 7px 14px;
+}
+
+.cx-footer-badge-icon {
+  color: #10b981;
+  height: 15px;
+  stroke-width: 2;
+  width: 15px;
+}
+
+/* Navigation Columns */
+.cx-footer-nav-grid {
+  display: flex;
+  flex: 1 1 480px;
+  gap: 60px;
+  justify-content: center;
+}
+
+.cx-footer-nav-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.cx-footer-nav-toggle {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: default;
+  display: flex;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 0;
+  text-align: left;
+}
+
+.cx-footer-col-title {
+  color: #ffffff;
+}
+
+.cx-footer-accordion-chevron {
+  display: none;
+}
+
+.cx-footer-link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cx-footer-nav-link {
+  align-items: center;
+  color: #94a3b8;
+  display: inline-flex;
+  font-size: 13.5px;
+  gap: 6px;
+  text-decoration: none;
+  transition: color 150ms ease, transform 150ms ease;
+}
+
+.cx-footer-nav-link:hover {
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+.cx-footer-link-chevron {
+  color: #475467;
+  height: 13px;
+  stroke-width: 2;
+  width: 13px;
+}
+
+/* Right Graphic Area */
+.cx-footer-graphic-col {
+  align-items: center;
+  display: flex;
+  flex: 1 1 320px;
+  justify-content: flex-end;
+  max-width: 340px;
+  min-width: 0;
+}
+
+.cx-footer-graphic-canvas {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+}
+
+.cx-footer-desk-svg {
+  height: auto;
+  max-width: 300px;
+  width: 100%;
+}
+
+.cx-footer-calligraphy {
+  color: #f8fafc;
+  font-family: "Brush Script MT", "Caveat", "Segoe Script", cursive, serif;
+  font-size: 26px;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin-top: -12px;
+  text-align: center;
+  text-shadow: 0 0 24px rgba(52, 211, 153, 0.35);
+}
+
+/* Tier 2: Middle Utility Bar */
+.cx-footer-utility-tier {
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  display: flex;
+  gap: 36px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: var(--cx-container);
+  padding: 36px 0;
+  width: 100%;
+}
+
+/* Stay Updated Block */
+.cx-footer-updates-block {
+  display: flex;
+  flex: 1 1 380px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cx-footer-updates-title {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cx-footer-updates-sub {
+  color: #94a3b8;
+  font-size: 12.5px;
+  margin: 0 0 10px;
+}
+
+.cx-footer-newsletter-form {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  max-width: 380px;
+}
+
+.cx-footer-input-wrap {
+  align-items: center;
+  background: #111c27;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 10px;
+  height: 42px;
+  padding: 0 12px;
+}
+
+.cx-footer-mail-icon {
+  color: #64748b;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+}
+
+.cx-footer-input-wrap input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+
+.cx-footer-input-wrap input::placeholder {
+  color: #64748b;
+}
+
+.cx-footer-signup-btn {
+  align-items: center;
+  background: #ffffff !important;
+  border: none;
+  border-radius: 8px;
+  color: #0f172a !important;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 6px;
+  height: 42px;
+  padding: 0 18px;
+  transition: background 150ms ease, transform 150ms ease;
+  white-space: nowrap;
+}
+
+.cx-footer-signup-btn:hover {
+  background: #e2e8f0 !important;
+  transform: translateY(-1px);
+}
+
+.cx-footer-signup-btn svg {
+  height: 14px;
+  stroke-width: 2.2;
+  width: 14px;
+}
+
+.cx-footer-vert-divider {
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  height: 48px;
+  width: 1px;
+}
+
+/* Supported Payment Types */
+.cx-footer-payments-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cx-footer-utility-heading {
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.cx-footer-payment-badges {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cx-footer-payment-chip {
+  align-items: center;
+  background: #111c27;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0 10px;
+}
+
+.cx-footer-payment-chip svg {
+  color: #94a3b8;
+  height: 18px;
+  width: 18px;
+}
+
+.cx-payment-visa-text {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.05em;
+}
+
+.cx-payment-mc-circles {
+  align-items: center;
+  display: flex;
+  position: relative;
+  width: 28px;
+}
+
+.cx-payment-mc-red {
+  background: #ef4444;
+  border-radius: 50%;
+  height: 16px;
+  width: 16px;
+}
+
+.cx-payment-mc-orange {
+  background: #f97316;
+  border-radius: 50%;
+  height: 16px;
+  margin-left: -7px;
+  opacity: 0.9;
+  width: 16px;
+}
+
+.cx-payment-upi-text {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.cx-payment-gpay-text {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cx-payment-paytm-text {
+  color: #38bdf8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Follow Us Block */
+.cx-footer-social-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cx-footer-social-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.cx-footer-social-circle {
+  align-items: center;
+  background: #111c27;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: #94a3b8;
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  text-decoration: none;
+  transition: color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  width: 38px;
+}
+
+.cx-footer-social-circle:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.cx-footer-social-circle svg {
+  height: 18px;
+  width: 18px;
+}
+
+/* Tier 3: Bottom Legal & Region Bar */
+.cx-footer-bottom-bar {
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  color: #64748b;
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: var(--cx-container);
+  padding-top: 24px;
+  width: 100%;
+}
+
+.cx-footer-legal-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cx-footer-legal-row a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.cx-footer-legal-row a:hover {
+  color: #94a3b8;
+}
+
+.cx-footer-legal-sep {
+  opacity: 0.4;
+}
+
+.cx-footer-region-powered {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+}
+
+.cx-footer-country-pill {
+  align-items: center;
+  background: #111c27;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: #cbd5e1;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 7px;
+  padding: 6px 14px;
+}
+
+.cx-footer-globe-icon {
+  height: 14px;
+  width: 14px;
+}
+
+.cx-footer-globe-chevron {
+  height: 12px;
+  width: 12px;
+}
+
+.cx-footer-powered-link {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.cx-footer-powered-link:hover {
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   BREAKPOINTS: TABLET & MOBILE (Trust Section & Footer)
+   ========================================================================== */
+
+/* Tablet (768px – 1279px) */
+@media (min-width: 768px) and (max-width: 1279px) {
+  /* Trust Section on Tablet */
+  .cx-trust-header-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 24px !important;
+  }
+
+  .cx-trust-intro-col {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 32px !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-intro-header {
+    flex: 1 1 54% !important;
+    max-width: 520px !important;
+    height: auto !important;
+  }
+
+  .cx-trust-heading {
+    font-size: 32px !important;
+    line-height: 1.18 !important;
+    margin: 0 0 12px !important;
+  }
+
+  .cx-trust-desc {
+    max-width: 480px !important;
+    font-size: 14.5px !important;
+    line-height: 1.55 !important;
+    margin: 0 0 18px !important;
+  }
+
+  .cx-trust-proof-list {
+    margin-top: 0 !important;
+    gap: 12px !important;
+  }
+
+  .cx-trust-proof-item strong {
+    font-size: 12px !important;
+  }
+
+  .cx-trust-pedestal-visual-wrap {
+    align-items: center !important;
+    display: flex !important;
+    flex: 1 1 45% !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    max-width: 420px !important;
+    width: 100% !important;
+    height: auto !important;
+    gap: 12px !important;
+  }
+
+  .cx-trust-pedestal-slide-box {
+    animation: trustSlideFade 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  @keyframes trustSlideFade {
+    0% {
+      opacity: 0;
+      transform: translateX(18px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .cx-trust-tablet-slide-caption {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    padding: 12px 16px !important;
+    width: 100% !important;
+    max-width: 360px !important;
+    text-align: left !important;
+  }
+
+  .cx-trust-tablet-slide-badge {
+    align-items: center !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+
+  .cx-trust-tablet-slide-num {
+    color: #059669 !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+  }
+
+  .cx-trust-tablet-slide-name {
+    color: #0f172a !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+  }
+
+  .cx-trust-tablet-slide-desc {
+    color: #475467 !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    margin: 0 !important;
+  }
+
+  .cx-trust-tablet-slide-action {
+    align-items: center !important;
+    color: #059669 !important;
+    display: inline-flex !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    gap: 4px !important;
+    margin-top: 2px !important;
+    text-decoration: none !important;
+  }
+
+  .cx-trust-tablet-slide-action:hover {
+    color: #047857 !important;
+    text-decoration: underline !important;
+  }
+
+  .cx-trust-tablet-slide-action svg {
+    height: 12px !important;
+    width: 12px !important;
+  }
+
+  .cx-trust-pedestal-svg {
+    max-height: 190px !important;
+    max-width: 340px !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-deck-col {
+    display: none !important;
+  }
+
+  .cx-trust-tablet-tabs-bar {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 10px !important;
+    margin-top: 20px !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-tablet-tab-card {
+    background: #ffffff;
+    border: 1.5px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 10px;
+    text-align: left;
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .cx-trust-tablet-tab-card:hover {
+    border-color: #a7f3d0 !important;
+    transform: translateY(-2px);
+  }
+
+  .cx-trust-tablet-tab-card.is-active {
+    background: #f0fdf4 !important;
+    border-color: #059669 !important;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.12) !important;
+  }
+
+  .cx-trust-tablet-tab-num {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #059669;
+  }
+
+  .cx-trust-tablet-tab-card:not(.is-active) .cx-trust-tablet-tab-num {
+    color: #64748b;
+  }
+
+  .cx-trust-tablet-tab-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cx-trust-tablet-tab-icon {
+    width: 18px;
+    height: 18px;
+    color: #0f172a;
+    flex-shrink: 0;
+  }
+
+  .cx-trust-tablet-tab-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.25;
+    flex: 1;
+  }
+
+  .cx-trust-tablet-tab-arrow {
+    width: 14px;
+    height: 14px;
+    color: #64748b;
+    flex-shrink: 0;
+  }
+
+  /* Footer on Tablet */
+  .cx-footer-top-tier {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 36px;
+  }
+
+  .cx-footer-brand-col {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .cx-footer-graphic-col {
+    display: none;
+  }
+
+  .cx-footer-utility-tier {
+    flex-wrap: wrap;
+    gap: 28px;
+  }
+
+  .cx-footer-vert-divider {
+    display: none;
+  }
+
+  /* Season Tech Upgrade Fest on Tablet */
+  .cx-season-hero-tier {
+    gap: 20px !important;
+    padding: 36px 28px 28px !important;
+  }
+
+  .cx-season-heading {
+    font-size: 32px !important;
+  }
+
+  .cx-season-showcase-col {
+    max-width: 400px !important;
+  }
+
+  .cx-season-categories-bar {
+    gap: 14px !important;
+  }
+
+  .cx-season-assurance-tier {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 18px !important;
+    padding: 24px 28px !important;
+  }
+
+  .cx-season-assurance-divider {
+    display: none !important;
+  }
+
+  .cx-season-assurance-brand {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    grid-column: span 2 !important;
+    padding-bottom: 8px !important;
+  }
+}
+
+/* Mobile (≤ 767px) */
+@media (max-width: 767px) {
+  /* Trust Section on Mobile */
+  .cx-trust-section {
+    box-sizing: border-box !important;
+    margin: 32px 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-header-row {
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-intro-col {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    gap: 16px !important;
+  }
+
+  .cx-trust-intro-header {
+    flex: 1 1 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+  }
+
+  .cx-trust-mobile-dot-grid {
+    display: block !important;
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    opacity: 0.6 !important;
+  }
+
+  .cx-trust-heading {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+    margin: 0 0 10px !important;
+  }
+
+  .cx-trust-desc {
+    max-width: 100% !important;
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    margin: 0 0 16px !important;
+  }
+
+  .cx-trust-proof-list {
+    margin-top: 0 !important;
+    gap: 10px !important;
+  }
+
+  .cx-trust-proof-item strong {
+    font-size: 11px !important;
+  }
+
+  .cx-trust-pedestal-visual-wrap {
+    display: none !important;
+  }
+
+  .cx-trust-inactive-tabs {
+    display: none !important;
+  }
+
+  .cx-trust-tablet-tabs-bar {
+    display: none !important;
+  }
+
+  /* Deck Column on Mobile */
+  .cx-trust-deck-col {
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    height: auto !important;
+    margin-top: 4px !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    position: relative !important;
+    width: 100% !important;
+  }
+
+  /* Active Card on Mobile: Takes most width with peek card visible on right */
+  .cx-trust-active-card {
+    background: #ffffff !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    height: auto !important;
+    max-width: calc(100% - 64px) !important;
+    min-width: 0 !important;
+    padding: 20px 16px !important;
+    position: relative !important;
+    width: calc(100% - 64px) !important;
+  }
+
+  .cx-trust-active-card-content {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    height: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .cx-trust-active-card-badge {
+    margin-bottom: 2px !important;
+  }
+
+  .cx-trust-active-number {
+    font-size: 16px !important;
+  }
+
+  .cx-trust-active-title {
+    font-size: 18px !important;
+    line-height: 1.25 !important;
+    margin: 0 0 4px !important;
+  }
+
+  .cx-trust-active-desc {
+    font-size: 12.5px !important;
+    line-height: 1.45 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide the checklist and desktop button on mobile to match Image 1 */
+  .cx-trust-active-checklist {
+    display: none !important;
+  }
+
+  .cx-trust-active-actions {
+    display: none !important;
+  }
+
+  .cx-trust-action-btn {
+    display: none !important;
+  }
+
+  /* Media row at bottom of active card: Laptop on left, Green arrow button on right */
+  .cx-trust-active-card-media {
+    align-items: center !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: row !important;
+    height: auto !important;
+    justify-content: space-between !important;
+    margin-top: 10px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-laptops-svg {
+    height: auto !important;
+    max-width: 150px !important;
+    width: 65% !important;
+  }
+
+  .cx-trust-mobile-circle-btn {
+    align-items: center !important;
+    background: #064e3b !important;
+    border-radius: 50% !important;
+    color: #ffffff !important;
+    display: flex !important;
+    flex-shrink: 0 !important;
+    height: 38px !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    width: 38px !important;
+  }
+
+  .cx-trust-mobile-circle-btn svg {
+    height: 16px !important;
+    width: 16px !important;
+  }
+
+  /* Pagination indicator dashes on mobile */
+  .cx-trust-pagination {
+    bottom: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    left: auto !important;
+    margin-top: 14px !important;
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+  }
+
+  /* Peeking adjacent card on the right */
+  .cx-trust-mobile-peek-card {
+    align-items: center !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    display: flex !important;
+    flex: 0 0 52px !important;
+    flex-direction: column !important;
+    height: auto !important;
+    justify-content: center !important;
+    opacity: 0.65 !important;
+    padding: 16px 6px !important;
+    width: 52px !important;
+  }
+
+  /* Footer on Mobile */
+  .cx-store-luxury-footer {
+    padding: 44px 18px 28px;
+    margin-top: 36px;
+  }
+
+  .cx-footer-top-tier {
+    flex-direction: column;
+    gap: 28px;
+    margin-bottom: 32px;
+  }
+
+  .cx-footer-brand-col {
+    max-width: 100%;
+  }
+
+  .cx-footer-graphic-col {
+    display: none;
+  }
+
+  .cx-footer-nav-grid {
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+  }
+
+  .cx-footer-nav-col {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .cx-footer-nav-toggle {
+    width: 100%;
+    padding: 16px 0;
+    margin-bottom: 0;
+    cursor: pointer;
+  }
+
+  .cx-footer-accordion-chevron {
+    display: block;
+    width: 16px;
+    height: 16px;
+    color: #94a3b8;
+    transition: transform 200ms ease;
+  }
+
+  .cx-footer-accordion-chevron.is-open {
+    transform: rotate(180deg);
+  }
+
+  .cx-footer-link-list {
+    display: none;
+    padding-bottom: 16px;
+  }
+
+  .cx-footer-link-list.is-mobile-open {
+    display: flex;
+  }
+
+  .cx-footer-utility-tier {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+    padding: 28px 0;
+  }
+
+  .cx-footer-vert-divider {
+    display: none;
+  }
+
+  .cx-footer-newsletter-form {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .cx-footer-bottom-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .cx-footer-region-powered {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Season Tech Upgrade Fest on Mobile */
+  .cx-season-banner-section {
+    margin: 36px auto !important;
+    padding: 0 16px !important;
+  }
+
+  .cx-season-banner-card {
+    border-radius: 18px !important;
+  }
+
+  .cx-season-hero-tier {
+    flex-direction: column !important;
+    gap: 24px !important;
+    padding: 28px 18px 24px !important;
+  }
+
+  .cx-season-copy-col {
+    max-width: 100% !important;
+    width: 100% !important;
+    gap: 12px !important;
+  }
+
+  .cx-season-heading {
+    font-size: 26px !important;
+    line-height: 1.15 !important;
+  }
+
+  .cx-season-sparkles-svg {
+    right: -20px !important;
+    top: -10px !important;
+    width: 26px !important;
+  }
+
+  .cx-season-desc {
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+  }
+
+  .cx-season-cta-btn {
+    box-sizing: border-box !important;
+    justify-content: center !important;
+    padding: 13px 20px !important;
+    width: 100% !important;
+  }
+
+  .cx-season-categories-bar {
+    display: grid !important;
+    gap: 10px !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    padding-top: 14px !important;
+    width: 100% !important;
+  }
+
+  .cx-season-category-item {
+    align-items: center !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    text-align: center !important;
+  }
+
+  .cx-season-category-divider {
+    display: none !important;
+  }
+
+  .cx-season-showcase-col {
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .cx-season-showcase-svg {
+    max-height: 280px !important;
+  }
+
+  .cx-season-assurance-tier {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 24px 18px !important;
+  }
+
+  .cx-season-assurance-divider {
+    display: none !important;
+  }
+
+  .cx-season-assurance-brand {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    font-size: 17px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .cx-season-assurance-item {
+    gap: 12px !important;
+  }
+}
+
+/* Desktop service carousel width overrides. */
+@media (min-width: 1280px) {
+  .cx-trust-section {
+    box-sizing: border-box !important;
+    margin: 36px auto !important;
+    max-width: 1200px !important;
+    padding: 0 !important;
+    width: calc(100% - 48px) !important;
+  }
+
+  .cx-trust-header-row {
+    display: grid !important;
+    gap: clamp(24px, 2.5vw, 36px) !important;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr) !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-intro-col {
+    flex: initial !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-intro-header {
+    flex: 1 1 250px !important;
+    max-width: 250px !important;
+  }
+
+  .cx-trust-pedestal-visual-wrap {
+    flex: 1 1 180px !important;
+    max-width: 220px !important;
+    min-width: 0 !important;
+  }
+
+  .cx-trust-deck-col {
+    flex: initial !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .cx-trust-active-card {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  .cx-trust-active-card-content {
+    flex: 0 1 250px !important;
+    max-width: 58% !important;
+  }
+
+  .cx-trust-active-card-media {
+    flex: 1 1 150px !important;
+    min-width: 130px !important;
+  }
+
+  .cx-trust-laptops-svg {
+    max-width: 100% !important;
+  }
+
+  .cx-trust-inactive-tabs {
+    flex: 0 0 240px !important;
+    width: 240px !important;
+  }
+}
+
+/* Violet trust-section accents and illustrations */
+.cx-trust-green-dash,
+.cx-trust-active-bar,
+.cx-trust-pagination-dash.is-active {
+  background: #7c3aed !important;
+}
+
+.cx-trust-proof-check {
+  background: #ede9fe !important;
+  color: #7c3aed !important;
+}
+
+.cx-trust-active-number,
+.cx-trust-check-icon,
+.cx-trust-tablet-slide-num,
+.cx-trust-tablet-slide-action {
+  color: #7c3aed !important;
+}
+
+.cx-trust-tablet-slide-action:hover {
+  color: #6d28d9 !important;
+}
+
+.cx-trust-tablet-tab-card:hover {
+  border-color: #a78bfa !important;
+}
+
+.cx-trust-tablet-tab-card.is-active {
+  background: #f5f3ff !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12) !important;
+}
+
+.cx-trust-tablet-tab-card.is-active .cx-trust-tablet-tab-num {
+  color: #7c3aed !important;
+}
+
+.cx-trust-tab-col:hover .cx-trust-tab-arrow {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.cx-trust-pedestal-svg {
+  filter: hue-rotate(105deg) saturate(1.05);
+}
+
+@media (max-width: 767px) {
+  .cx-trust-section {
+    background: linear-gradient(145deg, #faf8ff 0%, #f5f3ff 100%) !important;
+    border: 1px solid #ede9fe !important;
+    border-radius: 20px !important;
+    padding: 16px 12px !important;
+  }
+
+  .cx-trust-active-card {
+    border-color: #e9ddff !important;
+    box-shadow: 0 10px 24px rgba(76, 29, 149, 0.08) !important;
+  }
+
+  .cx-trust-active-card-media {
+    background: #f5f3ff !important;
+    border: 1px solid #ede9fe !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+    margin-top: 8px !important;
+    min-height: 88px !important;
+    padding: 6px 10px !important;
+  }
+
+  .cx-trust-mobile-circle-btn {
+    background: #0f172a !important;
+    border-radius: 10px !important;
+  }
+
+  .cx-trust-mobile-dot-grid svg {
+    filter: hue-rotate(90deg) saturate(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-trust-active-card,
+  .cx-trust-pedestal-slide-box {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Keep every service in its numbered slot; the selected slot expands and slides. */
+@media (min-width: 1280px) {
+  .cx-trust-deck-col {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 18px !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .cx-trust-active-card {
+    background: #f8fafb !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 26px 22px 24px !important;
+  }
+
+  .cx-trust-active-card-inner {
+    align-items: stretch;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 0;
+    height: 100%;
+    min-width: 0;
+    position: relative;
+    width: 100%;
+  }
+
+  .cx-trust-active-card-content {
+    flex: 0 1 250px !important;
+    max-width: 58% !important;
+    min-width: 0 !important;
+  }
+
+  .cx-trust-active-card-media {
+    flex: 1 1 150px !important;
+    min-width: 130px !important;
+  }
+
+  .cx-trust-laptops-svg {
+    max-width: 100% !important;
+  }
+
+  .cx-trust-tab-col {
+    border: 0 !important;
+    border-right: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    flex: 0 0 68px !important;
+    min-width: 68px !important;
+    padding: 24px 4px 20px !important;
+    width: 68px !important;
+  }
+
+  .cx-trust-tab-col:last-child {
+    border-right: 0 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .cx-trust-deck-col {
+    border: 0 !important;
+    overflow: visible !important;
+  }
+
+  .cx-trust-tab-col {
+    display: none !important;
+  }
+
+  .cx-trust-active-card-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+}
+
+/* Final desktop spacing: keep the action and pagination in separate areas. */
+@media (min-width: 1280px) {
+  .cx-trust-header-row {
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr) !important;
+  }
+
+  .cx-trust-tab-col {
+    flex-basis: 72px !important;
+    min-width: 72px !important;
+    width: 72px !important;
+  }
+
+  .cx-trust-pagination {
+    bottom: 16px !important;
+    left: auto !important;
+    right: 18px !important;
+    transform: none !important;
+  }
+}
+

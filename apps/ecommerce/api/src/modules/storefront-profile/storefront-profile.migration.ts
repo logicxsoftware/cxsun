@@ -89,3 +89,43 @@ export async function upgradeStorefrontProfilePaymentMethods(database: Kysely<Ec
     )
     .execute(database);
 }
+
+export const storefrontProfileHomeCtaMigration = {
+  description: "Editable home page closing call-to-action content.",
+  key: "ecommerce.storefront.profile.home-cta"
+} as const;
+
+export async function upgradeStorefrontProfileHomeCta(database: Kysely<EcommerceDatabase>) {
+  await sql
+    .raw(
+      `ALTER TABLE ecommerce_storefront_profiles
+    ADD COLUMN IF NOT EXISTS home_cta_eyebrow VARCHAR(120) NOT NULL DEFAULT 'Ready when you are',
+    ADD COLUMN IF NOT EXISTS home_cta_title VARCHAR(240) NOT NULL DEFAULT 'Technology for your work',
+    ADD COLUMN IF NOT EXISTS home_cta_description VARCHAR(500) NOT NULL DEFAULT 'Compare dependable systems, accessories, and practical support in one place.',
+    ADD COLUMN IF NOT EXISTS home_cta_action_label VARCHAR(120) NOT NULL DEFAULT 'Browse all products',
+    ADD COLUMN IF NOT EXISTS home_cta_action_url VARCHAR(500) NOT NULL DEFAULT '/shop'`
+    )
+    .execute(database);
+}
+
+export const storefrontProfileTrustedPanelsMigration = {
+  description: "Editable content for storefront trust and solution panels.",
+  key: "ecommerce.storefront.profile.trusted-panels"
+} as const;
+
+export async function upgradeStorefrontProfileTrustedPanels(database: Kysely<EcommerceDatabase>) {
+  await sql
+    .raw(
+      `ALTER TABLE ecommerce_storefront_profiles
+    ADD COLUMN IF NOT EXISTS trusted_panels_json LONGTEXT NULL AFTER trusted_proof_points`
+    )
+    .execute(database);
+  await sql
+    .raw(
+      `UPDATE ecommerce_storefront_profiles
+    SET trusted_panels_json='[{"title":"Computers and laptops","description":"Practical systems selected around your workload, budget, service needs, and future upgrades.","details":["Business and student laptops","Desktops and workstations","Custom systems and accessories"],"action":"Explore products","href":"/shop"},{"title":"Business IT solutions","description":"Connected technology for offices, factories, retailers, institutions, and growing teams.","details":["Networking, Wi-Fi and storage","CCTV, biometric and access","POS, VoIP and displays"],"action":"Explore solutions","href":"/features"},{"title":"Service and support","description":"Reach a Tiruppur team that can help before the purchase and after the installation.","details":["Computer and laptop service","Installation and upgrades","Maintenance and warranty help"],"action":"Get local support","href":"/support"},{"title":"Security and access","description":"Practical protection and access systems designed for the site, people, and daily workflow.","details":["CCTV and remote monitoring","Biometric attendance","Face recognition and access control"],"action":"Plan security","href":"/features"},{"title":"Managed infrastructure","description":"A connected foundation for teams that depend on reliable systems, communication, and support.","details":["Servers, storage and backup","VoIP and video conferencing","AMC and planned maintenance"],"action":"Discuss infrastructure","href":"/contact"}]'
+    WHERE trusted_panels_json IS NULL OR TRIM(trusted_panels_json)=''`
+    )
+    .execute(database);
+}
+

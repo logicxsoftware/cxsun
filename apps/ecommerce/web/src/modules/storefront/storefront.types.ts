@@ -1,4 +1,5 @@
 export type StorefrontProduct = {
+  badge?: StorefrontProductBadge | null;
   brand: string | null;
   category: string;
   compareAtPrice: number | null;
@@ -13,6 +14,12 @@ export type StorefrontProduct = {
   slug: string;
   subtitle: string;
   variantCount: number;
+  bulletPoints?: string[];
+};
+
+export type StorefrontProductBadge = {
+  text: string;
+  type: "bestseller" | "limited" | "new" | "discount" | "default";
 };
 
 export type StorefrontSlider = {
@@ -50,11 +57,19 @@ export type StorefrontFeaturedCard = Omit<StorefrontPromotion, "promotionCode"> 
 };
 export type StorefrontProductDetail = StorefrontProduct & {
   bulletPoints: string[];
+  images: StorefrontProductImage[];
   returnPolicy: string;
   variants: Array<{ id: number; price: number; sku: string; title: string }>;
   warranty: string;
 };
-export type StorefrontCategory = { name: string; productCount: number };
+
+export type StorefrontProductImage = {
+  altText: string;
+  caption: string;
+  url: string;
+  variantId: number | null;
+};
+export type StorefrontCategory = { imageUrl?: string; name: string; productCount: number };
 export type StorefrontSearchScope = "all" | "products" | "brands" | "categories";
 export type StorefrontSort = "featured" | "name" | "price-asc" | "price-desc" | "discount";
 export type StorefrontFilters = {
@@ -81,6 +96,13 @@ export type StorefrontBlogPost = {
 };
 export type StorefrontSiteNavigation = {
   about: string;
+  closingCta: {
+    actionLabel: string;
+    actionUrl: string;
+    description: string;
+    eyebrow: string;
+    title: string;
+  };
   copyrightText: string;
   groups: Array<{ title: string; links: Array<{ label: string; href: string }> }>;
   paymentMethods: Array<{ logoUrl: string; name: string }>;
@@ -97,6 +119,13 @@ export type StorefrontSiteNavigation = {
   trustedStrip: {
     description: string;
     eyebrow: string;
+    panels: Array<{
+      action: string;
+      description: string;
+      details: string[];
+      href: string;
+      title: string;
+    }>;
     proofPoints: string[];
     title: string;
   };

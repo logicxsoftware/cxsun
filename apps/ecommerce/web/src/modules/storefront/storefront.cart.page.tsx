@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { MinusIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { BackToTopButton, StoreFooter } from "./storefront.components";
+import { BackToTopButton, StoreFooter } from "./storefront.components1";
 import {
   clearStorefrontCart,
   removeStorefrontCartItem,
@@ -8,7 +8,7 @@ import {
   useStorefrontCart
 } from "./storefront.cart";
 import { money, whatsappLink } from "./storefront.formatters";
-import { StoreHeader } from "./storefront.navigation";
+import { StoreHeader } from "./storefront.navigation1";
 import { setStorefrontSeo } from "./storefront.seo";
 import {
   getStorefrontAnnouncement,

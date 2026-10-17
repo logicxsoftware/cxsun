@@ -1,0 +1,600 @@
+/* ==========================================================================
+   Summer Tech Upgrade Fest 2026 - Season Banner (storefront.season-banner1.css)
+   Exact match for Desktop, Tablet, and Mobile with dynamic backend API data
+   ========================================================================== */
+
+.cx-season-banner-section {
+  box-sizing: border-box !important;
+  margin: 28px 0 36px !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.cx-season-banner-card {
+  background: linear-gradient(120deg, #fff9ec 0%, #f8f3ff 52%, #eef7ff 100%);
+  border: 0 !important;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* ==========================================================================
+   UPPER HERO TIER (Cream Background)
+   ========================================================================== */
+
+.cx-season-hero-tier {
+  align-items: stretch;
+  background: linear-gradient(115deg, #fffaf0 0%, #f7f4ff 54%, #eff8ff 100%);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  justify-content: space-between;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+.cx-season-copy-col {
+  display: flex;
+  box-sizing: border-box;
+  flex: 0 0 50%;
+  flex-direction: column;
+  gap: 16px;
+  max-width: none;
+  min-width: 0;
+  padding: 44px clamp(20px, 4vw, 56px) 36px;
+  z-index: 2;
+}
+
+/* Eyebrow Row */
+.cx-season-eyebrow-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.cx-season-red-dot {
+  background: #9f1239;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  height: 6px;
+  width: 6px;
+}
+
+.cx-season-eyebrow {
+  color: #881337;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Main Heading */
+.cx-season-heading {
+  font-family:
+    "Manrope",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: clamp(30px, 3.2vw, 46px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+}
+
+.cx-season-heading-light {
+  color: #0f172a;
+}
+
+.cx-season-heading-accent {
+  color: #881337;
+  display: inline;
+  position: relative;
+}
+
+.cx-season-accent-underlined {
+  display: inline-block;
+  position: relative;
+}
+
+.cx-season-curve-line {
+  bottom: -8px;
+  height: 12px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}
+
+.cx-season-sparkles {
+  display: inline-block;
+  margin-left: 3px;
+  position: relative;
+  top: -8px;
+  vertical-align: top;
+}
+
+/* Description */
+.cx-season-desc {
+  color: #475467 !important;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 14.5px !important;
+  line-height: 1.55 !important;
+  margin: 0 !important;
+  max-width: 500px;
+}
+
+/* CTA Action Row */
+.cx-season-action-row {
+  margin-top: 4px;
+}
+
+.cx-season-cta-btn {
+  align-items: center;
+  background: #0f172a;
+  border: 0 !important;
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+  color: #ffffff !important;
+  display: inline-flex;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
+  padding: 13px 26px;
+  text-decoration: none !important;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.cx-season-cta-btn:hover {
+  background: #1e293b;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.25);
+  transform: translateY(-2px);
+}
+
+.cx-season-cta-btn svg {
+  height: 16px;
+  transition: transform 180ms ease;
+  width: 16px;
+}
+
+.cx-season-cta-btn:hover svg {
+  transform: translate(2px, -2px);
+}
+
+/* Quick Categories Bar */
+.cx-season-categories-bar {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+.cx-season-category-item {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  text-decoration: none !important;
+  transition: transform 160ms ease;
+}
+
+.cx-season-category-item:hover {
+  transform: translateY(-1px);
+}
+
+.cx-season-category-icon {
+  align-items: center;
+  color: #334155;
+  display: flex;
+  flex-shrink: 0;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.cx-season-category-icon svg {
+  height: 20px;
+  stroke-width: 1.8;
+  width: 20px;
+}
+
+.cx-season-category-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.cx-season-category-info strong {
+  color: #0f172a;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cx-season-category-info span {
+  color: #64748b;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 11.5px;
+}
+
+.cx-season-category-divider {
+  background: #e2e8f0;
+  flex-shrink: 0;
+  height: 24px;
+  width: 1px;
+}
+
+/* ==========================================================================
+   RIGHT SHOWCASE COLUMN (3D Illustrator Stage)
+   ========================================================================== */
+
+.cx-season-showcase-col {
+  align-items: stretch;
+  align-self: stretch;
+  display: flex;
+  flex: 0 0 50%;
+  justify-content: center;
+  max-width: none;
+  min-width: 0;
+  min-height: 360px;
+  position: relative;
+}
+
+.cx-season-showcase-svg {
+  display: block;
+  height: auto;
+  max-height: 380px;
+  width: 100%;
+}
+
+.cx-season-image-stage {
+  align-items: stretch;
+  align-self: stretch;
+  aspect-ratio: auto;
+  background: linear-gradient(135deg, #f8e9f0 0%, #eee9ff 52%, #e7f3ff 100%);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  flex: 1 1 auto;
+  height: 100%;
+  max-height: none;
+  max-width: none;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+
+.cx-season-image-stage::before {
+  display: none;
+}
+
+.cx-season-campaign-image {
+  border-radius: inherit;
+  filter: none;
+  height: 100%;
+  inset: 0;
+  max-height: none;
+  object-fit: cover;
+  object-position: center;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+
+.cx-season-image-badge {
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(52, 12, 25, 0.16);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.2;
+  max-width: calc(100% - 36px);
+  overflow: hidden;
+  padding: 10px 15px;
+  position: absolute;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.cx-season-image-badge--top-left {
+  left: 18px;
+  top: 18px;
+}
+
+.cx-season-image-badge--top-right {
+  right: 18px;
+  top: 18px;
+}
+
+.cx-season-image-badge--bottom-left {
+  bottom: 18px;
+  left: 18px;
+}
+
+.cx-season-image-badge--bottom-right {
+  bottom: 18px;
+  right: 18px;
+}
+
+.cx-season-image-sparkle {
+  color: rgba(159, 18, 57, 0.42);
+  height: 56px;
+  pointer-events: none;
+  position: absolute;
+  right: 9%;
+  top: 14%;
+  width: 56px;
+  z-index: 2;
+}
+
+/* ==========================================================================
+   LOWER ASSURANCE TIER (Soft Rose Bar)
+   ========================================================================== */
+
+.cx-season-assurance-tier {
+  align-items: center;
+  background: #fff1f2 !important;
+  border-top: 1px solid #f3d5dd;
+  box-sizing: border-box;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1.15fr auto 1.35fr auto 1.35fr auto 1.35fr;
+  padding: 20px clamp(20px, 4vw, 56px);
+  width: 100%;
+}
+
+.cx-season-assurance-brand strong {
+  color: #881337 !important;
+  font-family:
+    "Manrope",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.cx-season-assurance-divider {
+  background: #f1cbd4;
+  height: 32px;
+  width: 1px;
+}
+
+.cx-season-assurance-item {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.cx-season-assurance-icon {
+  align-items: center;
+  color: #881337;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.cx-season-assurance-icon svg {
+  height: 24px;
+  stroke-width: 1.8;
+  width: 24px;
+}
+
+.cx-season-assurance-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.cx-season-assurance-text strong {
+  color: #1f2937 !important;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+}
+
+.cx-season-assurance-text span {
+  color: #64748b !important;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 12px !important;
+  line-height: 1.35;
+}
+
+/* ==========================================================================
+   BREAKPOINTS: TABLET (768px – 1024px)
+   ========================================================================== */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .cx-season-hero-tier {
+    gap: 0;
+    padding: 0;
+  }
+
+  .cx-season-copy-col {
+    padding: 32px 24px;
+  }
+
+  .cx-season-showcase-col {
+    min-height: 340px;
+  }
+
+  .cx-season-heading {
+    font-size: 30px !important;
+  }
+
+  .cx-season-desc {
+    font-size: 13.5px !important;
+  }
+
+  .cx-season-assurance-tier {
+    gap: 14px;
+    grid-template-columns: 1fr 1fr;
+    padding: 20px 28px;
+  }
+
+  .cx-season-assurance-divider {
+    display: none;
+  }
+
+  .cx-season-assurance-brand {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+  }
+}
+
+/* ==========================================================================
+   BREAKPOINTS: MOBILE (≤ 767px)
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .cx-season-hero-tier {
+    flex-direction: column;
+    gap: 14px;
+    padding: 22px 16px 18px;
+  }
+
+  .cx-season-copy-col {
+    flex: 0 1 auto;
+    max-width: 100%;
+    padding: 0;
+    width: 100%;
+  }
+
+  .cx-season-heading {
+    font-size: 26px !important;
+  }
+
+  .cx-season-desc {
+    font-size: 13px !important;
+  }
+
+  .cx-season-categories-bar {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .cx-season-category-item {
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .cx-season-category-info {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cx-season-category-divider {
+    display: none;
+  }
+
+  .cx-season-showcase-col {
+    align-self: stretch;
+    flex: 0 1 auto;
+    min-height: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .cx-season-image-stage {
+    aspect-ratio: 1.35;
+    border-radius: 14px;
+    height: clamp(180px, 60vw, 260px);
+    min-height: 180px;
+  }
+
+  .cx-season-campaign-image {
+    border-radius: inherit;
+  }
+
+  .cx-season-image-sparkle {
+    height: 40px;
+    width: 40px;
+  }
+
+  .cx-season-assurance-tier {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .cx-season-assurance-brand,
+  .cx-season-assurance-item,
+  .cx-season-assurance-text,
+  .cx-season-assurance-text span {
+    min-width: 0;
+  }
+
+  .cx-season-assurance-brand strong {
+    white-space: normal;
+  }
+
+  .cx-season-assurance-item {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .cx-season-assurance-text span {
+    overflow-wrap: anywhere;
+  }
+
+  .cx-season-assurance-divider {
+    display: none;
+  }
+}

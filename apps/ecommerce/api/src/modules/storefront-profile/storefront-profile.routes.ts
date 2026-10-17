@@ -5,6 +5,11 @@ import { StorefrontProfileService } from "./storefront-profile.service.js";
 
 const profileSchema = z.object({
   aboutUs: z.string().max(2000),
+  homeCtaActionLabel: z.string().max(120),
+  homeCtaActionUrl: z.string().max(500),
+  homeCtaDescription: z.string().max(500),
+  homeCtaEyebrow: z.string().max(120),
+  homeCtaTitle: z.string().max(240),
   copyrightText: z.string().max(240),
   facebookUrl: z.union([z.literal(""), z.string().url().max(500)]),
   instagramUrl: z.union([z.literal(""), z.string().url().max(500)]),
@@ -31,6 +36,17 @@ const profileSchema = z.object({
   trustedDescription: z.string().max(500),
   trustedEyebrow: z.string().max(120),
   trustedProofPoints: z.string().max(1000),
+  trustedPanels: z
+    .array(
+      z.object({
+        action: z.string().trim().min(1).max(120),
+        description: z.string().trim().min(1).max(500),
+        details: z.array(z.string().trim().min(1).max(160)).min(1).max(5),
+        href: z.string().trim().min(1).max(500),
+        title: z.string().trim().min(1).max(160)
+      })
+    )
+    .length(5),
   trustedTitle: z.string().max(240),
   threadsUrl: z.union([z.literal(""), z.string().url().max(500)]),
   whatsappUrl: z.union([z.literal(""), z.string().url().max(500)]),

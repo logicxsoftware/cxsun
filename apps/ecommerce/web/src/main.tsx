@@ -6,10 +6,9 @@ import "@cxsun/ui/styles.css";
 declare const __CXSUN_PLATFORM_WEB_PORT__: number;
 
 const pathname = window.location.pathname;
-const publicPage =
-  ["/shop", "/cart", "/campaigns", "/search"].includes(pathname) || pathname.startsWith("/shop/");
+const isAdminRoute = pathname.startsWith("/app") || pathname.startsWith("/admin");
 
-if (publicPage) {
+if (!isAdminRoute) {
   createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={new QueryClient()}>
       <StorefrontPage />

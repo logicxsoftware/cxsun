@@ -1,0 +1,1883 @@
+/* ==========================================================================
+   DEDICATED SHOP PRODUCTS PAGE (storefront.shop-page1.css)
+   Ultra-modern, perfectly aligned, high-converting e-commerce catalog layout
+   ========================================================================== */
+
+/* ---------- Container & Page Wrappers ---------- */
+.cx-shop-page-wrapper {
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.cx-shop-main {
+  padding: 16px 0 64px;
+  width: 100%;
+}
+
+.cx-shop-container {
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 1400px;
+  padding: 0 24px;
+  width: 100%;
+}
+
+/* ---------- Breadcrumb Navigation ---------- */
+.cx-shop-breadcrumbs {
+  align-items: center;
+  color: #64748b;
+  display: flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cx-shop-breadcrumbs a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.cx-shop-breadcrumbs a:hover {
+  color: #0f172a;
+}
+
+.cx-shop-breadcrumbs svg {
+  height: 14px;
+  stroke-width: 2.2;
+  width: 14px;
+}
+
+.cx-shop-breadcrumbs span {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* ---------- Page Header Banner ---------- */
+.cx-shop-header {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  margin-bottom: 24px;
+  padding: 28px 32px 20px;
+}
+
+.cx-shop-header__badge-row {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.cx-shop-header__eyebrow {
+  color: #0d9488;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cx-shop-header__count-badge {
+  background: #f1f5f9;
+  border-radius: 999px;
+  color: #475569;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+}
+
+.cx-shop-header__title {
+  color: #0f172a;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 10px;
+}
+
+.cx-shop-header__desc {
+  color: #64748b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14.5px;
+  line-height: 1.5;
+  margin: 0 0 20px;
+  max-width: 720px;
+}
+
+/* Horizontal Quick Category Bar */
+.cx-shop-cat-strip {
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  gap: 10px;
+  margin: 0 -8px;
+  overflow-x: auto;
+  padding: 16px 8px 6px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cx-shop-cat-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.cx-shop-cat-pill {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 6px;
+  padding: 8px 16px;
+  transition: all 160ms ease;
+  white-space: nowrap;
+}
+
+.cx-shop-cat-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.cx-shop-cat-pill.is-active {
+  background: #0f172a;
+  border-color: #0f172a;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  color: #ffffff;
+}
+
+.cx-shop-cat-pill__count {
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+}
+
+.cx-shop-cat-pill.is-active .cx-shop-cat-pill__count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* ---------- Top Controls Bar ---------- */
+.cx-shop-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.cx-shop-controls__left {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.cx-shop-mobile-filter-btn {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  color: #0f172a;
+  cursor: pointer;
+  display: none; /* Shown on tablet / mobile */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  gap: 8px;
+  padding: 8px 16px;
+  transition: all 160ms ease;
+}
+
+.cx-shop-mobile-filter-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.cx-shop-mobile-filter-btn svg {
+  height: 16px;
+  stroke-width: 2.2;
+  width: 16px;
+}
+
+.cx-shop-filter-badge {
+  align-items: center;
+  background: #0d9488;
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  height: 18px;
+  justify-content: center;
+  min-width: 18px;
+  padding: 0 5px;
+}
+
+.cx-shop-results-summary {
+  color: #64748b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cx-shop-controls__right {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* Search Box Inside Controls */
+.cx-shop-search-field {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  display: flex;
+  gap: 8px;
+  min-width: 260px;
+  padding: 8px 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.cx-shop-search-field:focus-within {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.cx-shop-search-field svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+  height: 16px;
+  stroke-width: 2.2;
+  width: 16px;
+}
+
+.cx-shop-search-field input {
+  background: transparent;
+  border: 0;
+  color: #0f172a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  outline: none;
+  width: 100%;
+}
+
+.cx-shop-search-field input::placeholder {
+  color: #94a3b8;
+}
+
+.cx-shop-search-clear {
+  align-items: center;
+  background: #f1f5f9;
+  border: 0;
+  border-radius: 50%;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  height: 20px;
+  justify-content: center;
+  padding: 0;
+  transition: all 140ms ease;
+  width: 20px;
+}
+
+.cx-shop-search-clear:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.cx-shop-search-clear svg {
+  height: 12px;
+  stroke-width: 2.5;
+  width: 12px;
+}
+
+/* Sort Selector */
+.cx-shop-sort-wrap {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.cx-shop-sort-wrap label {
+  color: #64748b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cx-shop-select-box {
+  position: relative;
+}
+
+.cx-shop-select-box select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  color: #0f172a;
+  cursor: pointer;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  outline: none;
+  padding: 8px 36px 8px 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.cx-shop-select-box select:focus {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.cx-shop-select-chevron {
+  color: #64748b;
+  height: 16px;
+  pointer-events: none;
+  position: absolute;
+  right: 12px;
+  stroke-width: 2.2;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+}
+
+/* ---------- Active Filter Chips ---------- */
+.cx-shop-active-filters {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.cx-shop-active-label {
+  color: #64748b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.cx-shop-chip {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 6px;
+  padding: 5px 12px;
+  transition: all 150ms ease;
+}
+
+.cx-shop-chip strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.cx-shop-chip svg {
+  color: #94a3b8;
+  height: 13px;
+  stroke-width: 2.5;
+  transition: color 150ms ease;
+  width: 13px;
+}
+
+.cx-shop-chip:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.cx-shop-chip:hover svg {
+  color: #dc2626;
+}
+
+.cx-shop-clear-all-btn {
+  background: transparent;
+  border: 0;
+  color: #dc2626;
+  cursor: pointer;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-left: 4px;
+  padding: 4px 8px;
+  text-decoration: underline;
+  transition: color 150ms ease;
+}
+
+.cx-shop-clear-all-btn:hover {
+  color: #991b1b;
+}
+
+/* ==========================================================================
+   MAIN 2-COLUMN CATALOG LAYOUT
+   ========================================================================== */
+.cx-shop-layout {
+  align-items: flex-start;
+  display: grid;
+  gap: 32px;
+  grid-template-columns: 280px minmax(0, 1fr);
+  width: 100%;
+}
+
+/* ---------- Left Sticky Sidebar Filter Card ---------- */
+.cx-shop-sidebar {
+  position: sticky;
+  top: 92px;
+  z-index: 10;
+}
+
+.cx-filter-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px;
+}
+
+.cx-filter-card__header {
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 14px;
+}
+
+.cx-filter-card__title-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.cx-filter-card__title-row svg {
+  color: #0d9488;
+  height: 18px;
+  stroke-width: 2.2;
+  width: 18px;
+}
+
+.cx-filter-card__title-row h3 {
+  color: #0f172a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.cx-filter-card__reset-link {
+  background: transparent;
+  border: 0;
+  color: #64748b;
+  cursor: pointer;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 4px;
+  transition: color 150ms ease;
+}
+
+.cx-filter-card__reset-link:hover {
+  color: #dc2626;
+}
+
+/* Filter Groups */
+.cx-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cx-filter-group__title {
+  color: #1e293b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+.cx-filter-group__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cx-filter-group__list--scrollable {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+/* Selectable Filter Option (Category / Brand) */
+.cx-filter-option {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 10px;
+  padding: 6px 8px;
+  text-align: left;
+  transition: all 140ms ease;
+  width: 100%;
+}
+
+.cx-filter-option:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.cx-filter-option.is-active {
+  background: #f0fdfa;
+  border-color: #ccfbf1;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+/* Radio circle */
+.cx-filter-option__radio {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50%;
+  display: flex;
+  flex-shrink: 0;
+  height: 16px;
+  justify-content: center;
+  transition: all 140ms ease;
+  width: 16px;
+}
+
+.cx-filter-option.is-active .cx-filter-option__radio {
+  border-color: #0d9488;
+}
+
+.cx-filter-option__dot {
+  background: #0d9488;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+/* Checkbox square */
+.cx-filter-option__checkbox {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  flex-shrink: 0;
+  height: 16px;
+  justify-content: center;
+  transition: all 140ms ease;
+  width: 16px;
+}
+
+.cx-filter-option__checkbox.is-checked {
+  background: #0d9488;
+  border-color: #0d9488;
+}
+
+.cx-filter-option__checkbox svg {
+  color: #ffffff;
+  height: 12px;
+  stroke-width: 3;
+  width: 12px;
+}
+
+.cx-filter-option__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cx-filter-option__count {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cx-filter-option.is-active .cx-filter-option__count {
+  color: #0d9488;
+}
+
+/* Price Presets & Inputs */
+.cx-filter-price-presets {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.cx-filter-price-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #475569;
+  cursor: pointer;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 8px;
+  text-align: center;
+  transition: all 140ms ease;
+}
+
+.cx-filter-price-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.cx-filter-price-btn.is-active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+.cx-filter-price-inputs {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.cx-filter-input-wrap {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  flex: 1;
+  padding: 6px 8px;
+  transition: border-color 140ms ease;
+}
+
+.cx-filter-input-wrap:focus-within {
+  border-color: #0f172a;
+}
+
+.cx-filter-curr {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.cx-filter-input-wrap input {
+  background: transparent;
+  border: 0;
+  color: #0f172a;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12.5px;
+  outline: none;
+  width: 100%;
+}
+
+.cx-filter-dash {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   PRODUCT GRID & CARDS (SYMMETRICAL, ALIGNED, NO CRAMPING)
+   ========================================================================== */
+
+.cx-shop-grid-area {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.cx-shop-grid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  width: 100%;
+}
+
+.cx-shop-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cx-shop-grid--single .cx-shop-card:not(.cx-shop-card--skeleton) {
+  align-items: stretch;
+  flex-direction: row;
+  min-height: 300px;
+}
+
+.cx-shop-grid--single .cx-shop-card__media {
+  flex: 0 0 min(34%, 320px);
+  height: auto;
+  margin: 0 22px 0 0;
+  min-height: 260px;
+}
+
+.cx-shop-grid--single .cx-shop-card__body {
+  min-width: 0;
+  padding: 12px 4px 12px 0;
+}
+
+/* Card Root */
+.cx-shop-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 16px;
+  position: relative;
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms ease;
+}
+
+.cx-shop-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.09);
+  transform: translateY(-4px);
+}
+
+/* Card Media / Image Stage */
+.cx-shop-card__media {
+  align-items: center;
+  background: radial-gradient(circle at center, #ffffff 40%, #f8fafc 100%);
+  border-radius: 14px;
+  box-sizing: border-box;
+  display: flex;
+  height: 190px;
+  justify-content: center;
+  margin-bottom: 14px;
+  overflow: hidden;
+  padding: 12px;
+  position: relative;
+  width: 100%;
+}
+
+.cx-shop-card__badges {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  left: 10px;
+  pointer-events: none;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 3;
+}
+
+.cx-shop-card__badge {
+  align-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 750;
+  gap: 4px;
+  letter-spacing: 0.02em;
+  padding: 3.5px 8px;
+}
+
+.cx-shop-card__badge svg {
+  height: 11px;
+  stroke-width: 2.5;
+  width: 11px;
+}
+
+.cx-shop-card__badge--bestseller {
+  background: #047857;
+}
+
+.cx-shop-card__badge--limited {
+  background: #dc2626;
+}
+
+.cx-shop-card__badge--discount {
+  background: #d97706;
+}
+
+.cx-shop-card__badge--new {
+  background: #2563eb;
+}
+
+/* Wishlist Heart Button */
+.cx-shop-card__wishlist {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  pointer-events: auto;
+  transition: all 160ms ease;
+  width: 32px;
+}
+
+.cx-shop-card__wishlist:hover {
+  background: #ffffff;
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+.cx-shop-card__wishlist.is-active {
+  background: #ffffff;
+  color: #ef4444;
+}
+
+.cx-shop-card__wishlist.is-active svg {
+  fill: #ef4444;
+}
+
+.cx-shop-card__wishlist svg {
+  height: 16px;
+  stroke-width: 2.2;
+  width: 16px;
+}
+
+/* Product Image */
+.cx-shop-card__img-link {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  text-decoration: none;
+  width: 100%;
+}
+
+.cx-shop-card__img {
+  height: 100%;
+  max-height: 160px;
+  max-width: 100%;
+  object-fit: contain;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  width: auto;
+}
+
+.cx-shop-card:hover .cx-shop-card__img {
+  transform: scale(1.06);
+}
+
+/* Card Body Content */
+.cx-shop-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* Meta Category • Brand */
+.cx-shop-card__meta {
+  color: #64748b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+/* Product Title (Strictly 2 lines clamped for identical row alignment) */
+.cx-shop-card__title {
+  display: -webkit-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+  margin: 0 0 10px;
+  min-height: 39px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.cx-shop-card__title a {
+  color: #0f172a;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.cx-shop-card__title a:hover {
+  color: #0d9488;
+}
+
+/* Horizontal Spec Micro-Pills */
+.cx-shop-card__specs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  min-height: 24px;
+}
+
+.cx-shop-card__spec-pill {
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 6px;
+  color: #475569;
+  display: inline-flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  gap: 4px;
+  line-height: 1;
+  max-width: 100%;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.cx-shop-card__spec-pill svg {
+  color: #64748b;
+  flex-shrink: 0;
+  height: 12px;
+  stroke-width: 2.2;
+  width: 12px;
+}
+
+.cx-shop-card__spec-pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cx-shop-card__spec-pill--fallback {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+/* Price & Savings Row */
+.cx-shop-card__price-row {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  margin-top: auto; /* Push down before action buttons */
+  padding-top: 6px;
+}
+
+.cx-shop-card__price-box {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cx-shop-card__price {
+  color: #0f172a;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.cx-shop-card__compare-price {
+  color: #94a3b8;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+.cx-shop-card__save-badge {
+  background: #dcfce7;
+  border-radius: 6px;
+  color: #15803d;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 6px;
+}
+
+/* Action Buttons (Strictly Locked to Bottom Row) */
+.cx-shop-card__actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.cx-shop-card__btn-cart {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  color: #0f172a;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  gap: 6px;
+  height: 38px;
+  min-width: 0;
+  justify-content: center;
+  padding: 0 10px;
+  transition: all 160ms ease;
+  white-space: nowrap;
+}
+
+.cx-shop-card__btn-cart:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.cx-shop-card__btn-cart svg {
+  height: 14px;
+  stroke-width: 2.2;
+  width: 14px;
+}
+
+.cx-shop-card__btn-cart.is-added {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+}
+
+.cx-shop-card__btn-details {
+  align-items: center;
+  background: #0f172a;
+  border: 0;
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  color: #ffffff !important;
+  display: inline-flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  gap: 6px;
+  height: 38px;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 10px;
+  text-decoration: none !important;
+  transition: all 160ms ease;
+  white-space: nowrap;
+}
+
+.cx-shop-card__btn-details:hover {
+  background: #1e293b;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  transform: translateY(-1px);
+}
+
+.cx-shop-card__btn-details svg {
+  height: 14px;
+  stroke-width: 2.2;
+  transition: transform 160ms ease;
+  width: 14px;
+}
+
+.cx-shop-card__btn-details:hover svg {
+  transform: translateX(3px);
+}
+
+/* ---------- Empty State ---------- */
+.cx-shop-empty-state {
+  align-items: center;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 64px 24px;
+  text-align: center;
+  width: 100%;
+}
+
+.cx-shop-empty-state__icon {
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 50%;
+  color: #64748b;
+  display: flex;
+  height: 64px;
+  justify-content: center;
+  margin-bottom: 18px;
+  width: 64px;
+}
+
+.cx-shop-empty-state__icon svg {
+  height: 30px;
+  stroke-width: 2;
+  width: 30px;
+}
+
+.cx-shop-empty-state__title {
+  color: #0f172a;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.cx-shop-empty-state__desc {
+  color: #64748b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 20px;
+  max-width: 420px;
+}
+
+.cx-shop-empty-state__btn {
+  align-items: center;
+  background: #0f172a;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
+  padding: 11px 22px;
+  transition: all 160ms ease;
+}
+
+.cx-shop-empty-state__btn:hover {
+  background: #1e293b;
+  transform: translateY(-2px);
+}
+
+.cx-shop-empty-state__btn svg {
+  height: 16px;
+  stroke-width: 2.2;
+  width: 16px;
+}
+
+/* Loading Spinner & Marker */
+.cx-shop-load-marker {
+  height: 20px;
+  width: 100%;
+}
+
+.cx-shop-loading-more {
+  align-items: center;
+  color: #64748b;
+  display: flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  gap: 10px;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.cx-shop-spinner {
+  animation: cx-shop-spin 0.8s linear infinite;
+  border: 2.5px solid #cbd5e1;
+  border-radius: 50%;
+  border-top-color: #0f172a;
+  height: 20px;
+  width: 20px;
+}
+
+@keyframes cx-shop-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Skeleton Styles */
+.cx-shop-card--skeleton {
+  pointer-events: none;
+}
+
+.cx-shop-skeleton__image {
+  animation: cx-skeleton-pulse 1.4s ease-in-out infinite;
+  background: #f1f5f9;
+  border-radius: 12px;
+  height: 180px;
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.cx-shop-skeleton__line {
+  animation: cx-skeleton-pulse 1.4s ease-in-out infinite;
+  background: #f1f5f9;
+  border-radius: 4px;
+  height: 12px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.cx-shop-skeleton__line--short {
+  width: 40%;
+}
+
+.cx-shop-skeleton__line--title {
+  height: 16px;
+}
+
+.cx-shop-skeleton__pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.cx-shop-skeleton__pill {
+  animation: cx-skeleton-pulse 1.4s ease-in-out infinite;
+  background: #f1f5f9;
+  border-radius: 6px;
+  height: 22px;
+  width: 80px;
+}
+
+.cx-shop-skeleton__line--price {
+  height: 20px;
+  margin-top: auto;
+  width: 50%;
+}
+
+.cx-shop-skeleton__actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 10px;
+}
+
+.cx-shop-skeleton__btn {
+  animation: cx-skeleton-pulse 1.4s ease-in-out infinite;
+  background: #f1f5f9;
+  border-radius: 9px;
+  height: 38px;
+  width: 100%;
+}
+
+@keyframes cx-skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ==========================================================================
+   MOBILE FILTER DRAWER
+   ========================================================================== */
+
+.cx-shop-drawer-backdrop {
+  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.4);
+  inset: 0;
+  position: fixed;
+  z-index: 9999;
+}
+
+.cx-shop-drawer {
+  animation: cx-drawer-slide-up 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  background: #ffffff;
+  border-radius: 20px 20px 0 0;
+  bottom: 0;
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  max-height: 85vh;
+  position: absolute;
+  right: 0;
+  width: 100%;
+}
+
+@keyframes cx-drawer-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.cx-shop-drawer__header {
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 22px;
+}
+
+.cx-shop-drawer__title {
+  align-items: center;
+  color: #0f172a;
+  display: flex;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  gap: 8px;
+}
+
+.cx-shop-drawer__title svg {
+  color: #0d9488;
+  height: 18px;
+  width: 18px;
+}
+
+.cx-shop-drawer__close-btn {
+  align-items: center;
+  background: #f1f5f9;
+  border: 0;
+  border-radius: 50%;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+}
+
+.cx-shop-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 22px;
+}
+
+.cx-shop-drawer__body .cx-filter-card {
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.cx-shop-drawer__footer {
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  gap: 12px;
+  padding: 16px 22px;
+}
+
+.cx-shop-drawer__reset-btn {
+  background: #f1f5f9;
+  border: 0;
+  border-radius: 10px;
+  color: #475569;
+  cursor: pointer;
+  flex: 1;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  height: 44px;
+}
+
+.cx-shop-drawer__apply-btn {
+  background: #0f172a;
+  border: 0;
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  flex: 2;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  height: 44px;
+}
+
+/* ==========================================================================
+   BREAKPOINTS: LAPTOP / TABLET (768px – 1140px)
+   ========================================================================== */
+
+@media (max-width: 1140px) {
+  .cx-shop-layout {
+    gap: 20px;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .cx-shop-grid {
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cx-filter-card {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 960px) {
+  /* Hide sidebar on tablet/mobile; show mobile filter drawer trigger */
+  .cx-shop-sidebar {
+    display: none;
+  }
+
+  .cx-shop-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cx-shop-mobile-filter-btn {
+    display: inline-flex;
+  }
+
+  .cx-shop-search-field {
+    min-width: 200px;
+  }
+}
+
+/* ==========================================================================
+   BREAKPOINTS: MOBILE (≤ 767px)
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .cx-shop-container {
+    padding: 0 16px;
+  }
+
+  .cx-shop-header {
+    border-radius: 16px;
+    margin-bottom: 14px;
+    padding: 14px 14px 10px;
+  }
+
+  .cx-shop-header__title {
+    font-size: 22px !important;
+    margin-bottom: 6px;
+  }
+
+  .cx-shop-header__desc {
+    display: -webkit-box;
+    font-size: 12px !important;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .cx-shop-cat-strip {
+    margin: 0 -4px;
+    padding: 10px 4px 2px;
+  }
+
+  .cx-shop-cat-pill {
+    min-height: 34px;
+    padding: 0 11px;
+  }
+
+  .cx-shop-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .cx-shop-controls__left {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .cx-shop-controls__right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .cx-shop-search-field {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .cx-shop-sort-wrap {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .cx-shop-select-box {
+    flex: 1;
+  }
+
+  .cx-shop-select-box select {
+    width: 100%;
+  }
+
+  .cx-shop-grid {
+    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cx-shop-grid--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cx-shop-grid--single .cx-shop-card:not(.cx-shop-card--skeleton) {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .cx-shop-grid--single .cx-shop-card__media {
+    flex: 0 0 auto;
+    height: 170px;
+    margin: 0 0 12px;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .cx-shop-grid--single .cx-shop-card__body {
+    padding: 0;
+  }
+
+  .cx-shop-card {
+    padding: 14px;
+  }
+
+  .cx-shop-card__media {
+    height: 170px;
+  }
+
+  .cx-shop-card__title {
+    font-size: 14px !important;
+  }
+
+  .cx-shop-card__actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+  .cx-shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns on larger mobile devices */
+  }
+
+  .cx-shop-card__actions {
+    grid-template-columns: 1fr; /* Stack actions on 2-col mobile cards for clean touch targets */
+    gap: 6px;
+  }
+}
+
+/* Catalog refinements: illustration, explicit paging, and responsive card density. */
+.cx-shop-header__top {
+  align-items: center;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 156px;
+  min-width: 0;
+}
+
+.cx-shop-header__content {
+  min-width: 0;
+}
+
+.cx-shop-header__art {
+  align-items: center;
+  background: linear-gradient(145deg, #eef2ff 0%, #f5f3ff 58%, #eff6ff 100%);
+  border: 1px solid #e0e7ff;
+  border-radius: 18px;
+  box-sizing: border-box;
+  color: #4f46e5;
+  display: flex;
+  height: 104px;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  width: 156px;
+}
+
+.cx-shop-header__art::before,
+.cx-shop-header__art::after {
+  border: 1px solid rgba(99, 102, 241, 0.16);
+  border-radius: 50%;
+  content: "";
+  height: 116px;
+  position: absolute;
+  right: -54px;
+  top: -64px;
+  width: 116px;
+}
+
+.cx-shop-header__art::after {
+  height: 78px;
+  right: -34px;
+  top: -44px;
+  width: 78px;
+}
+
+.cx-shop-header__art-laptop {
+  height: 48px;
+  position: relative;
+  stroke-width: 1.4;
+  width: 62px;
+  z-index: 1;
+}
+
+.cx-shop-header__art-chip {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e0e7ff;
+  border-radius: 10px;
+  bottom: 25px;
+  display: flex;
+  height: 27px;
+  justify-content: center;
+  position: absolute;
+  right: 20px;
+  width: 27px;
+  z-index: 2;
+}
+
+.cx-shop-header__art-chip svg {
+  height: 15px;
+  width: 15px;
+}
+
+.cx-shop-header__art-sparkle {
+  height: 16px;
+  position: absolute;
+  right: 17px;
+  top: 17px;
+  width: 16px;
+}
+
+.cx-shop-header__art-caption {
+  bottom: 9px;
+  color: #6366f1;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  position: absolute;
+  text-transform: uppercase;
+}
+
+.cx-shop-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 28px 0 8px;
+  width: 100%;
+}
+
+.cx-shop-load-more__button {
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid #0f172a;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font: 700 13px 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  gap: 9px;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 190px;
+  padding: 0 20px;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.cx-shop-load-more__button:hover:not(:disabled) {
+  background: #1e293b;
+  transform: translateY(-1px);
+}
+
+.cx-shop-load-more__button:disabled {
+  cursor: wait;
+  opacity: 0.82;
+}
+
+.cx-shop-load-more__button > svg {
+  height: 15px;
+  width: 15px;
+}
+
+.cx-shop-load-more__button .cx-shop-spinner {
+  border-color: rgba(255, 255, 255, 0.38);
+  border-top-color: #ffffff;
+  flex: 0 0 18px;
+  height: 18px;
+  width: 18px;
+}
+
+@media (max-width: 1279px) {
+  .cx-shop-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .cx-shop-header__top {
+    align-items: start;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 58px;
+  }
+
+  .cx-shop-header__art {
+    border-radius: 14px;
+    height: 58px;
+    width: 58px;
+  }
+
+  .cx-shop-header__art-laptop {
+    height: 30px;
+    width: 38px;
+  }
+
+  .cx-shop-header__art-chip,
+  .cx-shop-header__art-sparkle,
+  .cx-shop-header__art-caption {
+    display: none;
+  }
+
+  .cx-shop-grid {
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cx-shop-card {
+    border-radius: 16px;
+    padding: 9px;
+  }
+
+  .cx-shop-card__media {
+    border-radius: 11px;
+    height: clamp(100px, 30vw, 128px);
+    margin-bottom: 10px;
+    padding: 7px;
+  }
+
+  .cx-shop-card__badges {
+    left: 6px;
+    right: 6px;
+    top: 6px;
+  }
+
+  .cx-shop-card__badge {
+    font-size: 9px;
+    gap: 3px;
+    padding: 3px 5px;
+  }
+
+  .cx-shop-card__wishlist {
+    height: 27px;
+    width: 27px;
+  }
+
+  .cx-shop-card__wishlist svg {
+    height: 14px;
+    width: 14px;
+  }
+
+  .cx-shop-card__meta {
+    font-size: 9px;
+    line-height: 1.25;
+    margin-bottom: 5px;
+    min-height: 22px;
+  }
+
+  .cx-shop-card__title {
+    font-size: 12px !important;
+    line-height: 1.3;
+    margin-bottom: 7px;
+    min-height: 32px;
+  }
+
+  .cx-shop-card__specs-row {
+    gap: 4px;
+    margin-bottom: 8px;
+    min-height: 18px;
+  }
+
+  .cx-shop-card__spec-pill {
+    font-size: 9px;
+    max-width: 100%;
+    padding: 4px 5px;
+  }
+
+  .cx-shop-card__spec-pill:nth-child(n + 2) {
+    display: none;
+  }
+
+  .cx-shop-card__price-row {
+    margin-bottom: 9px;
+    padding-top: 2px;
+  }
+
+  .cx-shop-card__price {
+    font-size: 16px;
+  }
+
+  .cx-shop-card__compare-price {
+    font-size: 10px;
+  }
+
+  .cx-shop-card__save-badge {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+
+  .cx-shop-card__actions {
+    gap: 6px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cx-shop-card__btn-cart,
+  .cx-shop-card__btn-details {
+    border-radius: 8px;
+    font-size: 10px;
+    gap: 5px;
+    height: 34px;
+    padding: 0 6px;
+  }
+
+  .cx-shop-card__btn-cart svg,
+  .cx-shop-card__btn-details svg {
+    height: 12px;
+    width: 12px;
+  }
+
+  .cx-shop-load-more {
+    padding-top: 20px;
+  }
+
+  .cx-shop-load-more__button {
+    width: 100%;
+  }
+}

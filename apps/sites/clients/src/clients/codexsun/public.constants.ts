@@ -5,11 +5,164 @@ import aiTrustImage from "./assets/uploads/insights/ai-trust.png";
 import clarityWorkflowsImage from "./assets/uploads/insights/clarity-workflows.png";
 import deepListeningImage from "./assets/uploads/insights/deep-listening.png";
 
-const PLATFORM_WEB_ORIGIN = (import.meta.env.VITE_PLATFORM_WEB_ORIGIN ?? "").replace(/\/$/, "");
+const PLATFORM_WEB_ORIGIN = ((import.meta.env.VITE_PLATFORM_WEB_ORIGIN ?? "").trim() ||
+  "https://app.codexsun.com").replace(/\/$/, "");
 
 export function platformUrl(path: string) {
   return `${PLATFORM_WEB_ORIGIN}${path}`;
 }
+
+// Keep this public catalog aligned with apps/platform/api/src/modules/app-registry/app-registry.service.ts.
+// Project Manager is a platform-only record and intentionally opens the platform sign-in.
+export const PLATFORM_PRODUCTS = [
+  {
+    id: "codexsun",
+    title: "CODEXSUN",
+    category: "Business operations",
+    description: "Front desk, requirements, connected workspaces and approvals.",
+    path: "/app/codexsun/frontdesk"
+  },
+  {
+    id: "hrms",
+    title: "HRMS",
+    category: "People",
+    description: "People, employment and workforce administration.",
+    path: "/app/hrms/overview"
+  },
+  {
+    id: "docs",
+    title: "Docs",
+    category: "Knowledge",
+    description: "Documentation and knowledge management.",
+    path: "/app/docs/overview"
+  },
+  {
+    id: "himsx",
+    title: "Himsx",
+    category: "Healthcare",
+    description: "Hospital information and administrative operations.",
+    path: "/app/himsx/overview"
+  },
+  {
+    id: "sites",
+    title: "Site Studio",
+    category: "Digital presence",
+    description: "Build and manage multi-client websites.",
+    path: "/app/sites/overview"
+  },
+  {
+    id: "q-cafe",
+    title: "Q Cafe",
+    category: "Hospitality",
+    description: "Restaurant operations in a dedicated workspace.",
+    path: "/app/q-cafe"
+  },
+  {
+    id: "ecommerce",
+    title: "Ecommerce",
+    category: "Commerce",
+    description: "Manage catalogs and tenant storefront operations.",
+    path: "/app/ecommerce"
+  },
+  {
+    id: "project-manager",
+    title: "Project Manager",
+    category: "Platform",
+    description: "Platform application and module registry.",
+    path: "/login"
+  },
+  {
+    id: "application",
+    title: "Application",
+    category: "Platform",
+    description: "Workspace, tenant profile, users and access settings.",
+    path: "/app/application/overview"
+  },
+  {
+    id: "billing",
+    title: "Billing",
+    category: "Finance",
+    description: "Sales, purchases, receipts, payments and reports.",
+    path: "/app/billing/overview"
+  },
+  {
+    id: "mail",
+    title: "Mail",
+    category: "Communication",
+    description: "Inbox, compose, delivery history and mail settings.",
+    path: "/app/mail/inbox"
+  },
+  {
+    id: "notes",
+    title: "Notes",
+    category: "Collaboration",
+    description: "Team notes with search and lifecycle controls.",
+    path: "/app/notes/overview"
+  },
+  {
+    id: "chat",
+    title: "Chat",
+    category: "Communication",
+    description: "Team channels, direct threads and messages.",
+    path: "/app/chat/direct"
+  },
+  {
+    id: "accounts",
+    title: "Accounts",
+    category: "Finance",
+    description: "Chart of accounts, ledgers, journals and overview.",
+    path: "/app/accounts/overview"
+  },
+  {
+    id: "task-manager",
+    title: "Task Manager",
+    category: "Work management",
+    description: "Plan and track tenant-owned work.",
+    path: "/app/task-manager/overview"
+  },
+  {
+    id: "blog",
+    title: "Blog",
+    category: "Publishing",
+    description: "Articles, authors, media, SEO and publishing.",
+    path: "/app/blog/overview"
+  },
+  {
+    id: "crm",
+    title: "CRM",
+    category: "Customer operations",
+    description: "Customer relationships and sales opportunities.",
+    path: "/app/crm/overview"
+  },
+  {
+    id: "frappe",
+    title: "Frappe",
+    category: "Integrations",
+    description: "Frappe connection and CRM enquiry sync.",
+    path: "/app/frappe/overview"
+  },
+  {
+    id: "zetro",
+    title: "Zetro",
+    category: "AI",
+    description: "AI coworker with private conversation history.",
+    path: "/app/zetro/chat"
+  },
+  {
+    id: "auditor",
+    title: "Auditor",
+    category: "Compliance",
+    description: "Audit planning, evidence, findings and sign-off.",
+    path: "/app/auditor/overview"
+  },
+  {
+    id: "logicx-erp",
+    title: "LogicX ERP",
+    category: "Operations",
+    description: "ERP operations workspace for tenant teams.",
+    path: "/app/logicx-erp/overview"
+  }
+] as const;
 
 export const SITE_TITLE = "CODEXSUN";
 export const CORE_LINE = "Software makes simple.";
@@ -50,7 +203,8 @@ export const NAV_ITEMS = [
 
 export const PRODUCT_NAV_ITEMS = [
   { id: "product-selected", label: "Selected Work" },
-  { id: "product-outcomes", label: "Product Outcomes" }
+  { id: "product-outcomes", label: "Product Outcomes" },
+  { id: "product-directory", label: "Platform Apps" }
 ] as const;
 
 export const CAPABILITIES = [
