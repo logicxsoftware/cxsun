@@ -22,7 +22,9 @@ import {
   migrateStorefrontProfileModule,
   upgradeStorefrontProfileSocialLinks,
   upgradeStorefrontProfileUxContent,
-  upgradeStorefrontProfilePaymentMethods
+  upgradeStorefrontProfilePaymentMethods,
+  upgradeStorefrontProfileHomeCta,
+  upgradeStorefrontProfileTrustedPanels
 } from "../storefront-profile/storefront-profile.migration.js";
 import {
   migrateCatalogMatchingModule,
@@ -71,7 +73,9 @@ const steps = [
   ["storefront-section-visibility", upgradeStorefrontSectionVisibility],
   ["storefront-schema", standardizeStorefrontSchema],
   ["storefront-performance", upgradeStorefrontReadPerformance],
-  ["legacy-cleanup", preserveLegacyEcommerceTables]
+  ["legacy-cleanup", preserveLegacyEcommerceTables],
+  ["storefront-profile-home-cta", upgradeStorefrontProfileHomeCta],
+  ["storefront-profile-trusted-panels", upgradeStorefrontProfileTrustedPanels]
 ] as const;
 
 const versionedSteps = steps.map(([name, up], index) => ({

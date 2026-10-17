@@ -13,11 +13,23 @@ export function StorefrontProfileForm({
   onChange: (value: StorefrontProfile) => void;
   mode?: "profile" | "service-banner" | "trusted-strip";
 }) {
-  const field = (key: Exclude<keyof StorefrontProfile, "paymentMethods">) => ({
+  const field = (
+    key: Exclude<keyof StorefrontProfile, "paymentMethods" | "trustedPanels">
+  ) => ({
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange({ ...value, [key]: event.target.value }),
     value: value[key]
   });
+  const updateTrustedPanel = (
+    index: number,
+    changes: Partial<StorefrontProfile["trustedPanels"][number]>
+  ) =>
+    onChange({
+      ...value,
+      trustedPanels: value.trustedPanels.map((panel, panelIndex) =>
+        panelIndex === index ? { ...panel, ...changes } : panel
+      )
+    });
   if (mode === "trusted-strip") {
     return (
       <div className="grid gap-5">
@@ -33,6 +45,59 @@ export function StorefrontProfileForm({
         <Field label="Proof points (one per line)">
           <Textarea className="min-h-28" maxLength={1000} {...field("trustedProofPoints")} />
         </Field>
+        <div className="grid gap-4">
+          <h3 className="font-semibold">Solution cards</h3>
+          {value.trustedPanels.map((panel, index) => (
+            <div className="grid gap-4 rounded-lg border p-4" key={`trusted-panel-${index}`}>
+              <strong>Card {index + 1}</strong>
+              <Field label="Title">
+                <Input
+                  maxLength={160}
+                  onChange={(event) => updateTrustedPanel(index, { title: event.target.value })}
+                  value={panel.title}
+                />
+              </Field>
+              <Field label="Description">
+                <Textarea
+                  className="min-h-20"
+                  maxLength={500}
+                  onChange={(event) =>
+                    updateTrustedPanel(index, { description: event.target.value })
+                  }
+                  value={panel.description}
+                />
+              </Field>
+              <Field label="Details (one per line)">
+                <Textarea
+                  className="min-h-24"
+                  maxLength={820}
+                  onChange={(event) =>
+                    updateTrustedPanel(index, {
+                      details: event.target.value.split(/\r?\n/u).slice(0, 5)
+                    })
+                  }
+                  value={panel.details.join("\n")}
+                />
+              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Action label">
+                  <Input
+                    maxLength={120}
+                    onChange={(event) => updateTrustedPanel(index, { action: event.target.value })}
+                    value={panel.action}
+                  />
+                </Field>
+                <Field label="Action URL">
+                  <Input
+                    maxLength={500}
+                    onChange={(event) => updateTrustedPanel(index, { href: event.target.value })}
+                    value={panel.href}
+                  />
+                </Field>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -76,6 +141,28 @@ export function StorefrontProfileForm({
           {...field("aboutUs")}
         />
       </Field>
+      <div className="grid gap-5 rounded-lg border p-4">
+        <h3 className="font-semibold">Home page closing call to action</h3>
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="Eyebrow">
+            <Input maxLength={120} {...field("homeCtaEyebrow")} />
+          </Field>
+          <Field label="Heading">
+            <Input maxLength={240} {...field("homeCtaTitle")} />
+          </Field>
+        </div>
+        <Field label="Description">
+          <Textarea className="min-h-20" maxLength={500} {...field("homeCtaDescription")} />
+        </Field>
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="Action label">
+            <Input maxLength={120} {...field("homeCtaActionLabel")} />
+          </Field>
+          <Field label="Action URL">
+            <Input maxLength={500} placeholder="/shop" {...field("homeCtaActionUrl")} />
+          </Field>
+        </div>
+      </div>
       <div className="grid gap-5 md:grid-cols-2">
         <Field label="Copyright text">
           <Input maxLength={240} placeholder="All rights reserved." {...field("copyrightText")} />

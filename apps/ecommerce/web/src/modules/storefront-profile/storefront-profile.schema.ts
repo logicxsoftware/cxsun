@@ -7,6 +7,11 @@ const optionalUrl = z.union([
 ]);
 export const storefrontProfileSchema = z.object({
   aboutUs: z.string().max(2000),
+  homeCtaActionLabel: z.string().max(120),
+  homeCtaActionUrl: z.string().max(500),
+  homeCtaDescription: z.string().max(500),
+  homeCtaEyebrow: z.string().max(120),
+  homeCtaTitle: z.string().max(240),
   copyrightText: z.string().max(240),
   facebookUrl: optionalUrl,
   instagramUrl: optionalUrl,
@@ -29,6 +34,17 @@ export const storefrontProfileSchema = z.object({
   trustedDescription: z.string().max(500),
   trustedEyebrow: z.string().max(120),
   trustedProofPoints: z.string().max(1000),
+  trustedPanels: z
+    .array(
+      z.object({
+        action: z.string().trim().min(1).max(120),
+        description: z.string().trim().min(1).max(500),
+        details: z.array(z.string().trim().min(1).max(160)).min(1).max(5),
+        href: z.string().trim().min(1).max(500),
+        title: z.string().trim().min(1).max(160)
+      })
+    )
+    .length(5),
   trustedTitle: z.string().max(240),
   threadsUrl: optionalUrl,
   whatsappUrl: optionalUrl,

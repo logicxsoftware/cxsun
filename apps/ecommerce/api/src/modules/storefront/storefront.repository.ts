@@ -42,10 +42,24 @@ export class StorefrontRepository {
       WHERE product_information_id=${Number(result.rows[0].id)} AND status='active' ORDER BY sort_order,id`.execute(
         getEcommerceDatabase()
       );
+    const images =
+      await sql<Row>`SELECT url,alt_text,caption,variant_id FROM ecommerce_product_images
+      WHERE product_information_id=${Number(result.rows[0].id)} AND status='active'
+      ORDER BY is_primary DESC,sort_order,id`.execute(getEcommerceDatabase());
     const product = toProduct(result.rows[0]);
     return {
       ...product,
       bulletPoints: jsonList(result.rows[0].bullet_points_json),
+      images: images.rows.length
+        ? images.rows.map((image) => ({
+            altText: String(image.alt_text || product.imageAlt),
+            caption: String(image.caption ?? ""),
+            url: String(image.url),
+            variantId: image.variant_id == null ? null : Number(image.variant_id)
+          }))
+        : product.imageUrl
+          ? [{ altText: product.imageAlt, caption: "", url: product.imageUrl, variantId: null }]
+          : [],
       returnPolicy: String(result.rows[0].return_policy ?? ""),
       variants: variants.rows.map((variant) => ({
         id: Number(variant.id),
@@ -58,13 +72,32 @@ export class StorefrontRepository {
   }
 
   async categories() {
-    const result = await sql<{ name: string; product_count: number | string }>`SELECT category.name,
-      COUNT(info.id) AS product_count FROM core_product_categories category
+    const result = await sql<{
+      name: string;
+      product_count: number | string;
+      image_url: string | null;
+    }>`SELECT category.name,
+      COUNT(info.id) AS product_count,
+      COALESCE(
+        (
+          SELECT image.url FROM ecommerce_product_images image
+          INNER JOIN ecommerce_product_information cat_info ON cat_info.id=image.product_information_id
+          INNER JOIN core_products cat_prod ON cat_prod.id=cat_info.core_product_id
+          WHERE cat_prod.product_category_id=category.id AND cat_info.publication_status='published' AND cat_info.status='active' AND image.status='active'
+          ORDER BY image.is_primary DESC, image.id ASC LIMIT 1
+        ),
+        ''
+      ) AS image_url
+      FROM core_product_categories category
       INNER JOIN core_products product ON product.product_category_id=category.id AND product.status='active' AND product.deleted_at IS NULL
       INNER JOIN ecommerce_product_information info ON info.core_product_id=product.id AND info.publication_status='published' AND info.status='active'
       WHERE ${this.sourceCondition("info")}
       GROUP BY category.id,category.name ORDER BY category.name`.execute(getEcommerceDatabase());
-    return result.rows.map((row) => ({ name: row.name, productCount: Number(row.product_count) }));
+    return result.rows.map((row) => ({
+      imageUrl: row.image_url ? String(row.image_url) : undefined,
+      name: row.name,
+      productCount: Number(row.product_count)
+    }));
   }
 
   async sliders() {
@@ -255,10 +288,20 @@ function selectProducts() {
 function toProduct(row: Row): StorefrontProduct {
   const price = Number(row.opening_price ?? 0);
   const compareAdjustment = Number(row.compare_at_adjustment ?? 0);
+  const compareAtPrice = compareAdjustment > 0 ? price + compareAdjustment : null;
+  const discountPercent = compareAtPrice
+    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
+    : 0;
+  const badge = discountPercent >= 12
+    ? { text: "Limited Deal", type: "limited" as const }
+    : Boolean(row.is_featured)
+      ? { text: "Best Seller", type: "bestseller" as const }
+      : null;
   return {
+    badge,
     brand: row.brand_name ? String(row.brand_name) : null,
     category: String(row.category_name),
-    compareAtPrice: compareAdjustment > 0 ? price + compareAdjustment : null,
+    compareAtPrice,
     description: String(row.description ?? ""),
     featured: Boolean(row.is_featured),
     featuredOrder: null,
@@ -269,7 +312,8 @@ function toProduct(row: Row): StorefrontProduct {
     shortDescription: String(row.short_description ?? ""),
     slug: String(row.slug),
     subtitle: String(row.subtitle ?? ""),
-    variantCount: Number(row.variant_count ?? 0)
+    variantCount: Number(row.variant_count ?? 0),
+    bulletPoints: jsonList(row.bullet_points_json)
   };
 }
 

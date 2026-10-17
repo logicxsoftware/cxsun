@@ -1,0 +1,611 @@
+/* Keep promotion surfaces stable while product imagery changes. */
+#promotions {
+  color: #172033;
+  max-width: 1540px;
+  padding: 0 clamp(20px, 3vw, 46px);
+}
+
+#promotions .cx-promotion-showcase__header {
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+#promotions .cx-promotion-showcase__heading h2 {
+  max-width: 680px;
+  font-size: clamp(28px, 2.6vw, 40px);
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+#promotions .cx-promotion-showcase__heading p {
+  font-size: 14px;
+}
+
+#promotions .cx-promotion-showcase__controls {
+  gap: 16px;
+}
+
+#promotions .cx-promotion-showcase__grid {
+  gap: 14px;
+}
+
+#promotions .cx-promotion-showcase__featured,
+#promotions .cx-promotion-showcase__card {
+  background: #f3f5f7;
+  border: 1px solid #e7eaf0;
+  box-shadow: 0 8px 24px rgba(24, 36, 56, 0.05);
+  color: #172033;
+}
+
+#promotions .cx-promotion-showcase__featured {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.88fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+}
+
+#promotions .cx-promotion-showcase__featured::before,
+#promotions .cx-promotion-showcase__scene {
+  display: none;
+}
+
+#promotions .cx-promotion-showcase__featured-image {
+  align-self: center;
+  background: #fff;
+  border: 1px solid #e8ebf0;
+  border-radius: 18px;
+  grid-column: 2;
+  grid-row: 1;
+  height: min(calc(100% - 36px), 410px);
+  justify-self: center;
+  object-fit: contain;
+  object-position: center;
+  padding: 14px;
+  position: relative;
+  right: auto;
+  width: min(calc(100% - 28px), 410px);
+  z-index: 1;
+}
+
+#promotions .cx-promotion-showcase__featured-copy {
+  color: #172033;
+  grid-column: 1;
+  grid-row: 1;
+  max-width: none;
+  min-width: 0;
+  padding: 30px 28px 94px;
+  z-index: 2;
+}
+
+#promotions .cx-promotion-showcase__item-eyebrow,
+#promotions .cx-promotion-showcase__featured-copy > p {
+  color: #667085;
+}
+
+#promotions .cx-promotion-showcase__featured h3,
+#promotions .cx-promotion-showcase__price-row b {
+  color: #111827;
+}
+
+#promotions .cx-promotion-showcase__featured-action {
+  bottom: 20px;
+  left: 28px;
+}
+
+#promotions .cx-promotion-showcase__featured-controls {
+  bottom: 20px;
+  right: 18px;
+}
+
+#promotions .cx-promotion-showcase__card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.78fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+}
+
+#promotions .cx-promotion-showcase__card.is-tone-0,
+#promotions .cx-promotion-showcase__card.is-tone-1,
+#promotions .cx-promotion-showcase__card.is-tone-2,
+#promotions .cx-promotion-showcase__card.is-tone-3 {
+  background: #f3f5f7;
+  color: #172033;
+}
+
+#promotions .cx-promotion-showcase__card > img {
+  align-self: center;
+  background: #fff;
+  border: 1px solid #e8ebf0;
+  border-radius: 14px;
+  grid-column: 2;
+  grid-row: 1;
+  height: calc(100% - 24px);
+  justify-self: center;
+  object-fit: contain;
+  object-position: center;
+  padding: 8px;
+  position: relative;
+  right: auto;
+  width: calc(100% - 18px);
+}
+
+#promotions .cx-promotion-showcase__card-copy {
+  color: #172033;
+  grid-column: 1;
+  grid-row: 1;
+  max-width: none;
+  min-width: 0;
+  padding: 18px 16px;
+}
+
+#promotions .cx-promotion-showcase__card-copy > small,
+#promotions .cx-promotion-showcase__card-copy > span:not(.cx-promotion-showcase__badge):not(.cx-promotion-showcase__card-price),
+#promotions .cx-promotion-showcase__card-price del {
+  color: #667085;
+  opacity: 1;
+}
+
+#promotions .cx-promotion-showcase__card-copy > strong,
+#promotions .cx-promotion-showcase__card-price {
+  color: #111827;
+}
+
+#promotions .cx-promotion-showcase__card-action {
+  background: #fff;
+  border: 1px solid #e2e6ed;
+  color: #172033;
+}
+
+#promotions .cx-promotion-showcase__featured-action:focus-visible,
+#promotions .cx-promotion-showcase__card:focus-visible,
+#promotions .cx-promotion-showcase__all-link:focus-visible {
+  outline: 3px solid rgba(20, 112, 101, 0.55);
+  outline-offset: 3px;
+}
+
+#promotions .cx-promotion-showcase__category.is-tone-0,
+#promotions .cx-promotion-showcase__category.is-tone-1,
+#promotions .cx-promotion-showcase__category.is-tone-2,
+#promotions .cx-promotion-showcase__category.is-tone-3 {
+  background: #f3f5f7;
+  border: 1px solid #e7eaf0;
+}
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  #promotions .cx-promotion-showcase__featured {
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 0.88fr);
+  }
+
+  #promotions .cx-promotion-showcase__featured-copy {
+    padding: 26px 22px 92px;
+  }
+}
+
+@media (max-width: 760px) {
+  #promotions {
+    padding: 0 18px;
+  }
+
+  #promotions .cx-promotion-showcase__header {
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  #promotions .cx-promotion-showcase__featured {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 42%;
+    min-height: 540px;
+  }
+
+  #promotions .cx-promotion-showcase__featured-image {
+    grid-column: 1;
+    grid-row: 2;
+    height: calc(100% - 12px);
+    max-height: 220px;
+    width: min(calc(100% - 32px), 420px);
+  }
+
+  #promotions .cx-promotion-showcase__featured-copy {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 22px 20px 70px;
+  }
+
+  #promotions .cx-promotion-showcase__featured-action {
+    bottom: calc(42% + 12px);
+    left: 20px;
+    padding: 11px 14px;
+  }
+
+  #promotions .cx-promotion-showcase__featured-controls {
+    bottom: 14px;
+    right: 14px;
+  }
+
+  #promotions .cx-promotion-showcase__featured-controls > button {
+    height: 34px;
+    width: 34px;
+  }
+
+  #promotions .cx-promotion-showcase__card {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 0.78fr);
+    min-height: 230px;
+  }
+
+  #promotions .cx-promotion-showcase__card-copy {
+    padding: 18px 14px;
+  }
+
+  #promotions .cx-promotion-showcase__categories {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  #promotions .cx-promotion-showcase__featured {
+    min-height: 560px;
+  }
+
+  #promotions .cx-promotion-showcase__featured-copy {
+    padding: 20px 16px 70px;
+  }
+
+  #promotions .cx-promotion-showcase__featured h3 {
+    font-size: 25px;
+  }
+
+  #promotions .cx-promotion-showcase__card {
+    grid-template-columns: minmax(0, 1fr) minmax(112px, 0.72fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #promotions *,
+  #promotions *::before,
+  #promotions *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Full-bleed images sit on soft rotating tints, so mixed product photography stays cohesive. */
+.cx-store__grid > .cx-product-card {
+  background: var(--storefront-card-tint, rgb(239 246 255 / 78%));
+}
+
+.cx-store__grid > .cx-product-card:nth-child(6n + 1) {
+  --storefront-card-tint: rgb(255 247 224 / 82%);
+}
+
+.cx-store__grid > .cx-product-card:nth-child(6n + 2) {
+  --storefront-card-tint: rgb(237 244 255 / 82%);
+}
+
+.cx-store__grid > .cx-product-card:nth-child(6n + 3) {
+  --storefront-card-tint: rgb(246 239 255 / 82%);
+}
+
+.cx-store__grid > .cx-product-card:nth-child(6n + 4) {
+  --storefront-card-tint: rgb(233 248 241 / 82%);
+}
+
+.cx-store__grid > .cx-product-card:nth-child(6n + 5) {
+  --storefront-card-tint: rgb(255 237 242 / 82%);
+}
+
+.cx-store__grid > .cx-product-card:nth-child(6n) {
+  --storefront-card-tint: rgb(232 246 250 / 82%);
+}
+
+.cx-store__grid > .cx-product-card .cx-product-card__image {
+  background: var(--storefront-card-tint);
+  padding: 0;
+}
+
+#promotions .cx-promotion-showcase__featured {
+  background: rgb(255 247 224 / 84%);
+}
+
+#promotions .cx-promotion-showcase__featured-image {
+  align-self: stretch;
+  border-radius: 0;
+  height: 100%;
+  justify-self: stretch;
+  max-height: none;
+  max-width: none;
+  object-fit: cover;
+  width: 100%;
+}
+
+.cx-store__grid > .cx-product-card .cx-product-card__image img {
+  aspect-ratio: 1 / 1;
+  border-radius: 0;
+  height: 100%;
+  object-fit: contain;
+  padding: 0;
+  width: 100%;
+}
+
+.cx-store__grid > .cx-product-card .cx-product-card__image img {
+  position: relative;
+  z-index: 1;
+}
+
+.cx-store__grid > .cx-product-card .cx-product-card__image-backdrop {
+  filter: blur(14px) saturate(0.82);
+  inset: 0;
+  object-fit: cover;
+  opacity: 0.44;
+  position: absolute;
+  transform: scale(1.08);
+  z-index: 0;
+}
+
+.cx-store__grid > .cx-product-card .cx-product-card__image > span {
+  z-index: 2;
+}
+
+#promotions .cx-promotion-showcase__featured-image {
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  padding: 0;
+}
+
+#promotions .cx-promotion-showcase__featured > .cx-promotion-showcase__featured-image,
+#promotions .cx-promotion-showcase__card > img {
+  z-index: 1;
+}
+
+#promotions .cx-promotion-showcase__featured > .cx-promotion-showcase__image-backdrop,
+#promotions .cx-promotion-showcase__card > .cx-promotion-showcase__image-backdrop {
+  align-self: stretch;
+  filter: blur(16px) saturate(0.82);
+  grid-column: 2;
+  grid-row: 1;
+  height: 100%;
+  justify-self: stretch;
+  object-fit: cover;
+  opacity: 0.4;
+  padding: 0;
+  position: relative;
+  transform: scale(1.08);
+  width: 100%;
+  z-index: 0;
+}
+
+#promotions .cx-promotion-showcase__card.is-tone-0 {
+  background: rgb(255 247 224 / 84%);
+  color: #172033;
+}
+
+#promotions .cx-promotion-showcase__card.is-tone-1 {
+  background: rgb(237 244 255 / 84%);
+  color: #172033;
+}
+
+#promotions .cx-promotion-showcase__card.is-tone-2 {
+  background: rgb(246 239 255 / 84%);
+  color: #172033;
+}
+
+#promotions .cx-promotion-showcase__card.is-tone-3 {
+  background: rgb(233 248 241 / 84%);
+  color: #172033;
+}
+
+#promotions .cx-promotion-showcase__card > img {
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  height: 100%;
+  object-fit: contain;
+  padding: 0;
+  width: 100%;
+}
+
+#promotions .cx-promotion-showcase__category.is-tone-0 {
+  background: rgb(255 247 224 / 84%);
+}
+
+#promotions .cx-promotion-showcase__category.is-tone-1 {
+  background: rgb(237 244 255 / 84%);
+}
+
+#promotions .cx-promotion-showcase__category.is-tone-2 {
+  background: rgb(246 239 255 / 84%);
+}
+
+#promotions .cx-promotion-showcase__category.is-tone-3 {
+  background: rgb(233 248 241 / 84%);
+}
+
+@media (max-width: 760px) {
+  #promotions .cx-promotion-showcase__featured {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(190px, 42%);
+    min-height: 500px;
+  }
+
+  #promotions .cx-promotion-showcase__featured-image {
+    grid-column: 1;
+    grid-row: 2;
+    height: 100%;
+    max-height: none;
+    width: 100%;
+  }
+
+  #promotions .cx-promotion-showcase__featured > .cx-promotion-showcase__image-backdrop {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #promotions .cx-promotion-showcase__supporting {
+    display: grid;
+    gap: 12px;
+    grid-auto-rows: minmax(210px, auto);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+
+  #promotions .cx-promotion-showcase__card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+    min-height: 210px;
+  }
+}
+
+@media (max-width: 480px) {
+  #promotions .cx-promotion-showcase__supporting {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #promotions .cx-promotion-showcase__card {
+    grid-template-columns: minmax(0, 1fr) minmax(130px, 0.82fr);
+  }
+}
+
+/* Keep the current-offers showcase layout intact alongside the shared offer styles above. */
+#promotions {
+  box-sizing: border-box;
+  max-width: 1424px;
+  padding: 0;
+  width: calc(100% - 64px);
+}
+
+#promotions .cx-promotion-showcase__featured {
+  background: linear-gradient(140deg, #fff9e9 0%, #fff3d3 100%);
+  border: 0;
+  border-radius: 14px;
+  display: flex;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  min-height: 404px;
+}
+
+#promotions .cx-promotion-showcase__featured-image {
+  align-self: stretch;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  flex: 0 0 48%;
+  grid-column: auto;
+  grid-row: auto;
+  height: auto;
+  justify-self: auto;
+  object-fit: cover;
+  order: 2;
+  padding: 0;
+  position: relative;
+  right: auto;
+  width: auto;
+}
+
+#promotions .cx-promotion-showcase__featured-copy {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 52%;
+  flex-direction: column;
+  grid-column: auto;
+  grid-row: auto;
+  max-width: 52%;
+  min-height: 100%;
+  order: 1;
+  padding: 26px 26px 88px;
+  position: relative;
+}
+
+#promotions .cx-promotion-showcase__category.is-tone-0 { background: #fff8e7; }
+#promotions .cx-promotion-showcase__category.is-tone-1 { background: #eef6ff; }
+#promotions .cx-promotion-showcase__category.is-tone-2 { background: #f5f1ff; }
+#promotions .cx-promotion-showcase__category.is-tone-3 { background: #edf8f4; }
+#promotions .cx-promotion-showcase__category.is-tone-0 .cx-promotion-showcase__category-icon { background: #fff0c5; }
+#promotions .cx-promotion-showcase__category.is-tone-1 .cx-promotion-showcase__category-icon { background: #dbeafe; }
+#promotions .cx-promotion-showcase__category.is-tone-2 .cx-promotion-showcase__category-icon { background: #e9ddff; }
+#promotions .cx-promotion-showcase__category.is-tone-3 .cx-promotion-showcase__category-icon { background: #d7f5ea; }
+
+@media (max-width: 1150px) {
+  #promotions {
+    width: calc(100% - 48px);
+  }
+
+  #promotions .cx-promotion-showcase__featured {
+    min-height: 360px;
+  }
+
+  #promotions .cx-promotion-showcase__featured-copy {
+    flex-basis: 52%;
+    max-width: 52%;
+    padding: 26px 24px 88px;
+  }
+
+  #promotions .cx-promotion-showcase__categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1151px) and (max-width: 1280px) {
+  #promotions {
+    width: calc(100% - 32px);
+  }
+}
+
+@media (max-width: 768px) {
+  #promotions {
+    width: calc(100% - 32px);
+  }
+
+  #promotions .cx-promotion-showcase__featured {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  #promotions .cx-promotion-showcase__featured-image {
+    flex: 0 0 auto;
+    height: clamp(190px, 56vw, 270px);
+    max-width: 100%;
+    order: 1;
+    width: 100%;
+  }
+
+  #promotions .cx-promotion-showcase__featured-copy {
+    flex: 1 1 auto;
+    max-width: 100%;
+    min-height: 290px;
+    order: 2;
+    padding: 20px 20px 84px;
+  }
+
+  #promotions .cx-promotion-showcase__wide-feature {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #promotions .cx-promotion-showcase__wide-image {
+    flex: 0 0 auto;
+    height: 190px;
+    object-position: center;
+    position: relative;
+  }
+
+  #promotions .cx-promotion-showcase__wide-copy {
+    min-height: 258px;
+    width: 100%;
+  }
+
+  #promotions .cx-promotion-showcase__category-icon {
+    flex-basis: 56px;
+    height: 56px;
+  }
+
+  #promotions .cx-promotion-showcase__category-icon svg {
+    height: 38px;
+    width: 38px;
+  }
+}
+
+@media (max-width: 380px) {
+  #promotions .cx-promotion-showcase__categories {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

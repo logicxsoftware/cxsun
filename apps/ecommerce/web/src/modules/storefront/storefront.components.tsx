@@ -224,42 +224,24 @@ export function TechMediaTrustSection({
                 <strong>{panel.title}</strong>
                 <ChevronRightIcon className="cx-store__tech-media-chevron" aria-hidden="true" />
               </button>
-              <AnimatePresence initial={false} mode="popLayout">
-                {active ? (
-                  <motion.div
-                    animate={{
-                      opacity: 1,
-                      transition: {
-                        delay: reduceMotion ? 0 : 0.38,
-                        duration: reduceMotion ? 0 : 0.34,
-                        ease: [0.22, 1, 0.36, 1]
-                      },
-                      x: 0
-                    }}
-                    className="cx-store__tech-media-panel"
-                    exit={{
-                      opacity: 0,
-                      transition: { duration: reduceMotion ? 0 : 0.16 },
-                      x: reduceMotion ? 0 : -10
-                    }}
-                    id={`tech-media-panel-${index}`}
-                    initial={{ opacity: 0, x: reduceMotion ? 0 : 28 }}
-                    key={panel.title}
-                  >
-                    <p>{panel.description}</p>
-                    <ul>
-                      {panel.details.map((detail) => (
-                        <li key={detail}>
-                          <CheckIcon /> {detail}
-                        </li>
-                      ))}
-                    </ul>
-                    <a href={panel.href}>
-                      {panel.action} <ArrowUpRightIcon />
-                    </a>
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+              <div
+                aria-hidden={!active}
+                className="cx-store__tech-media-panel"
+                id={`tech-media-panel-${index}`}
+                inert={!active}
+              >
+                <p>{panel.description}</p>
+                <ul>
+                  {panel.details.map((detail) => (
+                    <li key={detail}>
+                      <CheckIcon /> {detail}
+                    </li>
+                  ))}
+                </ul>
+                <a href={panel.href}>
+                  {panel.action} <ArrowUpRightIcon />
+                </a>
+              </div>
             </motion.article>
           );
         })}

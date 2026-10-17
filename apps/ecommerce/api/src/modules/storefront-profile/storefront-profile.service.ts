@@ -27,6 +27,12 @@ export class StorefrontProfileService {
 export function emptyStorefrontProfile(): StorefrontProfileInput {
   return {
     aboutUs: "",
+    homeCtaActionLabel: "Browse all products",
+    homeCtaActionUrl: "/shop",
+    homeCtaDescription:
+      "Compare dependable systems, accessories, and practical support in one place.",
+    homeCtaEyebrow: "Ready when you are",
+    homeCtaTitle: "Technology for your work",
     copyrightText: "",
     facebookUrl: "",
     instagramUrl: "",
@@ -50,6 +56,68 @@ export function emptyStorefrontProfile(): StorefrontProfileInput {
     trustedEyebrow: "Trusted in Tiruppur since 2002",
     trustedProofPoints:
       "Multi-brand guidance\nLocal technical support\nRetail and business expertise",
+    trustedPanels: [
+      {
+        action: "Explore products",
+        description:
+          "Practical systems selected around your workload, budget, service needs, and future upgrades.",
+        details: [
+          "Business and student laptops",
+          "Desktops and workstations",
+          "Custom systems and accessories"
+        ],
+        href: "/shop",
+        title: "Computers and laptops"
+      },
+      {
+        action: "Explore solutions",
+        description:
+          "Connected technology for offices, factories, retailers, institutions, and growing teams.",
+        details: [
+          "Networking, Wi-Fi and storage",
+          "CCTV, biometric and access",
+          "POS, VoIP and displays"
+        ],
+        href: "/features",
+        title: "Business IT solutions"
+      },
+      {
+        action: "Get local support",
+        description:
+          "Reach a Tiruppur team that can help before the purchase and after the installation.",
+        details: [
+          "Computer and laptop service",
+          "Installation and upgrades",
+          "Maintenance and warranty help"
+        ],
+        href: "/support",
+        title: "Service and support"
+      },
+      {
+        action: "Plan security",
+        description:
+          "Practical protection and access systems designed for the site, people, and daily workflow.",
+        details: [
+          "CCTV and remote monitoring",
+          "Biometric attendance",
+          "Face recognition and access control"
+        ],
+        href: "/features",
+        title: "Security and access"
+      },
+      {
+        action: "Discuss infrastructure",
+        description:
+          "A connected foundation for teams that depend on reliable systems, communication, and support.",
+        details: [
+          "Servers, storage and backup",
+          "VoIP and video conferencing",
+          "AMC and planned maintenance"
+        ],
+        href: "/contact",
+        title: "Managed infrastructure"
+      }
+    ],
     trustedTitle: "25+ years of practical technology experience",
     threadsUrl: "",
     whatsappUrl: "",

@@ -7,6 +7,12 @@ import { getEcommerceTenantDatabaseName } from "../../database/ecommerce-databas
 import { StorefrontService } from "./storefront.service.js";
 
 const product = z.object({
+  badge: z
+    .object({
+      text: z.string(),
+      type: z.enum(["bestseller", "limited", "new", "discount", "default"])
+    })
+    .nullable(),
   brand: z.string().nullable(),
   category: z.string(),
   compareAtPrice: z.number().nullable(),
@@ -20,7 +26,8 @@ const product = z.object({
   shortDescription: z.string(),
   slug: z.string(),
   subtitle: z.string(),
-  variantCount: z.number()
+  variantCount: z.number(),
+  bulletPoints: z.array(z.string()).optional()
 });
 const searchScope = z.enum(["all", "products", "brands", "categories"]);
 const sort = z.enum(["featured", "name", "price-asc", "price-desc", "discount"]);
@@ -64,7 +71,9 @@ const discovery = z.object({
       productCount: z.number()
     })
   ),
-  categories: z.array(z.object({ name: z.string(), productCount: z.number() })),
+  categories: z.array(
+    z.object({ imageUrl: z.string().optional(), name: z.string(), productCount: z.number() })
+  ),
   priceRange: z.object({ maximum: z.number(), minimum: z.number() })
 });
 const announcement = z
@@ -80,6 +89,13 @@ const siteNavigation = z
   .object({
     about: z.string(),
     copyrightText: z.string(),
+    closingCta: z.object({
+      actionLabel: z.string(),
+      actionUrl: z.string(),
+      description: z.string(),
+      eyebrow: z.string(),
+      title: z.string()
+    }),
     groups: z.array(
       z.object({
         title: z.string(),
@@ -109,6 +125,15 @@ const siteNavigation = z
     trustedStrip: z.object({
       description: z.string(),
       eyebrow: z.string(),
+      panels: z.array(
+        z.object({
+          action: z.string(),
+          description: z.string(),
+          details: z.array(z.string()),
+          href: z.string(),
+          title: z.string()
+        })
+      ),
       proofPoints: z.array(z.string()),
       title: z.string()
     })
@@ -244,7 +269,9 @@ export async function registerStorefrontRoutes(
     method: "GET",
     url: "/storefront/categories",
     schemas: {
-      response: z.array(z.object({ name: z.string(), productCount: z.number() }))
+      response: z.array(
+        z.object({ imageUrl: z.string().optional(), name: z.string(), productCount: z.number() })
+      )
     },
     handler: () => service().categories()
   });
@@ -263,6 +290,14 @@ export async function registerStorefrontRoutes(
       params: z.object({ slug: z.string().min(1).max(191) }),
       response: product.extend({
         bulletPoints: z.array(z.string()),
+        images: z.array(
+          z.object({
+            altText: z.string(),
+            caption: z.string(),
+            url: z.string(),
+            variantId: z.number().nullable()
+          })
+        ),
         returnPolicy: z.string(),
         variants: z.array(
           z.object({ id: z.number(), price: z.number(), sku: z.string(), title: z.string() })

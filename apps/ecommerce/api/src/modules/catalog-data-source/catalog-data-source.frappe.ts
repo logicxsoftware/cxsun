@@ -74,6 +74,16 @@ export class FrappeCatalogSource implements StorefrontCatalogSource {
     return {
       ...this.toProduct(item, snapshot),
       bulletPoints: highlights(item.highlights),
+      images: item.image
+        ? [
+            {
+              altText: item.item_name,
+              caption: "",
+              url: absoluteUrl(item.image, this.currentBaseUrl),
+              variantId: null
+            }
+          ]
+        : [],
       returnPolicy: "",
       variants: [],
       warranty: ""
@@ -430,12 +440,19 @@ function membershipsFrom(catalogs: IShopCatalog[]) {
 }
 
 function categoriesFrom(snapshot: CatalogSnapshot) {
-  return snapshot.catalogs.map((catalog) => ({
-    name: catalog.catalog_name,
-    productCount: (catalog.catalog_items ?? []).filter((row) =>
-      snapshot.items.some((item) => item.name === row.ishop_item)
-    ).length
-  }));
+  return snapshot.catalogs.map((catalog) => {
+    const matchingItem = snapshot.items.find((item) =>
+      (catalog.catalog_items ?? []).some((row) => row.ishop_item === item.name)
+    );
+    const imageUrl = catalog.catalog_image || matchingItem?.image_url || "";
+    return {
+      imageUrl: imageUrl || undefined,
+      name: catalog.catalog_name,
+      productCount: (catalog.catalog_items ?? []).filter((row) =>
+        snapshot.items.some((item) => item.name === row.ishop_item)
+      ).length
+    };
+  });
 }
 
 function brandsFrom(products: StorefrontProduct[]) {
